@@ -850,3 +850,11 @@ body[data-tab="home"] { background: var(--bg); }
 /* status bar in an older home-screen install takes the page colour: keep that colour navy */
 body { background: var(--band-page) top center / 100% var(--band-page-h) no-repeat, linear-gradient(var(--bg), var(--bg)) top center / 100% 100% no-repeat, #0A0E2E; }
 body[data-tab="home"] { background: linear-gradient(var(--bg), var(--bg)) top center / 100% 100% no-repeat, #0A0E2E; }
+
+/* ================= v8 ================= */
+.hero { height: calc(var(--app-h, 100svh) - var(--tabbar-h) - var(--safe-b)); }
+.jview { display: flex; align-items: flex-start; gap: 6px; padding: 12px 6px 12px 14px; border-radius: 14px; background: var(--inner); border: 1px solid var(--line-2); }
+.jview p { flex: 1; margin: 0; font-size: 15.5px; line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; }
+.jview .icon-btn { margin: -6px 0 -6px 0; color: var(--soft); }
+.jfoot { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: -4px; }
+.jfoot .saved { flex: 1; text-align: left; }

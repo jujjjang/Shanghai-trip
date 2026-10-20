@@ -330,15 +330,15 @@
     const dots = [[24, 30, 1], [70, 18, .8], [118, 44, 1.1], [160, 12, .7], [196, 34, 1], [252, 14, .8], [300, 18, .9], [366, 40, .8], [190, 80, .7], [52, 84, .8], [140, 104, .6], [18, 120, .7], [96, 132, .7], [228, 108, .6]].filter((s) => s[1] < h - 56);
     const gold = [[44, 50, 5.5], [150, 30, 4.2], [214, 72, 3.4], [338, 22, 4.6], [104, 100, 3.2], [380, 92, 3.4]].filter((s) => s[1] < h - 50);
     const win = [[225, 160], [233, 166], [247, 156], [304, 122], [314, 134], [309, 152], [345, 112], [352, 142], [358, 162], [377, 150], [365, 168], [228, 170]];
-    return '<svg class="hart" viewBox="0 0 390 ' + h + '" preserveAspectRatio="xMaxYMax slice" aria-hidden="true"><defs>' +
+    return '<svg class="hart" viewBox="0 0 390 ' + h + '" preserveAspectRatio="' + (small ? "xMaxYMax meet" : "xMaxYMax slice") + '" aria-hidden="true"><defs>' +
       '<linearGradient id="bfade" gradientUnits="userSpaceOnUse" x1="0" y1="' + (60 + dy) + '" x2="0" y2="' + (190 + dy) + '"><stop class="bt" offset="0"/><stop class="bt" offset=".7"/><stop class="bb" offset="1"/></linearGradient>' +
       '<radialGradient id="hpearl" cx=".36" cy=".32" r=".75"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".4" stop-color="#F7C6EE"/><stop offset=".8" stop-color="#B58BF2"/><stop offset="1" stop-color="#7A5BD6"/></radialGradient>' +
       '<radialGradient id="pglow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#E9A8FF" stop-opacity=".55"/><stop offset="1" stop-color="#E9A8FF" stop-opacity="0"/></radialGradient>' +
       '<radialGradient id="mglow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFE7A8" stop-opacity=".35"/><stop offset="1" stop-color="#FFE7A8" stop-opacity="0"/></radialGradient>' +
-      '<mask id="moonm"><rect x="0" y="0" width="390" height="' + h + '" fill="#fff"/><circle cx="243" cy="38" r="15" fill="#000"/></mask></defs>' +
+      '<mask id="moonm"><rect x="0" y="0" width="390" height="' + h + '" fill="#fff"/><circle cx="' + (small ? 327 : 243) + '" cy="' + (small ? 66 : 38) + '" r="' + (small ? 10.5 : 15) + '" fill="#000"/></mask></defs>' +
       dots.map((s, i) => '<circle class="' + (i % 2 ? "tw" : "") + '" fill="#FFFFFF" cx="' + s[0] + '" cy="' + s[1] + '" r="' + s[2] + '" opacity=".75"/>').join("") +
       gold.map((s) => spark(s[0], s[1], s[2])).join("") +
-      '<circle cx="236" cy="44" r="40" fill="url(#mglow)"/><circle cx="236" cy="44" r="16" fill="#FFE7A8" mask="url(#moonm)"/>' +
+      (small ? '<circle cx="322" cy="70" r="30" fill="url(#mglow)"/><circle cx="322" cy="70" r="11.5" fill="#FFE7A8" mask="url(#moonm)"/>' : '<circle cx="236" cy="44" r="40" fill="url(#mglow)"/><circle cx="236" cy="44" r="16" fill="#FFE7A8" mask="url(#moonm)"/>') +
       '<linearGradient id="skyf" gradientUnits="userSpaceOnUse" x1="0" y1="' + (h - 46) + '" x2="0" y2="' + h + '"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#000"/></linearGradient>' +
       '<mask id="skym"><rect width="390" height="' + h + '" fill="url(#skyf)"/></mask>' +
       '<g mask="url(#skym)"><g transform="' + (small ? "translate(" + f1(390 - 390 * .76) + " " + f1(h - 190 * .76) + ") scale(.76)" : "translate(0 " + dy + ")") + '">' +
@@ -491,7 +491,7 @@
     const el = document.getElementById("map");
     if (!el) return;
     const day = planDay(), bar = $(".daybar"), r = el.getBoundingClientRect();
-    const padT = bar ? Math.max(70, bar.getBoundingClientRect().bottom - r.top + 18) : 80;
+    const padT = bar ? Math.max(90, bar.getBoundingClientRect().bottom - r.top + 54) : 110;
     el.innerHTML = routeMap(day, Math.round(r.width), Math.round(r.height), { padT, padB: 92, padL: 44, padR: 44, uid: "p" });
   }
 
@@ -560,9 +560,9 @@
       '<radialGradient id="hp" cx=".36" cy=".32" r=".75"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".38" stop-color="#FFC2EC"/><stop offset=".78" stop-color="#C37BF0"/><stop offset="1" stop-color="#7B4FD0"/></radialGradient>' +
       '<linearGradient id="hb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1A1650"/><stop offset="1" stop-color="#120F3C"/></linearGradient>' +
       '<linearGradient id="hr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFB8E6" stop-opacity=".5"/><stop offset="1" stop-color="#FFB8E6" stop-opacity="0"/></linearGradient>' +
-      '<mask id="hmm"><rect width="390" height="760" fill="#fff"/><circle cx="330" cy="206" r="17" fill="#000"/></mask></defs>' +
+      '<mask id="hmm"><rect width="390" height="760" fill="#fff"/><circle cx="363" cy="231" r="12.5" fill="#000"/></mask></defs>' +
       '<rect width="390" height="480" fill="url(#hs)"/>' + stars + gold +
-      '<circle cx="322" cy="214" r="64" fill="url(#hm)"/><circle cx="322" cy="214" r="19" fill="#FFE7A8" mask="url(#hmm)"/>' +
+      '<circle cx="356" cy="238" r="44" fill="url(#hm)"/><circle cx="356" cy="238" r="14" fill="#FFE7A8" mask="url(#hmm)"/>' +
       '<ellipse cx="200" cy="470" rx="280" ry="110" fill="url(#hglow)"/>' +
       '<g fill="#2E2672" opacity=".9">' + far + "</g>" +
       '<rect y="470" width="390" height="290" fill="url(#hw)"/>' +
@@ -867,6 +867,7 @@
   function setSkip(id, on) { if (on) { state.skip[id] = true; delete state.done[id]; } else delete state.skip[id]; save(); }
 
   /* ---------- LOG ---------- */
+  const logEditing = {};
   function logHtml() {
     let s = pageHead("기록", "날마다 사진 · 한 줄 기록") + '<p class="lognote">사진이랑 그날 기록은 지금은 이 폰에만 저장돼요. 친구랑 같이 보는 건 여행 코드를 붙인 다음부터예요.</p>';
     state.days.forEach((d) => {
@@ -874,8 +875,11 @@
       s += '<section class="logday" id="log-' + d.id + '" style="--c:' + dayC(d) + '"><div class="hd"><span class="rd">' + esc(d.n) + '</span><div><span class="m">' + esc(d.date) + "</span><b>" + esc(d.title) + "</b></div></div>" +
         '<div class="photos">' + ph.map((id, i) => '<button type="button" data-act="view" data-day="' + d.id + '" data-i="' + i + '" aria-label="사진 ' + (i + 1) + ' 크게 보기"><img data-pid="' + esc(id) + '" alt=""></button>').join("") +
         "<label>" + ICON.camera + '<span>사진 추가</span><input class="vh" type="file" accept="image/*" multiple data-upload="' + d.id + '"></label></div>' +
-        '<textarea class="journal" data-journal="' + d.id + '" placeholder="오늘 어땠는지 적어두기" aria-label="' + esc(d.date) + ' 기록">' + esc(j.text || "") + "</textarea>" +
-        '<div class="saved" data-saved="' + d.id + '"></div></section>';
+        (j.text && !logEditing[d.id]
+          ? '<div class="jview"><p>' + esc(j.text) + '</p><button class="icon-btn" type="button" data-act="log-edit" data-day="' + d.id + '" aria-label="' + esc(d.date) + ' 기록 고치기">' + ICON.pen + "</button></div>"
+          : '<textarea class="journal" id="jr-' + d.id + '" data-journal="' + d.id + '" placeholder="오늘 어땠는지 적어두기" aria-label="' + esc(d.date) + ' 기록">' + esc(j.text || "") + "</textarea>" +
+            '<div class="jfoot"><span class="saved" data-saved="' + d.id + '"></span><button class="btn sm primary" type="button" data-act="log-save" data-day="' + d.id + '">저장</button></div>') +
+        "</section>";
     });
     return s;
   }
@@ -1538,6 +1542,13 @@
         return;
       }
       case "ck-sheet": ckSheet(t.getAttribute("data-list")); return;
+      case "log-edit": { const d = t.getAttribute("data-day"); logEditing[d] = true; render(); const ta = document.getElementById("jr-" + d); if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); } return; }
+      case "log-save": {
+        const d = t.getAttribute("data-day"), ta = document.getElementById("jr-" + d);
+        if (ta) { (state.journal[d] = state.journal[d] || {}).text = ta.value.trim(); save(); }
+        delete logEditing[d]; render(); toast("저장했어요");
+        return;
+      }
       case "row-del": deleteRow(id); return;
       case "photo-sheet": photoSheet(id); return;
       case "to-widgets": { const z = $("#wzone"); if (z) window.scrollTo({ top: z.getBoundingClientRect().top + window.scrollY - 8, behavior: "smooth" }); return; }
@@ -1709,6 +1720,7 @@
       clearTimeout(jTimers[d]);
       jTimers[d] = setTimeout(() => {
         (state.journal[d] = state.journal[d] || {}).text = t.value;
+        logEditing[d] = true;
         save();
         const s = document.querySelector('[data-saved="' + d + '"]'); if (s) s.textContent = "저장됨";
       }, 500);
@@ -1748,6 +1760,9 @@
   window.addEventListener("resize", () => { clearTimeout(rsz); rsz = setTimeout(() => { if (ui.tab === "plan") drawMap(); }, 150); });
 
   /* ---------- start ---------- */
+  const setAppH = () => { document.documentElement.style.setProperty("--app-h", window.innerHeight + "px"); };
+  setAppH();
+  window.addEventListener("resize", setAppH);
   document.querySelectorAll("[data-icon]").forEach((el) => { el.innerHTML = ICON[el.getAttribute("data-icon")] || ""; });
   applyTheme();
   render();
