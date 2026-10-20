@@ -72,6 +72,7 @@
     undo: I('<path d="M8.5 6 4 10.5 8.5 15"/><path d="M4 10.5h10a6 6 0 0 1 0 12h-3"/>'),
     plus: I('<path d="M12 5v14M5 12h14"/>', 2.2),
     x: I('<path d="M6 6l12 12M18 6 6 18"/>'),
+    trash: I('<path d="M4.5 7h15M9.5 7V4.8h5V7M6.5 7l.9 12.2a1.5 1.5 0 0 0 1.5 1.3h6.2a1.5 1.5 0 0 0 1.5-1.3L17.5 7"/><path d="M10 11v6M14 11v6"/>'),
     clock: I('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>'),
     store: I('<path d="M5 8.5h14l-1 11H6z"/><path d="M9 8.5V7a3 3 0 0 1 6 0v1.5"/>'),
     bolt: I('<path d="M13 3 5 13.5h6L10 21l8-10.5h-6z"/>')
@@ -350,7 +351,7 @@
       '<circle cx="280" cy="152" r="11" fill="url(#hpearl)"/><circle cx="280" cy="98" r="7.5" fill="url(#hpearl)"/><circle cx="280" cy="70" r="3.6" fill="url(#hpearl)"/>' +
       '<ellipse cx="276.5" cy="148" rx="3.6" ry="2.2" fill="#fff" opacity=".7" transform="rotate(-30 276.5 148)"/></g></svg>';
   }
-  const pageHead = (title, sub) => '<header class="phead">' + skyArt(150) + "<h1>" + esc(title) + "</h1>" + (sub ? '<span class="sub">' + esc(sub) + "</span>" : "") + "</header>";
+  const pageHead = (title, sub) => '<header class="phead">' + skyArt(250) + "<h1>" + esc(title) + "</h1>" + (sub ? '<span class="sub">' + esc(sub) + "</span>" : "") + "</header>";
 
   /* ---------- the illustrated route map ---------- */
   /* rough centre lines of 황푸강 and 쑤저우강 (WGS-84), enough to place the day's stops */
@@ -583,17 +584,19 @@
     const q = placeOf(st), th = placeImgs(st)[0], done = isDone(st.id), sk = isSkip(st.id), nx = st.id === nextId;
     const n = visible(day).indexOf(st) + 1;
     const lbl = nx ? '<span class="pc-tag on">다음 갈 곳</span>' : done ? '<span class="pc-tag">다녀옴 ✓</span>' : sk ? '<span class="pc-tag">건너뜀</span>' : '<span class="pc-tag">' + (nextId && list.findIndex((x) => x.id === nextId) > i ? "지나온 곳" : "이따 갈 곳") + "</span>";
-    return '<div class="hc-slide"><article class="pc' + (done || sk ? " dim" : "") + '" data-act="detail" data-id="' + st.id + '">' +
-      (th ? '<div class="pc-ph">' + imgHtml(th, "", st.ko, "this.parentNode.remove()") + "</div>" : "") +
+    const info = st.memo || st.desc || st.hours || "";
+    /* same slots on every card: picture (or drawn stand-in), name, zh, stars/tags, two lines of note, buttons */
+    return '<div class="hc-slide"><article class="pc' + (done || sk ? " dim" : "") + '" data-act="detail" data-id="' + st.id + '" style="--c:' + dayC(day) + '">' +
+      '<div class="pc-ph"><div class="pc-ph0" aria-hidden="true"><i></i><i></i><b>' + n + "</b></div>" + (th ? imgHtml(th, "", st.ko, "this.remove()") : "") + "</div>" +
       '<div class="pc-b"><div class="pc-top">' + lbl + '<span class="mono pc-n">' + (i + 1) + " / " + list.length + "</span></div>" +
-      '<div class="pc-row"><span class="numdot" style="--c:' + dayC(day) + '">' + (done ? ICON.check : n) + '</span><div class="pc-t">' +
-      '<a class="wn-name" href="' + google(st.ko) + '"' + EXT + ">" + esc(st.ko) + '<span class="ext" aria-label="구글 검색">↗</span></a>' +
-      (st.zh ? '<span class="zhs">' + esc(st.zh) + "</span>" : "") + "</div></div>" +
-      (st.pri || (st.tags || []).length ? '<div class="chips">' + starsHtml(st.pri) + tagsHtml(st) + "</div>" : "") +
-      (st.memo ? '<div class="memo-in clamp2x">' + ICON.checkc + "<span>" + esc(st.memo) + "</span></div>" : "") +
-      (q ? '<div class="acts3"><a class="btn primary" href="' + amap(q) + '"' + EXT + ">" + ICON.map + "고덕지도</a>" +
+      '<div class="pc-row"><span class="numdot">' + (done ? ICON.check : n) + '</span><div class="pc-t">' +
+      '<a class="wn-name" href="' + google(st.ko) + '"' + EXT + "><span>" + esc(st.ko) + '</span><span class="ext" aria-label="구글 검색">↗</span></a>' +
+      '<span class="zhs">' + esc(st.zh || " ") + "</span></div></div>" +
+      '<div class="pc-chips">' + starsHtml(st.pri) + tagsHtml(st) + "</div>" +
+      '<div class="pc-info">' + (info ? esc(info) : "") + "</div>" +
+      '<div class="acts3">' + (q ? '<a class="btn primary" href="' + amap(q) + '"' + EXT + ">" + ICON.map + "고덕지도</a>" +
         '<a class="btn" href="' + apple(q) + '"' + EXT + '><span class="ic">' + ICON.nav + "</span>길찾기</a>" +
-        '<button class="btn" type="button" data-act="taxi" data-id="' + st.id + '"><span class="ic">' + ICON.taxi + "</span>택시</button></div>" : "") +
+        '<button class="btn" type="button" data-act="taxi" data-id="' + st.id + '"><span class="ic">' + ICON.taxi + "</span>택시</button>" : "") + "</div>" +
       "</div></article></div>";
   }
   function heroCardHtml(ctx) {
@@ -622,9 +625,9 @@
     if (!list.length) return '<div class="hc-one"><article class="pc"><div class="pc-b"><b class="wtitle">오늘은 정해진 일정이 없어요</b><button class="btn primary" type="button" data-act="taxi" data-id="hotel">' + ICON.taxi + "숙소로 가는 택시 카드</button></div></article></div>";
     const start = heroIdx[day.id] != null ? Math.min(heroIdx[day.id], list.length - 1) : next ? list.indexOf(next) : list.length - 1;
     return '<div class="hc-wrap"><div class="hc" id="hc" data-day="' + day.id + '" data-start="' + start + '">' + list.map((st, i) => placeCard(st, i, list, day, next && next.id)).join("") + "</div>" +
-      '<button class="hc-arr l" type="button" data-act="hc-step" data-d="-1" aria-label="이전 장소">' + ICON.chevL + "</button>" +
-      '<button class="hc-arr r" type="button" data-act="hc-step" data-d="1" aria-label="다음 장소">' + ICON.chevR + "</button>" +
-      '<div class="hc-dots" aria-hidden="true">' + list.map((st, i) => '<i class="' + (isDone(st.id) || isSkip(st.id) ? "ok" : "") + (next && st.id === next.id ? " nx" : "") + '"></i>').join("") + "</div></div>";
+      '<div class="hc-nav"><button class="hc-arr l" type="button" data-act="hc-step" data-d="-1" aria-label="이전 장소">' + ICON.chevL + "</button>" +
+      '<div class="hc-dots" aria-hidden="true">' + list.map((st, i) => '<i class="' + (isDone(st.id) || isSkip(st.id) ? "ok" : "") + (next && st.id === next.id ? " nx" : "") + '"></i>').join("") + "</div>" +
+      '<button class="hc-arr r" type="button" data-act="hc-step" data-d="1" aria-label="다음 장소">' + ICON.chevR + "</button></div></div>";
   }
   function homeHtml() {
     const ctx = homeCtx(), ph = ctx.ph, t = state.trip;
@@ -725,10 +728,9 @@
   function wCheck(key) {
     const list = state.prep[key], doneN = list.filter((x) => state.done[x.id]).length;
     const sorted = list.filter((x) => !state.done[x.id]).concat(list.filter((x) => state.done[x.id]));
-    return wrapW(key, '<div class="hd"><span class="lbl">' + CK_TITLE[key] + '</span><span class="mono sub">' + doneN + "/" + list.length + "</span></div>" +
+    return wrapW(key, '<div class="hd"><span class="lbl">' + CK_TITLE[key] + '</span><button class="wedit-ic" type="button" data-act="ck-sheet" data-list="' + key + '" aria-label="' + CK_TITLE[key] + ' 추가 · 편집">' + ICON.pen + "</button></div>" +
       '<div class="wprog"><i style="width:' + (list.length ? (doneN / list.length) * 100 : 0) + '%"></i></div>' +
-      '<div class="wlist">' + (sorted.length ? sorted.map((x) => ckHtml(x, esc(x.t) + (x.u && key === "apps" ? "<small>" + esc(x.u) + "</small>" : ""), "wck")).join("") : '<span class="sub" style="padding:6px 0">비어 있어요</span>') + "</div>" +
-      '<span class="wfoot">' + ICON.plus + " 추가 · 편집</span>", "wcheck", ' data-act="ck-sheet" data-list="' + key + '"');
+      '<div class="wlist">' + (sorted.length ? sorted.map((x) => ckHtml(x, esc(x.t), "wck")).join("") : '<span class="sub" style="padding:6px 0">비어 있어요 · 연필을 눌러 추가</span>') + "</div>", "wcheck", ' data-act="ck-sheet" data-list="' + key + '"');
   }
   function wFlight(ctx) {
     const legs = state.flight.legs;
@@ -764,14 +766,13 @@
       '<div class="plist-h"><h2>' + (isNum(day.n) ? "Day " + esc(day.n) : "귀국날") + ' 일정</h2><span class="cnt">' + (pr.n ? pr.done + "/" + pr.n + " 다녀옴" + (pr.sk ? " · " + pr.sk + " 건너뜀" : "") : "") + "</span>" +
       '<button class="icon-btn" type="button" data-act="edit-day" data-day="' + day.id + '" aria-label="이 날 제목·날씨 수정">' + ICON.pen + "</button></div>";
     if (hasPri(day)) s += '<p class="starkey"><span class="stars">★★★</span> 꼭 가기 · <span class="stars">★★</span> 가면 좋음 · <span class="stars">★</span> 여유 있으면</p>';
-    s += '<p class="rowhint">길게 눌러 끌면 순서 바꾸기 · 왼쪽으로 밀면 삭제</p>';
     s += '<ul class="prows">' + vis.map((st, i) => prowHtml(st, i + 1, nextId, vis[i - 1] && vis[i - 1].id === nextId, c)).join("") + "</ul>";
     s += maybeDrawer(day);
     s += '<div class="addrow"><button class="btn dashed wide" type="button" data-act="add-stop" data-day="' + day.id + '">+ 장소 추가</button></div></section></div>';
     return s;
   }
   /* every row can be swiped left to show 삭제; long-press a place row to drag it (its shops move with it) */
-  const swipeWrap = (id, inner) => '<div class="swipe" data-sw="' + id + '"><button class="sw-del" type="button" data-act="row-del" data-id="' + id + '" tabindex="-1">' + ICON.x + "삭제</button>" + inner + "</div>";
+  const swipeWrap = (id, inner) => '<div class="swipe" data-sw="' + id + '"><button class="sw-del" type="button" data-act="row-del" data-id="' + id + '" tabindex="-1" aria-label="삭제"><span class="sw-ic">' + ICON.trash + "</span>삭제</button>" + inner + "</div>";
   function prowHtml(st, n, nextId, afterNext, c) {
     const done = isDone(st.id), sk = isSkip(st.id), nx = st.id === nextId, has = !!placeOf(st);
     const num = done ? ICON.check : sk ? ICON.skip : has ? n : "·";
@@ -936,11 +937,6 @@
   function moreHtml() {
     const h = state.hotel, legs = state.flight.legs;
     let s = pageHead("더보기", String(state.trip.dates || ""));
-    s += '<div class="group-h">여행</div><div class="group">' +
-      row("hotel", "bed", "숙소", h.name || "아직 미정") +
-      row("flight", "plane", "항공", legs.map(legShort).join("  /  ")) +
-      row("papago", "trans", "번역 · 파파고", "앱으로 열기 · 한국어 → 중국어") +
-      "</div>";
     s += '<div class="group-h">정보</div><div class="group">' +
       '<div class="row"><span class="ri">' + ICON.clock + '</span><span class="rt"><b>시차</b><span>상하이가 한국보다 1시간 느려요</span></span><span class="rv">−1h</span></div>' +
       [["경찰", "중국 현지", "110"], ["구급차", "중국 현지", "120"], ["영사콜센터", "외교부 · 24시간", "+82-2-3210-0404"]].map((x) =>
@@ -948,7 +944,7 @@
       state.infos.map((x) => row("info-edit", "info", esc(x.title || "정보"), x.body, ' data-id="' + x.id + '"')).join("") +
       row("info-add", "plus", "정보 추가", "") + "</div>";
     s += '<div class="group-h">메모</div><div class="group">' +
-      state.memos.map((m) => '<button class="memo-item" type="button" data-act="memo-edit" data-id="' + m.id + '">' + esc(m.text) + "</button>").join("") +
+      state.memos.map((m) => { const ls = String(m.text || "").split("\n").filter((x) => x.trim()); return '<button class="row memo-row" type="button" data-act="memo-edit" data-id="' + m.id + '"><span class="ri">' + ICON.note + '</span><span class="rt"><b>' + esc(ls[0] || "메모") + "</b><span>" + esc(ls.slice(1).join(" · ") || (m.at ? dayLabel(m.at) : "")) + '</span></span><span class="chev2" aria-hidden="true">›</span></button>'; }).join("") +
       row("memo-add", "plus", "메모 추가", "") + "</div>";
     s += '<div class="group-h">참고 링크</div><div class="group links">' +
       state.prep.links.map((l) => '<div class="li"><a class="linkrow grow" href="' + esc(safeUrl(l.url)) + '"' + EXT + "><b>" + esc(l.title || hostOf(l.url)) + "</b><span>" + esc(hostOf(l.url)) + "</span></a>" +
@@ -1038,6 +1034,7 @@
     sheet.innerHTML = '<button class="sh-bg" type="button" data-act="sh-close" tabindex="-1" aria-label="닫기"></button>' +
       '<div class="sh-panel' + (same ? " still" : "") + (o.bare ? " bare" : "") + '" role="dialog" aria-modal="true" aria-label="' + esc(o.title) + '">' + head +
       '<form class="sh-body' + (o.bare ? " flush" : "") + '" id="shForm">' + o.body + "</form>" + (o.foot ? '<div class="' + (o.footCls || "sh-foot") + '">' + o.foot + "</div>" : "") + "</div>";
+    sheet.classList.toggle("center", !!o.center);
     sheet.hidden = false;
     document.body.classList.add("noscroll", "sheet-open");
     hydratePhotos(sheet);
@@ -1067,12 +1064,13 @@
     const list = state.prep[key], doneN = list.filter((x) => state.done[x.id]).length;
     openSheet({
       key: "ck-" + key,
+      center: true,
       title: CK_TITLE[key],
-      body: '<div class="ckhead"><div class="wprog"><i style="width:' + (list.length ? (doneN / list.length) * 100 : 0) + '%"></i></div><span class="mono">' + doneN + " / " + list.length + "</span></div>" +
-        (list.length ? '<div class="cklist">' + list.map((x) => '<div class="li">' + ckHtml(x, esc(x.t) + (x.u ? "<small>" + esc(x.u) + "</small>" : "")) +
-          '<button class="icon-btn" type="button" data-act="li-del" data-list="' + key + '" data-id="' + x.id + '" aria-label="' + esc(x.t) + ' 지우기">' + ICON.x + "</button></div>").join("") + "</div>" : '<p class="empty">아직 비어 있어요</p>') +
-        '<div class="addline"><input id="add-' + key + '" data-addkey="' + key + '" placeholder="' + (key === "apps" ? "앱 이름" : "추가할 것") + '" autocomplete="off" enterkeyhint="done" aria-label="' + CK_TITLE[key] + ' 추가">' +
-        '<button class="btn primary" type="button" data-act="li-add" data-list="' + key + '">추가</button></div>'
+      body: '<div class="addline"><input id="add-' + key + '" data-addkey="' + key + '" placeholder="' + (key === "apps" ? "앱 이름 추가" : "추가할 것") + '" autocomplete="off" enterkeyhint="done" aria-label="' + CK_TITLE[key] + ' 추가">' +
+        '<button class="btn primary" type="button" data-act="li-add" data-list="' + key + '">추가</button></div>' +
+        '<div class="ckhead"><div class="wprog"><i style="width:' + (list.length ? (doneN / list.length) * 100 : 0) + '%"></i></div><span class="mono">' + doneN + " / " + list.length + "</span></div>" +
+        (list.length ? '<div class="cklist">' + list.map((x) => '<div class="li">' + ckHtml(x, esc(x.t)) +
+          '<button class="icon-btn" type="button" data-act="li-del" data-list="' + key + '" data-id="' + x.id + '" aria-label="' + esc(x.t) + ' 지우기">' + ICON.x + "</button></div>").join("") + "</div>" : '<p class="empty">아직 비어 있어요</p>')
     });
   }
   function papagoSheet() {
@@ -1386,6 +1384,25 @@
   document.addEventListener("touchmove", (e) => { if (drag) e.preventDefault(); }, { passive: false });
   view.addEventListener("contextmenu", (e) => { if (editing && e.target.closest("#wgrid")) e.preventDefault(); });
 
+  /* ---------- plan: swipe the map sideways to go to the day before / after ---------- */
+  let ds = null;
+  view.addEventListener("pointerdown", (e) => {
+    if (ui.tab !== "plan" || !e.target.closest(".mapwrap") || e.target.closest(".daybar button, .mapbot")) return;
+    ds = { x: e.clientX, y: e.clientY, id: e.pointerId };
+  });
+  document.addEventListener("pointerup", (e) => {
+    if (!ds || e.pointerId !== ds.id) return;
+    const dx = e.clientX - ds.x, dy = e.clientY - ds.y;
+    ds = null;
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    const i = state.days.indexOf(planDay()) + (dx < 0 ? 1 : -1);
+    if (!state.days[i]) return;
+    swallow = true;
+    ui.day = state.days[i].id; saveUI(); render(); window.scrollTo(0, 0);
+    const p = $(".plan"); if (p) p.classList.add(dx < 0 ? "in-r" : "in-l");
+  });
+  document.addEventListener("pointercancel", () => { ds = null; });
+
   /* ---------- plan list gestures: swipe left to delete, long-press to drag ---------- */
   let rg = null, swallow = false, openSw = null, edgeRaf = 0;
   const SW_W = 92;
@@ -1501,7 +1518,7 @@
       case "go-log": go("log", { focus: "log-" + t.getAttribute("data-day") }); return;
       case "day-step": {
         const i = state.days.indexOf(planDay()) + (+t.getAttribute("data-d") || 0);
-        if (state.days[i]) { ui.day = state.days[i].id; saveUI(); render(); window.scrollTo(0, 0); }
+        if (state.days[i]) { ui.day = state.days[i].id; saveUI(); render(); window.scrollTo(0, 0); const p = $(".plan"); if (p) p.classList.add(+t.getAttribute("data-d") > 0 ? "in-r" : "in-l"); }
         return;
       }
       case "w-edit": editing = !editing; render(); if (editing) { const z = $("#wzone"); if (z) window.scrollTo({ top: z.getBoundingClientRect().top + window.scrollY - 8, behavior: "smooth" }); } return;
@@ -1612,7 +1629,6 @@
         state.prep[key].push(key === "apps" ? { id: newId("a"), t: v, u: "" } : { id: newId(key === "todo" ? "t" : "k"), t: v });
         save(); render(); ckSheet(key);
         const again = document.getElementById("add-" + key); if (again) again.focus();
-        const b = sheet.querySelector(".sh-body"); if (b) b.scrollTop = b.scrollHeight;
         return;
       }
       case "li-del": {
