@@ -858,3 +858,5 @@ body[data-tab="home"] { background: linear-gradient(var(--bg), var(--bg)) top ce
 .jview .icon-btn { margin: -6px 0 -6px 0; color: var(--soft); }
 .jfoot { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: -4px; }
 .jfoot .saved { flex: 1; text-align: left; }
+/* 기록 · 정산: first card starts where 더보기's first card does (under its '정보' label) */
+.phead.tight + .lognote, .phead.tight + .pad { margin-top: 31px; }
