@@ -562,7 +562,8 @@
       "</ul></details>";
   }
 
-  /* the real map (Leaflet + CARTO tiles); falls back to a drawn map with no internet */
+  /* the real map (Leaflet + OpenStreetMap tiles, recoloured in CSS to fit the theme) */
+  const TILE_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
   let lmap = null;
   const mapView = {};
   function mountMap() {
@@ -581,8 +582,9 @@
     const accent = cs.getPropertyValue("--accent-2").trim() || "#7B6CF0";
     lmap = L.map(el, { zoomControl: false, attributionControl: false, zoomSnap: 0.25 });
     L.control.attribution({ prefix: false, position: "bottomright" }).addTo(lmap);
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/" + (isDark() ? "dark_all" : "light_all") + "/{z}/{x}/{y}{r}.png", {
-      subdomains: "abcd", maxZoom: 19, attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/attributions">CARTO</a>'
+    L.tileLayer(TILE_URL, {
+      maxZoom: 19, crossOrigin: true,
+      attribution: '© <a href="https://www.openstreetmap.org/copyright"' + EXT + ">OpenStreetMap</a>"
     }).addTo(lmap);
     if (near.length > 1) L.polyline(near.map((p) => p.ll), { color: accent, weight: 3, opacity: 0.85, dashArray: "6 8", lineCap: "round", interactive: false }).addTo(lmap);
     const icon = (cls, html, sz) => L.divIcon({ className: "", html: '<div class="pin ' + cls + '">' + html + "</div>", iconSize: [sz, sz], iconAnchor: [sz / 2, sz / 2] });

@@ -1,10 +1,7 @@
 /* Offline support: the app shell answers from cache at once and refreshes in the background,
-   so the trip still opens with no signal in China. Fonts and map tiles are kept the first
-   time they load, so places you've already looked at still show on the map offline. */
-const VERSION = "sht-2026-10-20c";
+   so the trip still opens with no signal in China. Fonts are kept the first time they load. */
+const VERSION = "sht-2026-10-20d";
 const FONTS = "sht-fonts";
-const TILES = "sht-tiles";
-const TILE_MAX = 900;
 const CORE = [
   "./",
   "./index.html",
@@ -26,7 +23,7 @@ self.addEventListener("install", (e) => {
 self.addEventListener("activate", (e) => {
   e.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== VERSION && k !== FONTS && k !== TILES).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => k !== VERSION && k !== FONTS).map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
@@ -78,6 +75,6 @@ self.addEventListener("fetch", (e) => {
     return;
   }
 
-  if (url.hostname === "fonts.googleapis.com" || url.hostname === "fonts.gstatic.com") { cacheFirst(e, FONTS, 0); return; }
-  if (/\.basemaps\.cartocdn\.com$/.test(url.hostname)) cacheFirst(e, TILES, TILE_MAX);
+  /* map tiles are left to the browser's normal cache (OpenStreetMap's rules ask apps not to store them for offline use) */
+  if (url.hostname === "fonts.googleapis.com" || url.hostname === "fonts.gstatic.com") cacheFirst(e, FONTS, 0);
 });
