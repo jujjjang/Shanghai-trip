@@ -1,6 +1,10 @@
 /* Offline support: the app shell answers from cache at once and refreshes in the background,
-   so the trip still opens with no signal in China. Fonts are cached the first time they load. */
-const VERSION = "sht-2026-10-20b";
+   so the trip still opens with no signal in China. Fonts and map tiles are kept the first
+   time they load, so places you've already looked at still show on the map offline. */
+const VERSION = "sht-2026-10-20c";
+const FONTS = "sht-fonts";
+const TILES = "sht-tiles";
+const TILE_MAX = 900;
 const CORE = [
   "./",
   "./index.html",
@@ -8,7 +12,8 @@ const CORE = [
   "./app.js",
   "./data.js",
   "./manifest.webmanifest",
-  "./icons/cover.svg",
+  "./vendor/leaflet/leaflet.js",
+  "./vendor/leaflet/leaflet.css",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
   "./icons/apple-touch-icon.png"
@@ -21,10 +26,34 @@ self.addEventListener("install", (e) => {
 self.addEventListener("activate", (e) => {
   e.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== VERSION && k !== "sht-fonts").map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => k !== VERSION && k !== FONTS && k !== TILES).map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
+
+async function trim(cache, max) {
+  const keys = await cache.keys();
+  for (let i = 0; i < keys.length - max; i++) await cache.delete(keys[i]);
+}
+
+function cacheFirst(e, name, max) {
+  e.respondWith(
+    caches.open(name).then(async (cache) => {
+      const hit = await cache.match(e.request);
+      if (hit) return hit;
+      try {
+        const res = await fetch(e.request);
+        if (res && (res.ok || res.type === "opaque")) {
+          cache.put(e.request, res.clone());
+          if (max) e.waitUntil(trim(cache, max));
+        }
+        return res;
+      } catch (err) {
+        return Response.error();
+      }
+    })
+  );
+}
 
 self.addEventListener("fetch", (e) => {
   const req = e.request;
@@ -49,19 +78,6 @@ self.addEventListener("fetch", (e) => {
     return;
   }
 
-  if (url.hostname === "fonts.googleapis.com" || url.hostname === "fonts.gstatic.com") {
-    e.respondWith(
-      caches.open("sht-fonts").then(async (cache) => {
-        const hit = await cache.match(req);
-        if (hit) return hit;
-        try {
-          const res = await fetch(req);
-          if (res && (res.ok || res.type === "opaque")) cache.put(req, res.clone());
-          return res;
-        } catch (err) {
-          return Response.error();
-        }
-      })
-    );
-  }
+  if (url.hostname === "fonts.googleapis.com" || url.hostname === "fonts.gstatic.com") { cacheFirst(e, FONTS, 0); return; }
+  if (/\.basemaps\.cartocdn\.com$/.test(url.hostname)) cacheFirst(e, TILES, TILE_MAX);
 });
