@@ -121,7 +121,7 @@
     return d;
   }
   let state = norm(lsGet(LS_STATE) || clone(window.TRIP_SEED));
-  const W_DEFAULT = ["next", "weather", "hotel", "flight", "todo", "pack", "apps", "route"];
+  const W_DEFAULT = ["weather", "hotel", "flight", "todo", "pack", "apps", "route"];
   const ui = Object.assign({ tab: "home", day: null, preview: "auto", open: {}, cur: "CNY", payer: "", theme: "time" }, lsGet(LS_UI) || {});
   ui.open = ui.open || {};
   function save() {
@@ -492,14 +492,13 @@
     el.innerHTML = routeMap(day, Math.round(r.width), Math.round(r.height), { padT, padB: 92, padL: 44, padR: 44, uid: "p" });
   }
 
-  /* ---------- HOME (widgets) ---------- */
+  /* ---------- HOME: full-screen night view + widgets below ---------- */
   const WDEF = {
-    next: { name: "다음 갈 곳", desc: "갈 곳 · 길찾기 · 다녀옴 / 건너뛰기", icon: "pin", size: "wide" },
     weather: { name: "날씨", desc: "최고 · 최저 기온", icon: "cloud", size: "half" },
     hotel: { name: "숙소", desc: "체크인 · 체크아웃 시간", icon: "bed", size: "half" },
     flight: { name: "항공편", desc: "가는 편 · 오는 편 탑승권", icon: "plane", size: "wide" },
     todo: { name: "출발 전 할 일", desc: "체크리스트", icon: "list", size: "big" },
-    pack: { name: "필수 준비물", desc: "짐 체크리스트", icon: "bag", size: "tall" },
+    pack: { name: "필수 준비물", desc: "짐 체크리스트", icon: "bag", size: "big" },
     apps: { name: "필수 앱", desc: "깔아 둘 앱 체크", icon: "phone", size: "half" },
     route: { name: "오늘 동선", desc: "갈 곳을 작은 지도로", icon: "map", size: "half" },
     settle: { name: "N빵 정산", desc: "총 지출 · 보낼 돈", icon: "money", size: "half" },
@@ -514,10 +513,118 @@
     return w;
   }
   let editing = false;
+  const heroIdx = {};
   function homeCtx() {
     const ph = phase(), days = state.days;
     const day = ph.k === "during" ? ph.day : ph.k === "after" ? days[days.length - 1] : days[0];
     return { ph, day };
+  }
+  /* the night view behind the home screen: stars, moon, Lujiazui skyline and its reflection */
+  let heroSvg = "";
+  function heroArt() {
+    if (heroSvg) return heroSvg;
+    let seed = 7;
+    const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+    let stars = "";
+    for (let i = 0; i < 46; i++) {
+      const x = f1(rnd() * 390), y = f1(rnd() * 400), r = f1(0.5 + rnd() * 1.1);
+      stars += '<circle class="' + (i % 3 ? "" : "tw") + '" cx="' + x + '" cy="' + y + '" r="' + r + '" fill="#fff" opacity="' + f1(0.35 + rnd() * 0.55) + '"/>';
+    }
+    const gold = [[46, 128, 6], [128, 70, 4.4], [92, 236, 3.4], [232, 54, 4], [356, 214, 4.6], [176, 168, 3], [24, 300, 3.2], [270, 338, 3]].map((g) => spark(g[0], g[1], g[2])).join("");
+    let far = "", x = -6;
+    while (x < 396) {
+      const w = 12 + Math.floor(rnd() * 16), h = 26 + Math.floor(rnd() * 64);
+      far += '<rect x="' + x + '" y="' + (470 - h) + '" width="' + (w - 2) + '" height="' + h + '"/>';
+      x += w;
+    }
+    const blocks = [[0, 404, 26], [24, 420, 20], [42, 380, 22], [62, 410, 18], [80, 392, 24], [102, 424, 18], [118, 400, 22], [138, 430, 16], [228, 418, 18], [342, 408, 20], [360, 380, 18], [376, 420, 16]];
+    let near = "", wins = "";
+    blocks.forEach((b) => {
+      near += '<rect x="' + b[0] + '" y="' + b[1] + '" width="' + b[2] + '" height="' + (470 - b[1]) + '"/>';
+      for (let yy = b[1] + 8; yy < 462; yy += 9) for (let xx = b[0] + 4; xx < b[0] + b[2] - 3; xx += 6) if (rnd() < 0.3) wins += '<rect x="' + xx + '" y="' + yy + '" width="2" height="2.6"/>';
+    });
+    let shim = "";
+    for (let i = 0; i < 46; i++) {
+      const cx = rnd() * 390, y = 480 + rnd() * 240, w = 6 + rnd() * 34;
+      const near1 = Math.abs(cx - 196) < 40 ? "#FFB8E6" : Math.abs(cx - 300) < 30 || Math.abs(cx - 336) < 20 ? "#FFD68A" : "#B7A9FF";
+      shim += '<rect class="' + (i % 4 ? "" : "tw") + '" x="' + f1(cx - w / 2) + '" y="' + f1(y) + '" width="' + f1(w) + '" height="1.6" rx=".8" fill="' + near1 + '" opacity="' + f1(0.18 + rnd() * 0.45) + '"/>';
+    }
+    heroSvg = '<svg class="hero-art" viewBox="0 0 390 760" preserveAspectRatio="xMidYMax slice" aria-hidden="true"><defs>' +
+      '<linearGradient id="hs" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#060A24"/><stop offset=".3" stop-color="#101646"/><stop offset=".5" stop-color="#26206A"/><stop offset=".62" stop-color="#5A3C9C"/></linearGradient>' +
+      '<linearGradient id="hw" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2D2270"/><stop offset=".35" stop-color="#211B5E"/><stop offset="1" stop-color="#1C1850"/></linearGradient>' +
+      '<radialGradient id="hglow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#E58BE8" stop-opacity=".5"/><stop offset="1" stop-color="#E58BE8" stop-opacity="0"/></radialGradient>' +
+      '<radialGradient id="hm" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFE7A8" stop-opacity=".32"/><stop offset="1" stop-color="#FFE7A8" stop-opacity="0"/></radialGradient>' +
+      '<radialGradient id="hp" cx=".36" cy=".32" r=".75"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".38" stop-color="#FFC2EC"/><stop offset=".78" stop-color="#C37BF0"/><stop offset="1" stop-color="#7B4FD0"/></radialGradient>' +
+      '<linearGradient id="hb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1A1650"/><stop offset="1" stop-color="#120F3C"/></linearGradient>' +
+      '<linearGradient id="hr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFB8E6" stop-opacity=".5"/><stop offset="1" stop-color="#FFB8E6" stop-opacity="0"/></linearGradient>' +
+      '<mask id="hmm"><rect width="390" height="760" fill="#fff"/><circle cx="330" cy="206" r="17" fill="#000"/></mask></defs>' +
+      '<rect width="390" height="480" fill="url(#hs)"/>' + stars + gold +
+      '<circle cx="322" cy="214" r="64" fill="url(#hm)"/><circle cx="322" cy="214" r="19" fill="#FFE7A8" mask="url(#hmm)"/>' +
+      '<ellipse cx="200" cy="470" rx="280" ry="110" fill="url(#hglow)"/>' +
+      '<g fill="#2E2672" opacity=".9">' + far + "</g>" +
+      '<rect y="470" width="390" height="290" fill="url(#hw)"/>' +
+      '<g fill="url(#hb)">' + near +
+      '<path d="M284 470 L287 330 Q290 280 302 246 L306 250 Q314 290 316 330 L318 470 Z"/>' +
+      '<path fill-rule="evenodd" d="M248 470 L250 296 L272 282 L274 470 Z M254 297 L269 290 L269 306 L254 311 Z"/>' +
+      '<polygon points="326,470 326,370 329,370 329,350 332,350 332,334 335,334 337,300 339,334 342,334 342,350 345,350 345,370 348,370 348,470"/>' +
+      '<path d="M174 470 L190 426 M218 470 L202 426 M196 470 L196 426" stroke="#1A1650" stroke-width="7" stroke-linecap="round"/>' +
+      '<rect x="191" y="300" width="10" height="122"/><rect x="193" y="228" width="6" height="74"/></g>' +
+      '<path d="M196 226 L196 158" stroke="#1E1A58" stroke-width="2.4"/><circle cx="196" cy="156" r="2.4" fill="#FFD36B"/>' +
+      '<g fill="#FFD68A" opacity=".7">' + wins + '<rect x="300" y="300" width="2" height="2.6"/><rect x="305" y="340" width="2" height="2.6"/><rect x="298" y="380" width="2" height="2.6"/><rect x="309" y="410" width="2" height="2.6"/><rect x="262" y="330" width="2" height="2.6"/><rect x="258" y="380" width="2" height="2.6"/><rect x="266" y="420" width="2" height="2.6"/><rect x="336" y="390" width="2" height="2.6"/><rect x="340" y="430" width="2" height="2.6"/></g>' +
+      '<circle cx="196" cy="420" r="46" fill="url(#hglow)"/><circle cx="196" cy="300" r="30" fill="url(#hglow)"/>' +
+      '<circle cx="196" cy="420" r="22" fill="url(#hp)"/><circle cx="196" cy="300" r="15" fill="url(#hp)"/><circle cx="196" cy="228" r="7.5" fill="url(#hp)"/>' +
+      '<ellipse cx="189" cy="412" rx="7" ry="4.2" fill="#fff" opacity=".7" transform="rotate(-30 189 412)"/><ellipse cx="191" cy="294" rx="4.6" ry="2.8" fill="#fff" opacity=".7" transform="rotate(-30 191 294)"/>' +
+      '<rect x="174" y="474" width="44" height="150" fill="url(#hr)" opacity=".55"/>' +
+      '<g class="shim">' + shim + "</g>" +
+      '<path d="M0 476 H390" stroke="#B7A9FF" stroke-opacity=".25" stroke-width="1"/></svg>';
+    return heroSvg;
+  }
+  function placeCard(st, i, list, day, nextId) {
+    const q = placeOf(st), th = placeImgs(st)[0], done = isDone(st.id), sk = isSkip(st.id), nx = st.id === nextId;
+    const n = visible(day).indexOf(st) + 1;
+    const lbl = nx ? '<span class="pc-tag on">다음 갈 곳</span>' : done ? '<span class="pc-tag">다녀옴 ✓</span>' : sk ? '<span class="pc-tag">건너뜀</span>' : '<span class="pc-tag">' + (nextId && list.findIndex((x) => x.id === nextId) > i ? "지나온 곳" : "이따 갈 곳") + "</span>";
+    return '<div class="hc-slide"><article class="pc' + (done || sk ? " dim" : "") + '" data-act="detail" data-id="' + st.id + '">' +
+      (th ? '<div class="pc-ph">' + imgHtml(th, "", st.ko, "this.parentNode.remove()") + "</div>" : "") +
+      '<div class="pc-b"><div class="pc-top">' + lbl + '<span class="mono pc-n">' + (i + 1) + " / " + list.length + "</span></div>" +
+      '<div class="pc-row"><span class="numdot" style="--c:' + dayC(day) + '">' + (done ? ICON.check : n) + '</span><div class="pc-t">' +
+      '<a class="wn-name" href="' + google(st.ko) + '"' + EXT + ">" + esc(st.ko) + '<span class="ext" aria-label="구글 검색">↗</span></a>' +
+      (st.zh ? '<span class="zhs">' + esc(st.zh) + "</span>" : "") + "</div></div>" +
+      (st.pri || (st.tags || []).length ? '<div class="chips">' + starsHtml(st.pri) + tagsHtml(st) + "</div>" : "") +
+      (st.memo ? '<div class="memo-in clamp2x">' + ICON.checkc + "<span>" + esc(st.memo) + "</span></div>" : "") +
+      (q ? '<div class="acts3"><a class="btn primary" href="' + amap(q) + '"' + EXT + ">" + ICON.map + "고덕지도</a>" +
+        '<a class="btn" href="' + apple(q) + '"' + EXT + '><span class="ic">' + ICON.nav + "</span>길찾기</a>" +
+        '<button class="btn" type="button" data-act="taxi" data-id="' + st.id + '"><span class="ic">' + ICON.taxi + "</span>택시</button></div>" : "") +
+      "</div></article></div>";
+  }
+  function heroCardHtml(ctx) {
+    const ph = ctx.ph;
+    if (ph.k === "before") {
+      const d1 = state.days[0], l0 = state.flight.legs[0] || {};
+      const names = d1 ? visible(d1).filter(placeOf).map(mapLabel) : [];
+      return '<div class="hc-one"><article class="pc"><div class="pc-b"><div class="pc-top"><span class="pc-tag on">출발까지</span></div>' +
+        '<div class="wn-dday"><b>' + esc(ddayText()) + "</b>" + (l0.no ? "<span>" + esc([l0.date, l0.dep].filter(Boolean).join(" ")) + " · " + esc(l0.from || "") + " 출발 " + esc(l0.no) + "</span>" : "") + "</div>" +
+        (names.length ? '<div class="wn-path"><span class="lbl">첫날</span>' + names.slice(0, 6).map(esc).join(' <i aria-hidden="true">→</i> ') + (names.length > 6 ? " …" : "") + "</div>" : "") +
+        '<div class="wn-foot"><button class="btn cta" type="button" data-act="go-plan" data-day="' + (d1 ? d1.id : "") + '">' + ICON.map + "첫날 일정 보기</button>" +
+        '<button class="btn" type="button" data-act="ck-sheet" data-list="pack">' + ICON.bag + "준비물</button></div></div></article></div>";
+    }
+    if (ph.k === "after") {
+      let places = 0, photos = 0;
+      state.days.forEach((d) => {
+        photos += ((state.journal[d.id] || {}).photos || []).length;
+        d.stops.forEach((st) => { if (isDone(st.id)) places++; (st.spots || []).forEach((p) => { if (isDone(p.id)) places++; }); });
+      });
+      Object.keys(state.placePhotos).forEach((k) => { photos += state.placePhotos[k].length; });
+      return '<div class="hc-one"><article class="pc"><div class="pc-b"><div class="pc-top"><span class="pc-tag on">다녀온 여행 한눈에</span></div>' +
+        '<div class="stat3"><div><span>다녀온 곳</span><b>' + places + "곳</b></div><div><span>사진</span><b>" + photos + "장</b></div><div><span>함께 쓴 돈</span><b>" + totalFmt(settleCalc()) + "</b></div></div>" +
+        '<div class="wn-foot"><button class="btn cta" type="button" data-act="tab" data-tab="log">' + ICON.log + "기록 보기</button></div></div></article></div>";
+    }
+    const day = ph.day, list = visible(day).filter(placeOf), next = nextOf(day);
+    if (!list.length) return '<div class="hc-one"><article class="pc"><div class="pc-b"><b class="wtitle">오늘은 정해진 일정이 없어요</b><button class="btn primary" type="button" data-act="taxi" data-id="hotel">' + ICON.taxi + "숙소로 가는 택시 카드</button></div></article></div>";
+    const start = heroIdx[day.id] != null ? Math.min(heroIdx[day.id], list.length - 1) : next ? list.indexOf(next) : list.length - 1;
+    return '<div class="hc-wrap"><div class="hc" id="hc" data-day="' + day.id + '" data-start="' + start + '">' + list.map((st, i) => placeCard(st, i, list, day, next && next.id)).join("") + "</div>" +
+      '<button class="hc-arr l" type="button" data-act="hc-step" data-d="-1" aria-label="이전 장소">' + ICON.chevL + "</button>" +
+      '<button class="hc-arr r" type="button" data-act="hc-step" data-d="1" aria-label="다음 장소">' + ICON.chevR + "</button>" +
+      '<div class="hc-dots" aria-hidden="true">' + list.map((st, i) => '<i class="' + (isDone(st.id) || isSkip(st.id) ? "ok" : "") + (next && st.id === next.id ? " nx" : "") + '"></i>').join("") + "</div></div>";
   }
   function homeHtml() {
     const ctx = homeCtx(), ph = ctx.ph, t = state.trip;
@@ -525,20 +632,43 @@
     if (ph.k === "during") {
       chip = (isNum(ph.day.n) ? "DAY " + ph.day.n + " · " : "귀국 · ") + ph.day.date;
       title = ph.day.title;
+      const w = wxParse(ph.day.wx);
+      if (ph.day.wx) hint = '<a class="hwx" href="' + WX_URL + '"' + EXT + ">" + ICON[w.kind] + esc(w.c) + (w.t ? " · " + esc(w.t) : "") + "</a>";
     } else {
       chip = ph.k === "before" ? "여행 전" : "다녀온 여행";
       title = (t.title || "상하이") + " " + (t.nights || "");
-      hint = String(t.dates || "").replace(/\s*·\s*\d+박.*$/, "");
+      hint = '<span class="mono">' + esc(String(t.dates || "").replace(/\s*·\s*\d+박.*$/, "")) + "</span>";
     }
-    let s = '<header class="hhead">' + skyArt(190) +
-      '<div class="hrow"><span class="hz">上海</span><span class="hchip">' + esc(chip) + "</span>" +
+    let s = '<section class="hero">' + heroArt() +
+      '<div class="hero-top"><div class="hrow"><span class="hz">上海</span><span class="hchip">' + esc(chip) + "</span>" +
       '<button class="hedit' + (editing ? " done" : "") + '" type="button" data-act="w-edit">' + (editing ? "완료" : "편집") + "</button></div>" +
-      '<h1 class="htitle">' + esc(title) + "</h1>" + (hint ? '<div class="hhint mono">' + esc(hint) + "</div>" : "") + "</header>";
+      '<h1 class="htitle">' + esc(title) + "</h1>" + (hint ? '<div class="hhint">' + hint + "</div>" : "") + "</div>" +
+      '<div class="hero-card">' + heroCardHtml(ctx) + "</div>" +
+      '<button class="hero-more" type="button" data-act="to-widgets">위젯 ' + ICON.chevR + "</button></section>";
     const list = widgetList();
-    s += '<div class="wgrid' + (editing ? " wedit" : "") + '" id="wgrid">' + list.map((id) => widgetHtml(id, ctx)).join("") +
-      (editing ? '<button class="w-add" type="button" data-act="w-addsheet">+ 위젯 추가</button>' : "") + "</div>";
-    if (!list.length && !editing) s += '<p class="note" style="text-align:center;margin-top:24px">오른쪽 위 \'편집\'을 눌러 위젯을 넣어보세요</p>';
+    s += '<div class="wzone" id="wzone"><div class="wgrid' + (editing ? " wedit" : "") + '" id="wgrid">' + list.map((id) => widgetHtml(id, ctx)).join("") +
+      (editing ? '<button class="w-add" type="button" data-act="w-addsheet">+ 위젯 추가</button>' : "") + "</div>" +
+      (!list.length && !editing ? '<p class="note" style="text-align:center;margin-top:24px;color:#fff">\'편집\'을 눌러 위젯을 넣어보세요</p>' : "") + "</div>";
     return s;
+  }
+  function heroMount() {
+    const hc = document.getElementById("hc");
+    if (!hc) return;
+    const n = hc.children.length, start = +hc.getAttribute("data-start") || 0, dayId = hc.getAttribute("data-day");
+    const dots = Array.from(document.querySelectorAll(".hc-dots i"));
+    const l = $(".hc-arr.l"), r = $(".hc-arr.r");
+    const mark = (i) => {
+      dots.forEach((d, k) => d.classList.toggle("on", k === i));
+      if (l) l.disabled = i <= 0;
+      if (r) r.disabled = i >= n - 1;
+    };
+    hc.scrollLeft = start * hc.clientWidth;
+    mark(start);
+    let tm;
+    hc.addEventListener("scroll", () => {
+      clearTimeout(tm);
+      tm = setTimeout(() => { const i = Math.round(hc.scrollLeft / Math.max(1, hc.clientWidth)); heroIdx[dayId] = i; mark(i); }, 60);
+    }, { passive: true });
   }
   function wrapW(id, inner, cls, attrs) {
     const def = WDEF[id];
@@ -547,7 +677,6 @@
   }
   function widgetHtml(id, ctx) {
     switch (id) {
-      case "next": return wNext(ctx);
       case "weather": {
         const d = ctx.day, w = wxParse(d && d.wx);
         const lbl = ctx.ph.k === "during" ? "오늘 날씨" : ctx.ph.k === "before" ? "첫날 날씨" : "날씨";
@@ -613,53 +742,6 @@
       (other ? '<div class="wf-cut" aria-hidden="true"></div><div class="wf-back"><span>' + esc(other.label || "") + " " + esc(other.date || "") + "</span><b>" + esc(apCode(other.from)) + " " + esc(other.dep || "") + " → " + esc(apCode(other.to)) + " " + esc(other.arr || "") + '</b><span class="r">' + esc(other.no || "") + "</span></div>" : ""),
       "wf", ' data-act="flight"');
   }
-  function wNext(ctx) {
-    const ph = ctx.ph;
-    if (ph.k === "before") {
-      const d1 = state.days[0], l0 = state.flight.legs[0] || {};
-      const names = d1 ? visible(d1).filter(placeOf).map(mapLabel) : [];
-      return wrapW("next", '<div class="wn-glow" aria-hidden="true"></div><div class="wn-top"><span class="lbl ac">출발까지</span></div>' +
-        '<div class="wn-dday"><b>' + esc(ddayText()) + "</b>" + (l0.no ? "<span>" + esc([l0.date, l0.dep].filter(Boolean).join(" ")) + " · " + esc(l0.from || "") + " 출발 " + esc(l0.no) + "</span>" : "") + "</div>" +
-        (names.length ? '<div class="wn-path"><span class="lbl">첫날</span>' + names.slice(0, 6).map(esc).join(' <i aria-hidden="true">→</i> ') + (names.length > 6 ? " …" : "") + "</div>" : "") +
-        '<div class="wn-foot"><button class="btn cta" type="button" data-act="go-plan" data-day="' + (d1 ? d1.id : "") + '">' + ICON.map + "첫날 일정 보기</button>" +
-        '<button class="btn" type="button" data-act="ck-sheet" data-list="pack">' + ICON.bag + "준비물</button></div>");
-    }
-    if (ph.k === "after") {
-      let places = 0, photos = 0;
-      state.days.forEach((d) => {
-        photos += ((state.journal[d.id] || {}).photos || []).length;
-        d.stops.forEach((st) => { if (isDone(st.id)) places++; (st.spots || []).forEach((p) => { if (isDone(p.id)) places++; }); });
-      });
-      Object.keys(state.placePhotos).forEach((k) => { photos += state.placePhotos[k].length; });
-      return wrapW("next", '<div class="wn-glow" aria-hidden="true"></div><div class="wn-top"><span class="lbl ac">다녀온 여행 한눈에</span></div>' +
-        '<div class="stat3"><div><span>다녀온 곳</span><b>' + places + "곳</b></div><div><span>사진</span><b>" + photos + "장</b></div><div><span>함께 쓴 돈</span><b>" + totalFmt(settleCalc()) + "</b></div></div>" +
-        '<div class="wn-foot"><button class="btn cta" type="button" data-act="tab" data-tab="log">' + ICON.log + "기록 보기</button></div>");
-    }
-    const day = ph.day, pr = dayProgress(day), next = nextOf(day), vis = visible(day);
-    const top = '<div class="wn-glow" aria-hidden="true"></div><div class="wn-top"><span class="lbl ac">' + (next ? "다음 갈 곳" : "오늘 일정") + "</span>" + (pr.n ? ringSvg(pr.done + pr.sk, pr.n) : "") + "</div>";
-    if (!next) {
-      return wrapW("next", top + '<b class="wtitle" style="font-size:19px">' + (pr.n ? "오늘 갈 곳은 다 끝났어요" : "오늘은 정해진 일정이 없어요") + "</b>" +
-        '<span class="sub">숙소로 돌아갈 땐 택시 카드를 보여주세요</span>' +
-        '<div class="wn-foot"><button class="btn primary" type="button" data-act="taxi" data-id="hotel">' + ICON.taxi + "숙소로 가는 택시 카드</button>" +
-        '<button class="btn" type="button" data-act="go-plan" data-day="' + day.id + '">일정 보기</button></div>');
-    }
-    const q = placeOf(next), spots = (next.spots || []).filter((p) => p.pri !== "maybe"), th = placeImgs(next)[0];
-    return wrapW("next", top +
-      '<div class="wn-row"><span class="numdot" style="--c:' + dayC(day) + '">' + (vis.indexOf(next) + 1) + '</span><div class="grow" style="min-width:0;display:flex;flex-direction:column;gap:3px">' +
-      '<a class="wn-name" href="' + google(next.ko) + '"' + EXT + ">" + esc(next.ko) + '<span class="ext" aria-label="구글 검색">↗</span></a>' +
-      (next.zh ? '<span class="zhs">' + esc(next.zh) + "</span>" : "") +
-      (next.pri || (next.tags || []).length ? '<span class="chips" style="margin-top:3px">' + starsHtml(next.pri) + tagsHtml(next) + "</span>" : "") + "</div>" +
-      (th ? imgHtml(th, "wn-thumb", next.ko) : "") + "</div>" +
-      (next.memo ? '<div class="memo-in">' + ICON.checkc + "<span>" + esc(next.memo) + "</span></div>" : "") +
-      (spots.length ? '<div class="sub" style="position:relative">이 안에서 · ' + spots.map((p) => esc(p.ko)).join(" · ") + "</div>" : "") +
-      '<div class="acts3"><a class="btn primary" href="' + amap(q) + '"' + EXT + ">" + ICON.map + "고덕지도</a>" +
-      '<a class="btn" href="' + apple(q) + '"' + EXT + '><span class="ic">' + ICON.nav + "</span>길찾기</a>" +
-      '<button class="btn" type="button" data-act="taxi" data-id="' + next.id + '"><span class="ic">' + ICON.taxi + "</span>택시</button></div>" +
-      '<div class="wn-foot"><button class="btn cta" type="button" data-act="mark-done" data-id="' + next.id + '">' + ICON.check + "다녀왔어요</button>" +
-      '<button class="btn" type="button" data-act="mark-skip" data-id="' + next.id + '"><span class="ic">' + ICON.skip + "</span>건너뛰기</button>" +
-      '<button class="btn icon-only" type="button" data-act="detail" data-id="' + next.id + '" aria-label="' + esc(next.ko) + ' 자세히">' + ICON.chevR + "</button></div>");
-  }
-
   /* ---------- PLAN: illustrated map + list ---------- */
   function planDay() {
     let day = findDay(ui.day);
@@ -682,19 +764,24 @@
       '<div class="plist-h"><h2>' + (isNum(day.n) ? "Day " + esc(day.n) : "귀국날") + ' 일정</h2><span class="cnt">' + (pr.n ? pr.done + "/" + pr.n + " 다녀옴" + (pr.sk ? " · " + pr.sk + " 건너뜀" : "") : "") + "</span>" +
       '<button class="icon-btn" type="button" data-act="edit-day" data-day="' + day.id + '" aria-label="이 날 제목·날씨 수정">' + ICON.pen + "</button></div>";
     if (hasPri(day)) s += '<p class="starkey"><span class="stars">★★★</span> 꼭 가기 · <span class="stars">★★</span> 가면 좋음 · <span class="stars">★</span> 여유 있으면</p>';
+    s += '<p class="rowhint">길게 눌러 끌면 순서 바꾸기 · 왼쪽으로 밀면 삭제</p>';
     s += '<ul class="prows">' + vis.map((st, i) => prowHtml(st, i + 1, nextId, vis[i - 1] && vis[i - 1].id === nextId, c)).join("") + "</ul>";
     s += maybeDrawer(day);
     s += '<div class="addrow"><button class="btn dashed wide" type="button" data-act="add-stop" data-day="' + day.id + '">+ 장소 추가</button></div></section></div>';
     return s;
   }
+  /* every row can be swiped left to show 삭제; long-press a place row to drag it (its shops move with it) */
+  const swipeWrap = (id, inner) => '<div class="swipe" data-sw="' + id + '"><button class="sw-del" type="button" data-act="row-del" data-id="' + id + '" tabindex="-1">' + ICON.x + "삭제</button>" + inner + "</div>";
   function prowHtml(st, n, nextId, afterNext, c) {
     const done = isDone(st.id), sk = isSkip(st.id), nx = st.id === nextId, has = !!placeOf(st);
     const num = done ? ICON.check : sk ? ICON.skip : has ? n : "·";
     const sub = sk ? "건너뜀 · 다녀온 걸로 안 쳐요" : st.desc || st.zh || "";
     const th = placeImgs(st)[0];
     const right = nx ? '<span class="pr">다음</span>' : th ? imgHtml(th, "pthumb", "") : '<span class="pr go">' + ICON.chevR + "</span>";
-    return '<li class="' + (afterNext ? "after-next" : "") + (nx ? " is-next" : "") + '"><button class="prow' + (nx ? " next" : "") + (done ? " ok" : "") + (sk ? " sk" : "") + '" type="button" id="row-' + st.id + '" data-act="detail" data-id="' + st.id + '">' +
-      '<span class="pnum">' + num + '</span><span class="pt"><b>' + esc(st.ko) + starsHtml(st.pri) + "</b>" + (sub ? "<small>" + esc(sub) + "</small>" : "") + "</span>" + right + "</button>" + subrowsHtml(st, c) + "</li>";
+    return '<li data-id="' + st.id + '" class="' + (afterNext ? "after-next" : "") + (nx ? " is-next" : "") + '">' +
+      swipeWrap(st.id, '<button class="prow' + (nx ? " next" : "") + (done ? " ok" : "") + (sk ? " sk" : "") + '" type="button" id="row-' + st.id + '" data-act="detail" data-id="' + st.id + '" data-drag="1">' +
+        '<span class="pnum">' + num + '</span><span class="pt"><b>' + esc(st.ko) + starsHtml(st.pri) + "</b>" + (sub ? "<small>" + esc(sub) + "</small>" : "") + "</span>" + right + "</button>") +
+      subrowsHtml(st, c) + "</li>";
   }
   /* shops inside a place, listed right under it */
   function subrowsHtml(st, c) {
@@ -703,9 +790,9 @@
     return '<ul class="subrows" style="--c:' + c + '">' + sp.map((p) => {
       const done = isDone(p.id), sk = isSkip(p.id);
       const sub = sk ? "건너뜀" : [p.desc, p.hours].filter(Boolean).join(" · ") || p.zh || "";
-      return '<li><button class="srow' + (done ? " ok" : "") + (sk ? " sk" : "") + (p.pri === "maybe" ? " maybe" : "") + '" type="button" data-act="detail" data-id="' + p.id + '">' +
-        '<span class="sdot">' + (done ? ICON.check : sk ? ICON.skip : "") + '</span><span class="pt"><b>' + esc(p.ko) + starsHtml(p.pri) + "</b>" + (sub ? "<small>" + esc(sub) + "</small>" : "") + "</span>" +
-        '<span class="pr go">' + ICON.chevR + "</span></button></li>";
+      return "<li>" + swipeWrap(p.id, '<button class="srow' + (done ? " ok" : "") + (sk ? " sk" : "") + (p.pri === "maybe" ? " maybe" : "") + '" type="button" data-act="detail" data-id="' + p.id + '">' +
+        '<span class="sic">' + (done ? ICON.check : sk ? ICON.skip : ICON.store) + '</span><span class="pt"><b>' + esc(p.ko) + starsHtml(p.pri) + "</b>" + (sub ? "<small>" + esc(sub) + "</small>" : "") + "</span>" +
+        '<span class="pr go">' + ICON.chevR + "</span></button>") + "</li>";
     }).join("") + "</ul>";
   }
   function maybeDrawer(day) {
@@ -713,9 +800,9 @@
     if (!items.length) return "";
     const key = "maybe-" + day.id;
     return '<details class="maybe-fold" data-fold="' + key + '"' + (ui.open[key] ? " open" : "") + '><summary><span class="stars">★</span><span class="ft">여유 있으면 · ' +
-      items.length + '곳</span><span class="chev" aria-hidden="true"></span></summary><ul class="prows">' +
-      items.map((it) => '<li><button class="prow' + (isDone(it.id) ? " ok" : "") + (isSkip(it.id) ? " sk" : "") + '" type="button" data-act="detail" data-id="' + it.id + '"><span class="pnum">' +
-        (isDone(it.id) ? ICON.check : "★") + '</span><span class="pt"><b>' + esc(it.ko) + "</b><small>" + esc(it.desc || it.zh || "") + '</small></span><span class="pr go">' + ICON.chevR + "</span></button>" + subrowsHtml(it, dayC(day)) + "</li>").join("") +
+      items.length + '곳</span><span class="chev" aria-hidden="true"></span></summary><ul class="prows" data-maybe="1">' +
+      items.map((it) => '<li data-id="' + it.id + '">' + swipeWrap(it.id, '<button class="prow' + (isDone(it.id) ? " ok" : "") + (isSkip(it.id) ? " sk" : "") + '" type="button" data-act="detail" data-id="' + it.id + '" data-drag="1"><span class="pnum">' +
+        (isDone(it.id) ? ICON.check : "★") + '</span><span class="pt"><b>' + esc(it.ko) + "</b><small>" + esc(it.desc || it.zh || "") + '</small></span><span class="pr go">' + ICON.chevR + "</span></button>") + subrowsHtml(it, dayC(day)) + "</li>").join("") +
       "</ul></details>";
   }
 
@@ -728,16 +815,15 @@
     const imgs = placeImgs(it);
     const done = isDone(id), sk = isSkip(id);
     const nm = esc(it.ko || "장소");
-    const up = (extra) => '<input class="vh" type="file" accept="image/*" multiple data-upload-place="' + id + '"' + (extra || "") + ">";
-    let hero = '<div class="dt-hero' + (imgs.length ? "" : " noimg") + '"><label class="ph">' +
+    let hero = '<div class="dt-hero' + (imgs.length ? "" : " noimg") + '"><button class="ph" type="button" data-act="photo-sheet" data-id="' + id + '">' +
       '<svg class="deco" viewBox="0 0 350 188" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><circle cx="300" cy="30" r="58" fill="none" stroke-width="1.5"/><circle cx="300" cy="30" r="90" fill="none" stroke-width="1.5"/>' +
       '<circle cx="40" cy="166" r="70" fill="none" stroke-width="1.5"/><text x="330" y="168" text-anchor="end" font-size="104">' + (idx >= 0 ? idx + 1 : "") + "</text></svg>" +
-      '<span class="addph">' + ICON.camera + "사진 추가</span>" + up() + "</label>";
+      '<span class="addph">' + ICON.camera + "사진 넣기</span></button>";
     if (imgs.length) {
       hero += '<button class="hero-hit" type="button" data-act="view-place" data-id="' + id + '" aria-label="사진 크게 보기">' + imgHtml(imgs[0], "", it.ko + " 사진", "this.closest('.dt-hero').classList.add('noimg')") + "</button>" +
         (imgs[0].u && it.imgSrc ? '<a class="credit" href="' + esc(it.imgSrc) + '"' + EXT + ">사진 · Wikimedia Commons ↗</a>" : "") +
         (imgs.length > 1 ? '<span class="cnt">' + imgs.length + "장</span>" : "") +
-        '<label class="plus" aria-label="사진 더 넣기">' + ICON.plus + up(' id="up2"') + "</label>";
+        '<button class="plus" type="button" data-act="photo-sheet" data-id="' + id + '" aria-label="사진 바꾸기 · 더 넣기">' + ICON.camera + "</button>";
     }
     hero += "</div>";
     const chips = (it.pri ? '<span class="chip-gold">' + STARS[it.pri] + " " + PRI[it.pri] + "</span>" : "") +
@@ -762,7 +848,7 @@
     if (!isSpot) {
       const sp = it.spots || [];
       body += '<div class="dt-spots">' + (sp.length ? '<span class="h">이 안에서 갈 가게</span>' + sp.map((p) => '<button type="button" data-act="detail" data-id="' + p.id + '"' + (isDone(p.id) || isSkip(p.id) ? ' class="ok"' : "") + ">" +
-        '<span class="sdot" style="--c:' + dayC(day) + '">' + (isDone(p.id) ? ICON.check : isSkip(p.id) ? ICON.skip : "") + "</span><b>" + esc(p.ko) + " " + starsHtml(p.pri) + "</b>" + ICON.chevR + "</button>").join("") : "") +
+        '<span class="sic" style="--c:' + dayC(day) + '">' + (isDone(p.id) ? ICON.check : isSkip(p.id) ? ICON.skip : ICON.store) + "</span><b>" + esc(p.ko) + " " + starsHtml(p.pri) + "</b>" + ICON.chevR + "</button>").join("") : "") +
         '<button type="button" class="addspot" data-act="add-spot" data-id="' + id + '">' + ICON.plus + "가게 추가</button></div>";
     }
     body += "</div>";
@@ -901,6 +987,7 @@
       if (b.getAttribute("data-tab") === ui.tab) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
     });
     if (ui.tab === "plan") drawMap();
+    if (ui.tab === "home") heroMount();
     hydratePhotos(view);
     window.scrollTo(0, y);
     if (focusId) { const f = document.getElementById(focusId); if (f) f.focus({ preventScroll: true }); }
@@ -997,6 +1084,26 @@
     });
   }
 
+  function photoSheet(id) {
+    const f = findItem(id);
+    if (!f) return;
+    const it = f.item;
+    openSheet({
+      key: "ph-" + id,
+      title: "사진 넣기",
+      body: '<label class="bigopt main"><span class="ri">' + ICON.camera + '</span><span class="rt"><b>앨범에서 고르기</b><span>폰에 있는 사진을 여러 장 넣을 수 있어요</span></span><input class="vh" type="file" accept="image/*" multiple data-upload-place="' + id + '"></label>' +
+        field("img", "인터넷 사진 주소", it.img, { type: "url", ph: "https://…jpg", hint: "인터넷에서 사진을 길게 눌러 '이미지 주소 복사' 한 걸 붙여넣으면 돼요" }),
+      foot: (it.img ? '<button class="btn danger" type="button" data-act="sh" data-k="clear">주소 사진 빼기</button>' : "") + '<span class="grow"></span><button class="btn" type="button" data-act="sh-close">취소</button><button class="btn primary" type="button" data-act="sh" data-k="save">저장</button>',
+      on(k, v) {
+        if (k === "clear") { it.img = ""; delete it.imgSrc; save(); render(); detailSheet(id); toast("사진을 뺐어요"); return; }
+        if (k !== "save") return;
+        const u = safeUrl(v.img);
+        if (v.img && !u) { toast("사진 주소를 확인해 주세요"); return; }
+        if (u !== (it.img || "")) { it.img = u; delete it.imgSrc; save(); }
+        render(); detailSheet(id); if (u) toast("사진을 넣었어요");
+      }
+    });
+  }
   function hotelSheet(editing2) {
     const h = state.hotel;
     if (editing2) {
@@ -1050,29 +1157,17 @@
       field("desc", "한 줄 설명", it.desc, { ph: "예: 신천지 근처 딤섬집" }) +
       field("tags", "태그 (쉼표로 구분)", (it.tags || []).join(", "), { ph: "예: 예약 필수, 현금만" }) +
       field("hours", "영업시간", it.hours, { ph: "예: 10:00–22:00, 월요일 휴무" }) +
-      field("memo", "가서 할 일 · 메모", it.memo, { area: 1, ph: "예: 홍미창펀 꼭 먹기" }) +
-      field("img", "사진 주소 (인터넷 이미지 URL)", it.img, { type: "url", ph: "https://…jpg", hint: "사진을 길게 눌러 '이미지 주소 복사' 한 걸 붙여넣으면 돼요. 폰에 있는 사진은 장소 화면의 '사진 추가'로 넣어요." });
+      field("memo", "가서 할 일 · 메모", it.memo, { area: 1, ph: "예: 홍미창펀 꼭 먹기" });
     if (!isSpot) {
-      body += field("addr", "중국어 주소", it.addr, { zh: 1 }) + field("q", "지도 검색어", it.q, { zh: 1, ph: "비우면 중국어 이름으로 검색" }) +
-        '<label class="field"><span>날짜</span><select name="day">' + state.days.map((d) => '<option value="' + d.id + '"' + (d.id === dayId ? " selected" : "") + ">" +
+      body += '<label class="field"><span>날짜</span><select name="day">' + state.days.map((d) => '<option value="' + d.id + '"' + (d.id === dayId ? " selected" : "") + ">" +
           esc((isNum(d.n) ? "Day " + d.n : "귀국") + " · " + d.date + " · " + d.title) + "</option>").join("") + "</select></label>";
-    }
-    if (!isNew) {
-      body += '<div class="field"><span>순서</span><div class="chips"><button class="btn sm" type="button" data-act="sh" data-k="up">위로</button><button class="btn sm" type="button" data-act="sh" data-k="down">아래로</button></div></div>';
-    }
-    if (!isSpot && !isNew) {
-      const sp = it.spots || [];
-      body += '<div class="field"><span>이 구역에서 갈 가게</span>' + (sp.length ? '<div class="mini">' + sp.map((p) => '<div class="r"><span>' + esc(p.ko) + " " + starsHtml(p.pri) + '</span><button class="btn sm" type="button" data-act="sh" data-k="spot" data-id="' + p.id + '">수정</button></div>').join("") + "</div>" : "") +
-        '<button class="btn dashed" type="button" data-act="sh" data-k="addspot">+ 가게 추가</button></div>';
     }
     const apply = (v) => {
       it.ko = v.ko || it.ko || "";
       it.zh = v.zh || "";
-      ["desc", "hours", "memo", "pri"].concat(isSpot ? [] : ["addr", "q"]).forEach((k) => { if (v[k]) it[k] = v[k]; else delete it[k]; });
+      ["desc", "hours", "memo", "pri"].forEach((k) => { if (v[k]) it[k] = v[k]; else delete it[k]; });
       const tags = String(v.tags || "").split(/[,，]/).map((x) => x.trim()).filter(Boolean);
       if (tags.length) it.tags = tags; else delete it.tags;
-      const img = safeUrl(v.img);
-      if (img !== (it.img || "") && (img || it.img)) { it.img = img; delete it.imgSrc; }
       if (isNew) {
         if (isSpot) (parent.spots = parent.spots || []).push(it);
         else findDay(dayId).stops.push(it);
@@ -1089,7 +1184,6 @@
       on(k, v, btn) {
         if (k === "save") {
           if (!v.ko) { toast("이름을 적어주세요"); return; }
-          if (v.img && !safeUrl(v.img)) { toast("사진 주소를 확인해 주세요"); return; }
           apply(v); save(); render(); detailSheet(it.id); toast("저장했어요");
         } else if (k === "del") {
           if (!armDelete(btn)) return;
@@ -1246,7 +1340,7 @@
   async function addPlacePhotos(id, files) {
     const arr = (state.placePhotos[id] = state.placePhotos[id] || []);
     await putPhotos(arr, files);
-    refreshDetail(id);
+    render(); detailSheet(id);
   }
 
   /* ---------- home widget editing: remove, add, long-press drag ---------- */
@@ -1292,6 +1386,100 @@
   document.addEventListener("touchmove", (e) => { if (drag) e.preventDefault(); }, { passive: false });
   view.addEventListener("contextmenu", (e) => { if (editing && e.target.closest("#wgrid")) e.preventDefault(); });
 
+  /* ---------- plan list gestures: swipe left to delete, long-press to drag ---------- */
+  let rg = null, swallow = false, openSw = null, edgeRaf = 0;
+  const SW_W = 92;
+  function closeSwipe(except) {
+    if (openSw && openSw !== except) { openSw.style.transform = ""; openSw.parentNode.classList.remove("open"); }
+    if (openSw !== except) openSw = null;
+  }
+  function startRowDrag() {
+    if (!rg || rg.mode) return;
+    const li = rg.row.closest("li");
+    if (!li || !rg.row.hasAttribute("data-drag")) return;
+    closeSwipe();
+    rg.mode = "drag"; rg.li = li;
+    li.classList.add("dragging");
+    try { if (navigator.vibrate) navigator.vibrate(8); } catch (e) {}
+    const loop = () => {
+      if (!rg || rg.mode !== "drag") { edgeRaf = 0; return; }
+      const y = rg.lastY;
+      if (y > window.innerHeight - 120) window.scrollBy(0, 9);
+      else if (y < 110) window.scrollBy(0, -9);
+      edgeRaf = requestAnimationFrame(loop);
+    };
+    edgeRaf = requestAnimationFrame(loop);
+  }
+  view.addEventListener("pointerdown", (e) => {
+    swallow = false;
+    if (ui.tab !== "plan" || (e.button && e.button > 0)) return;
+    if (e.target.closest(".sw-del")) return;
+    const row = e.target.closest(".swipe > .prow, .swipe > .srow");
+    if (!row) { closeSwipe(); return; }
+    rg = { row, id: e.pointerId, x0: e.clientX, y0: e.clientY, lastY: e.clientY, base: openSw === row ? -SW_W : 0, mode: null, t: setTimeout(startRowDrag, e.pointerType === "mouse" ? 260 : 380) };
+  });
+  document.addEventListener("pointermove", (e) => {
+    if (!rg || e.pointerId !== rg.id) return;
+    const dx = e.clientX - rg.x0, dy = e.clientY - rg.y0;
+    rg.lastY = e.clientY;
+    if (!rg.mode) {
+      if (Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy) * 1.2) { clearTimeout(rg.t); rg.mode = "swipe"; closeSwipe(rg.row); rg.row.style.transition = "none"; }
+      else if (Math.abs(dy) > 10) { clearTimeout(rg.t); rg = null; return; }
+      else return;
+    }
+    e.preventDefault();
+    if (rg.mode === "swipe") {
+      const x = Math.max(-SW_W - 30, Math.min(0, rg.base + dx));
+      rg.row.style.transform = "translateX(" + x + "px)";
+      rg.row.parentNode.classList.toggle("open", x < -4);
+      rg.dx = dx;
+      return;
+    }
+    if (rg.mode === "drag") {
+      const ul = rg.li.parentNode, el = document.elementFromPoint(e.clientX, e.clientY);
+      const over = el && el.closest("li[data-id]");
+      if (!over || over === rg.li || over.parentNode !== ul) return;
+      const r = over.getBoundingClientRect();
+      ul.insertBefore(rg.li, e.clientY > r.top + r.height / 2 ? over.nextSibling : over);
+    }
+  });
+  function endRowGesture() {
+    if (!rg) return;
+    clearTimeout(rg.t);
+    const g = rg;
+    rg = null;
+    if (g.mode === "swipe") {
+      swallow = true;
+      g.row.style.transition = "";
+      const x = g.base + (g.dx || 0);
+      if (x < -SW_W / 2) { g.row.style.transform = "translateX(" + -SW_W + "px)"; g.row.parentNode.classList.add("open"); openSw = g.row; }
+      else { g.row.style.transform = ""; g.row.parentNode.classList.remove("open"); if (openSw === g.row) openSw = null; }
+    } else if (g.mode === "drag") {
+      swallow = true;
+      g.li.classList.remove("dragging");
+      const ul = g.li.parentNode, day = planDay();
+      const ids = Array.from(ul.children).map((li) => li.getAttribute("data-id"));
+      const byId = {}; day.stops.forEach((s) => { byId[s.id] = s; });
+      const moved = ids.map((k) => byId[k]).filter(Boolean);
+      const isMaybe = ul.hasAttribute("data-maybe");
+      const others = day.stops.filter((s) => (isMaybe ? s.pri !== "maybe" : s.pri === "maybe"));
+      day.stops = isMaybe ? others.concat(moved) : moved.concat(others);
+      save(); render(); toast("순서를 바꿨어요");
+    }
+  }
+  document.addEventListener("pointerup", endRowGesture);
+  document.addEventListener("pointercancel", () => { if (rg && rg.mode === "swipe") endRowGesture(); else if (rg) { clearTimeout(rg.t); if (rg.mode === "drag") endRowGesture(); rg = null; } });
+  document.addEventListener("touchmove", (e) => { if (rg && rg.mode) e.preventDefault(); }, { passive: false });
+  function deleteRow(id) {
+    const f = findItem(id);
+    if (!f) return;
+    const list = f.list, idx = f.idx, item = f.item;
+    list.splice(idx, 1);
+    openSw = null;
+    save(); render();
+    toast("'" + (item.ko || "장소") + "' 지웠어요", { label: "되돌리기", fn: () => { list.splice(Math.min(idx, list.length), 0, item); save(); render(); } }, 5000);
+  }
+
   /* ---------- events ---------- */
   document.addEventListener("submit", (e) => e.preventDefault());
   document.addEventListener("click", (e) => {
@@ -1299,6 +1487,10 @@
     if (editing && e.target.closest("#wgrid") && !e.target.closest(".w-del, .w-add")) { e.preventDefault(); return; }
     /* ticking a box inside a checklist widget shouldn't also open the big list */
     if (e.target.closest(".wck")) return;
+    if (swallow) { swallow = false; e.preventDefault(); return; }
+    if (openSw && !e.target.closest(".sw-del")) { const was = openSw; closeSwipe(); if (e.target.closest(".swipe") && was.contains(e.target)) { e.preventDefault(); return; } }
+    const lk = e.target.closest("a[href]");
+    if (lk && !lk.hasAttribute("data-act")) return;
     const t = e.target.closest("[data-act], [data-href]");
     if (!t) return;
     if (!t.hasAttribute("data-act")) { window.open(t.getAttribute("data-href"), "_blank", "noopener"); return; }
@@ -1312,8 +1504,8 @@
         if (state.days[i]) { ui.day = state.days[i].id; saveUI(); render(); window.scrollTo(0, 0); }
         return;
       }
-      case "w-edit": editing = !editing; render(); return;
-      case "w-edit-go": editing = true; go("home"); return;
+      case "w-edit": editing = !editing; render(); if (editing) { const z = $("#wzone"); if (z) window.scrollTo({ top: z.getBoundingClientRect().top + window.scrollY - 8, behavior: "smooth" }); } return;
+      case "w-edit-go": editing = true; go("home"); { const z = $("#wzone"); if (z) window.scrollTo({ top: z.getBoundingClientRect().top + window.scrollY - 8 }); } return;
       case "w-del": {
         const w = t.getAttribute("data-w");
         ui.widgets = widgetList().filter((x) => x !== w); saveUI(); render();
@@ -1328,6 +1520,10 @@
         return;
       }
       case "ck-sheet": ckSheet(t.getAttribute("data-list")); return;
+      case "row-del": deleteRow(id); return;
+      case "photo-sheet": photoSheet(id); return;
+      case "to-widgets": { const z = $("#wzone"); if (z) window.scrollTo({ top: z.getBoundingClientRect().top + window.scrollY - 8, behavior: "smooth" }); return; }
+      case "hc-step": { const hc = $("#hc"); if (hc) hc.scrollBy({ left: (+t.getAttribute("data-d") || 0) * hc.clientWidth, behavior: "smooth" }); return; }
       case "detail": detailSheet(id); return;
       case "mark-done":
       case "dt-done": {
