@@ -353,7 +353,7 @@
       '<circle cx="280" cy="152" r="11" fill="url(#hpearl)"/><circle cx="280" cy="98" r="7.5" fill="url(#hpearl)"/><circle cx="280" cy="70" r="3.6" fill="url(#hpearl)"/>' +
       '<ellipse cx="276.5" cy="148" rx="3.6" ry="2.2" fill="#fff" opacity=".7" transform="rotate(-30 276.5 148)"/></g></g></svg>';
   }
-  const pageHead = (title, sub) => '<header class="phead">' + skyArt(172, true) + "<h1>" + esc(title) + "</h1>" + (sub ? '<span class="sub">' + esc(sub) + "</span>" : "") + "</header>";
+  const pageHead = (title, sub, tight) => '<header class="phead' + (tight ? " tight" : "") + '">' + skyArt(tight ? 188 : 184, true) + "<h1>" + esc(title) + "</h1>" + (sub ? '<span class="sub">' + esc(sub) + "</span>" : "") + "</header>";
 
   /* ---------- the illustrated route map ---------- */
   /* rough centre lines of 황푸강 and 쑤저우강 (WGS-84), enough to place the day's stops */
@@ -730,7 +730,7 @@
     const list = state.prep[key], doneN = list.filter((x) => state.done[x.id]).length;
     const sorted = list.filter((x) => !state.done[x.id]).concat(list.filter((x) => state.done[x.id]));
     return wrapW(key, '<div class="hd"><span class="lbl">' + CK_TITLE[key] + '</span><button class="wedit-ic" type="button" data-act="ck-sheet" data-list="' + key + '" aria-label="' + CK_TITLE[key] + ' 추가 · 편집">' + ICON.pen + "</button></div>" +
-      '<div class="wprog"><i style="width:' + (list.length ? (doneN / list.length) * 100 : 0) + '%"></i></div>' +
+      '<div class="wprog" data-prog="' + key + '"><i style="width:' + (list.length ? (doneN / list.length) * 100 : 0) + '%"></i></div>' +
       '<div class="wlist">' + (sorted.length ? sorted.map((x) => ckHtml(x, esc(x.t), "wck")).join("") : '<span class="sub" style="padding:6px 0">비어 있어요 · 연필을 눌러 추가</span>') + "</div>", "wcheck", ' data-act="ck-sheet" data-list="' + key + '"');
   }
   function wFlight(ctx) {
@@ -937,7 +937,7 @@
   }
   function moreHtml() {
     const h = state.hotel, legs = state.flight.legs;
-    let s = pageHead("더보기", String(state.trip.dates || ""));
+    let s = pageHead("더보기", String(state.trip.dates || ""), true);
     s += '<div class="group-h">정보</div><div class="group">' +
       '<div class="row"><span class="ri">' + ICON.clock + '</span><span class="rt"><b>시차</b><span>상하이가 한국보다 1시간 느려요</span></span><span class="rv">−1h</span></div>' +
       [["경찰", "중국 현지", "110"], ["구급차", "중국 현지", "120"], ["영사콜센터", "외교부 · 24시간", "+82-2-3210-0404"]].map((x) =>
@@ -1069,7 +1069,7 @@
       title: CK_TITLE[key],
       body: '<div class="addline"><input id="add-' + key + '" data-addkey="' + key + '" placeholder="' + (key === "apps" ? "앱 이름 추가" : "추가할 것") + '" autocomplete="off" enterkeyhint="done" aria-label="' + CK_TITLE[key] + ' 추가">' +
         '<button class="btn primary" type="button" data-act="li-add" data-list="' + key + '">추가</button></div>' +
-        '<div class="ckhead"><div class="wprog"><i style="width:' + (list.length ? (doneN / list.length) * 100 : 0) + '%"></i></div><span class="mono">' + doneN + " / " + list.length + "</span></div>" +
+        '<div class="ckhead"><div class="wprog" data-prog="' + key + '"><i style="width:' + (list.length ? (doneN / list.length) * 100 : 0) + '%"></i></div><span class="mono" data-count="' + key + '">' + doneN + " / " + list.length + "</span></div>" +
         (list.length ? '<div class="cklist">' + list.map((x) => '<div class="li">' + ckHtml(x, esc(x.t)) +
           '<button class="icon-btn" type="button" data-act="li-del" data-list="' + key + '" data-id="' + x.id + '" aria-label="' + esc(x.t) + ' 지우기">' + ICON.x + "</button></div>").join("") + "</div>" : '<p class="empty">아직 비어 있어요</p>')
     });
@@ -1671,11 +1671,16 @@
   document.addEventListener("change", (e) => {
     const t = e.target;
     if (t.hasAttribute("data-ck")) {
-      const id = t.getAttribute("data-ck");
-      if (t.checked) state.done[id] = true; else delete state.done[id];
-      save(); render();
-      const k = sheetKey();
-      if (k.indexOf("ck-") === 0) ckSheet(k.slice(3));
+      const id = t.getAttribute("data-ck"), on = t.checked;
+      if (on) state.done[id] = true; else delete state.done[id];
+      save();
+      document.querySelectorAll('[data-ck="' + id + '"]').forEach((el) => { el.checked = on; const l = el.closest("label"); if (l) l.classList.toggle("on", on); });
+      const key = Object.keys(CK_TITLE).find((k) => state.prep[k].some((x) => x.id === id));
+      if (key) {
+        const list = state.prep[key], n = list.filter((x) => state.done[x.id]).length;
+        document.querySelectorAll('[data-prog="' + key + '"] i').forEach((i) => { i.style.width = (list.length ? (n / list.length) * 100 : 0) + "%"; });
+        document.querySelectorAll('[data-count="' + key + '"]').forEach((c) => { c.textContent = n + " / " + list.length; });
+      }
       return;
     }
     if (t.hasAttribute("data-upload")) {

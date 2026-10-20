@@ -837,3 +837,16 @@ body[data-tab="home"] { background: var(--bg); }
 .phead .hart { height: calc(var(--safe-t) + 172px); }
 .hc-slide > .pc, .pc-b, .pc-row, .pc-t, .pc-info { min-width: 0; }
 .hc-slide { min-width: 0; }
+
+/* ================= v7 ================= */
+.pc-ph { height: 118px; }
+@media (max-height: 720px) { .pc-ph { height: 88px; } }
+.wedit-ic { background: none; color: var(--soft); }
+[data-theme="dark"] .wedit-ic { color: var(--muted); }
+/* tower base lands ~24px under the top of the first card */
+.phead .hart { height: calc(var(--safe-t) + 184px); }
+.phead.tight { min-height: calc(var(--safe-t) + 128px); }
+.phead.tight .hart { height: calc(var(--safe-t) + 188px); }
+/* status bar in an older home-screen install takes the page colour: keep that colour navy */
+body { background: var(--band-page) top center / 100% var(--band-page-h) no-repeat, linear-gradient(var(--bg), var(--bg)) top center / 100% 100% no-repeat, #0A0E2E; }
+body[data-tab="home"] { background: linear-gradient(var(--bg), var(--bg)) top center / 100% 100% no-repeat, #0A0E2E; }
