@@ -216,7 +216,8 @@ window.TRIP_SEED = {
       31.1962,
       121.341
      ],
-     "far": true
+     "far": true,
+     "label": "홍차오 공항"
     },
     {
      "id": "s13",
@@ -227,7 +228,8 @@ window.TRIP_SEED = {
      "ll": [
       31.204,
       121.4838
-     ]
+     ],
+     "label": "호텔 체크인"
     },
     {
      "id": "s07",
@@ -243,7 +245,8 @@ window.TRIP_SEED = {
      "ll": [
       31.2353,
       121.4745
-     ]
+     ],
+     "label": "헌지우이치엔"
     },
     {
      "id": "s08",
@@ -262,7 +265,8 @@ window.TRIP_SEED = {
        "ll": [
         31.24,
         121.4868
-       ]
+       ],
+       "label": "그랜드마더"
       },
       {
        "id": "p02",
@@ -274,7 +278,8 @@ window.TRIP_SEED = {
        "ll": [
         31.2381,
         121.4838
-       ]
+       ],
+       "label": "미니소 랜드"
       },
       {
        "id": "p03",
@@ -286,14 +291,17 @@ window.TRIP_SEED = {
        "ll": [
         31.2377,
         121.4815
-       ]
+       ],
+       "label": "레드립스"
       }
      ],
      "pri": "must",
      "ll": [
       31.2368,
       121.48
-     ]
+     ],
+     "img": "https://commons.wikimedia.org/wiki/Special:FilePath/East_Nanjing_Road_at_night.jpg?width=960",
+     "imgSrc": "https://commons.wikimedia.org/wiki/File:East_Nanjing_Road_at_night.jpg"
     },
     {
      "id": "s16",
@@ -304,7 +312,9 @@ window.TRIP_SEED = {
      "ll": [
       31.2393,
       121.4904
-     ]
+     ],
+     "img": "https://commons.wikimedia.org/wiki/Special:FilePath/Bund_at_night.jpg?width=960",
+     "imgSrc": "https://commons.wikimedia.org/wiki/File:Bund_at_night.jpg"
     },
     {
      "id": "s17",
@@ -315,7 +325,9 @@ window.TRIP_SEED = {
      "ll": [
       31.2422,
       121.4906
-     ]
+     ],
+     "img": "https://commons.wikimedia.org/wiki/Special:FilePath/Huangpu_Park_20124-Shanghai_(32208802494).jpg?width=960",
+     "imgSrc": "https://commons.wikimedia.org/wiki/File:Huangpu_Park_20124-Shanghai_(32208802494).jpg"
     },
     {
      "id": "s15",
@@ -325,7 +337,9 @@ window.TRIP_SEED = {
      "ll": [
       31.2397,
       121.4998
-     ]
+     ],
+     "img": "https://commons.wikimedia.org/wiki/Special:FilePath/Shanghai_Oriental_Pearl_Tower-20150516-RM-174122.jpg?width=960",
+     "imgSrc": "https://commons.wikimedia.org/wiki/File:Shanghai_Oriental_Pearl_Tower-20150516-RM-174122.jpg"
     }
    ]
   },
@@ -347,7 +361,9 @@ window.TRIP_SEED = {
      "ll": [
       31.2049,
       121.4378
-     ]
+     ],
+     "img": "https://commons.wikimedia.org/wiki/Special:FilePath/Wukang_Mansion_1.jpg?width=960",
+     "imgSrc": "https://commons.wikimedia.org/wiki/File:Wukang_Mansion_1.jpg"
     },
     {
      "id": "s05",
@@ -358,7 +374,9 @@ window.TRIP_SEED = {
      "ll": [
       31.2096,
       121.4688
-     ]
+     ],
+     "img": "https://commons.wikimedia.org/wiki/Special:FilePath/Tianzifang_21669-Shanghai_(33070816285).jpg?width=960",
+     "imgSrc": "https://commons.wikimedia.org/wiki/File:Tianzifang_21669-Shanghai_(33070816285).jpg"
     },
     {
      "id": "s04",
@@ -373,7 +391,8 @@ window.TRIP_SEED = {
      "ll": [
       31.2186,
       121.4757
-     ]
+     ],
+     "label": "임시정부 청사"
     },
     {
      "id": "s02",
@@ -389,7 +408,8 @@ window.TRIP_SEED = {
       31.217,
       121.4735
      ],
-     "q": "点都德(中海环宇荟店)"
+     "q": "点都德(中海环宇荟店)",
+     "label": "점도덕"
     },
     {
      "id": "s03",
@@ -411,7 +431,9 @@ window.TRIP_SEED = {
      "ll": [
       31.2272,
       121.4921
-     ]
+     ],
+     "img": "https://commons.wikimedia.org/wiki/Special:FilePath/Yuyuan_Garden.jpg?width=960",
+     "imgSrc": "https://commons.wikimedia.org/wiki/File:Yuyuan_Garden.jpg"
     }
    ]
   },
@@ -434,7 +456,10 @@ window.TRIP_SEED = {
      "ll": [
       31.1434,
       121.6574
-     ]
+     ],
+     "img": "https://commons.wikimedia.org/wiki/Special:FilePath/Shanghai_disneyland_castle.jpg?width=960",
+     "imgSrc": "https://commons.wikimedia.org/wiki/File:Shanghai_disneyland_castle.jpg",
+     "label": "디즈니랜드"
     }
    ]
   },
@@ -456,7 +481,8 @@ window.TRIP_SEED = {
      "ll": [
       31.204,
       121.4838
-     ]
+     ],
+     "label": "호텔 체크아웃"
     },
     {
      "id": "s12",
@@ -471,7 +497,8 @@ window.TRIP_SEED = {
       31.1513,
       121.8036
      ],
-     "far": true
+     "far": true,
+     "label": "푸동 공항"
     }
    ]
   }

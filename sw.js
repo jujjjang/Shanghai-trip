@@ -1,6 +1,6 @@
 /* Offline support: the app shell answers from cache at once and refreshes in the background,
    so the trip still opens with no signal in China. Fonts are kept the first time they load. */
-const VERSION = "sht-2026-10-20d";
+const VERSION = "sht-2026-10-20e";
 const FONTS = "sht-fonts";
 const CORE = [
   "./",
@@ -9,8 +9,6 @@ const CORE = [
   "./app.js",
   "./data.js",
   "./manifest.webmanifest",
-  "./vendor/leaflet/leaflet.js",
-  "./vendor/leaflet/leaflet.css",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
   "./icons/apple-touch-icon.png"
