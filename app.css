@@ -1,4 +1,4 @@
-/* 상하이 여행 앱 — night-indigo palette from the trip page; titles in Gowun Batang, body in Gowun Dodum */
+/* 상하이 여행 앱 — night-indigo palette from the trip page; headings in Hahmlet, body in IBM Plex Sans KR */
 :root {
   --bg: #F3F3FA;
   --surface: #FFFFFF;
@@ -16,8 +16,8 @@
   --star-a: #FFD45C; --star-b: #F59E0B; --star: #F5A70F;
   --d1: #4F63D2; --d2: #2E86AE; --d3: #7F55CC; --d4: #6E7393;
   --on-c: #FFFFFF;
-  --f-body: "Gowun Dodum", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
-  --f-title: "Gowun Batang", "Nanum Myeongjo", "AppleMyungjo", serif;
+  --f-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+  --f-title: "Hahmlet", "Nanum Myeongjo", "AppleMyungjo", serif;
   --f-zh: "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", sans-serif;
   --f-hero: "Noto Serif SC", "Songti SC", "STSong", serif;
   --f-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
@@ -172,7 +172,7 @@ body.sheet-open .tabbar { visibility: hidden; }
 .tlist .n { flex: none; width: 24px; height: 24px; border-radius: 50%; border: 2.5px solid var(--c, var(--d1)); display: grid; place-items: center; font-family: var(--f-mono); font-size: 11px; font-weight: 600; }
 .tlist .n.ok { border: 0; background: color-mix(in srgb, var(--c, var(--d1)) 35%, var(--surface)); color: #fff; }
 .tlist .n svg { width: 13px; height: 13px; }
-.tlist .nm { flex: 1; min-width: 0; font-family: var(--f-title); font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tlist .nm { flex: 1; min-width: 0; font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tlist .dim { color: var(--muted); font-family: var(--f-body); font-weight: 400; font-size: 13.5px; }
 .tlist .meta { font-size: 12.5px; color: var(--muted); white-space: nowrap; }
 .alldone { margin: -32px 16px 0; position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 18px 16px; display: flex; flex-direction: column; gap: 10px; text-align: center; }
@@ -235,7 +235,7 @@ ol.route { list-style: none; margin: 8px 16px 0; padding: 0; }
 .head .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 .head .icon-btn { margin: -6px -8px 0 0; }
 .name-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
-.ko { font-family: var(--f-title); font-weight: 700; font-size: 17px; line-height: 1.3; color: var(--ink); text-decoration: none; }
+.ko { font-family: var(--f-body); font-weight: 700; font-size: 17px; line-height: 1.3; color: var(--ink); text-decoration: none; }
 a.ko .ext { font-family: var(--f-body); font-weight: 400; font-size: .72em; color: var(--muted); margin-left: 3px; }
 .zhn { font-family: var(--f-zh); font-size: 13.5px; font-weight: 500; color: var(--muted); line-height: 1.35; }
 .gdesc { font-size: 13.5px; color: var(--muted); line-height: 1.45; }
@@ -262,7 +262,7 @@ a.ko .ext { font-family: var(--f-body); font-weight: 400; font-size: .72em; colo
 .fold { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
 .fold > summary { list-style: none; display: flex; align-items: center; gap: 10px; min-height: 50px; padding: 0 14px; cursor: pointer; }
 .fold > summary::-webkit-details-marker { display: none; }
-.fold .ft { flex: 1; font-family: var(--f-title); font-size: 15.5px; font-weight: 700; }
+.fold .ft { flex: 1; font-size: 15.5px; font-weight: 600; }
 .fold .fc { font-family: var(--f-mono); font-size: 12.5px; color: var(--muted); }
 .chev { width: 9px; height: 9px; margin: -4px 2px 0 0; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(45deg); transition: transform .15s; }
 .fold[open] .chev { margin-top: 4px; transform: rotate(-135deg); }
@@ -363,7 +363,7 @@ select.plain { padding: 8px 10px; border-radius: 10px; border: 1px solid var(--l
 .mini { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
 .mini .r { display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 12px; min-height: 44px; }
 .mini .r + .r { border-top: 1px solid var(--line); }
-.mini .r span { flex: 1; min-width: 0; font-family: var(--f-title); font-weight: 700; }
+.mini .r span { flex: 1; min-width: 0; font-weight: 600; }
 .leg { display: flex; flex-direction: column; gap: 6px; padding: 12px 0; }
 .leg + .leg { border-top: 1px solid var(--line); }
 .leg .lh { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
