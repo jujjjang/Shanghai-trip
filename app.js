@@ -885,7 +885,7 @@
   /* ---------- LOG ---------- */
   const logEditing = {};
   function logHtml() {
-    let s = pageHead("기록", "날마다 사진 · 한 줄 기록") + '<p class="lognote">사진이랑 그날 기록은 지금은 이 폰에만 저장돼요. 친구랑 같이 보는 건 여행 코드를 붙인 다음부터예요.</p>';
+    let s = pageHead("기록", "날마다 사진 · 한 줄 기록", true) + '<p class="lognote">사진이랑 그날 기록은 지금은 이 폰에만 저장돼요. 친구랑 같이 보는 건 여행 코드를 붙인 다음부터예요.</p>';
     state.days.forEach((d) => {
       const j = state.journal[d.id] || {}, ph = j.photos || [];
       s += '<section class="logday" id="log-' + d.id + '" style="--c:' + dayC(d) + '"><div class="hd"><span class="rd">' + esc(d.n) + '</span><div><span class="m">' + esc(d.date) + "</span><b>" + esc(d.title) + "</b></div></div>" +
@@ -906,7 +906,7 @@
   function moneyHtml() {
     const S = state.settle, ppl = S.members, c = settleCalc();
     if (ppl.indexOf(ui.payer) < 0) ui.payer = ppl[0] || "";
-    let s = pageHead("정산", c.rate ? "1위안 = " + c.rate + "원" : "N빵 · 환율 계산");
+    let s = pageHead("정산", c.rate ? "1위안 = " + c.rate + "원" : "N빵 · 환율 계산", true);
     s += '<div class="pad"><div class="box"><span class="lbl">환율 계산</span><div style="margin-top:8px">' + fxHtml("fx") + "</div></div></div>";
     s += '<div class="sec-h"><h2>N빵 결과</h2></div><div class="pad"><div class="box">';
     if (!ppl.length) s += '<p class="note">아래 \'인원 · 환율\'에서 같이 가는 사람을 먼저 넣어주세요</p>';
