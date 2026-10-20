@@ -860,3 +860,20 @@ body[data-tab="home"] { background: linear-gradient(var(--bg), var(--bg)) top ce
 .jfoot .saved { flex: 1; text-align: left; }
 /* 기록 · 정산: first card starts where 더보기's first card does (under its '정보' label) */
 .phead.tight + .lognote, .phead.tight + .pad { margin-top: 31px; }
+
+/* 친구랑 같이 쓰기 sheet */
+.codebox { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 18px 14px 16px; border-radius: 18px; background: var(--primary-bg); color: var(--primary-ink); text-align: center; }
+.codebox .lbl { color: inherit; opacity: .7; }
+.codebox b { font-size: 26px; font-weight: 600; letter-spacing: .06em; user-select: all; -webkit-user-select: all; }
+.codebox .sub { font-size: 12.5px; color: inherit; opacity: .78; }
+.shbtns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.shbtns .btn { min-height: 46px; justify-content: center; }
+.shinfo { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; border-radius: 16px; background: var(--inner); border: 1px solid var(--line-2); }
+.shinfo div { display: flex; flex-direction: column; gap: 2px; }
+.shinfo b { font-size: 12.5px; font-weight: 600; }
+.shinfo span { font-size: 13px; color: var(--muted); line-height: 1.45; }
+.ordiv { display: flex; align-items: center; gap: 10px; color: var(--soft); font-size: 12.5px; }
+.ordiv::before, .ordiv::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.sh-body > .btn.ghost.danger, .sh-body > .btn.ghost.sm { align-self: center; }
+.sh-body .fold .form { display: flex; flex-direction: column; gap: 10px; }
+.sh-body button.bigopt { text-align: left; width: 100%; font: inherit; cursor: pointer; }

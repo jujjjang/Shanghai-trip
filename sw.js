@@ -1,6 +1,6 @@
 /* Offline support: the app shell answers from cache at once and refreshes in the background,
    so the trip still opens with no signal in China. Fonts are kept the first time they load. */
-const VERSION = "sht-2026-10-21c";
+const VERSION = "sht-2026-10-22a";
 const FONTS = "sht-fonts";
 const CORE = [
   "./",
@@ -8,6 +8,7 @@ const CORE = [
   "./app.css",
   "./app.js",
   "./data.js",
+  "./config.js",
   "./manifest.webmanifest",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
@@ -73,6 +74,6 @@ self.addEventListener("fetch", (e) => {
     return;
   }
 
-  /* map tiles are left to the browser's normal cache (OpenStreetMap's rules ask apps not to store them for offline use) */
+  /* other sites (photos, the shared-trip server) go straight to the network */
   if (url.hostname === "fonts.googleapis.com" || url.hostname === "fonts.gstatic.com") cacheFirst(e, FONTS, 0);
 });

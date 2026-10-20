@@ -1,6 +1,6 @@
 /* 상하이 여행 앱 — 홈(위젯) / 일정(그림 지도) / 기록 / 정산 / 더보기.
-   Everything is stored on this phone for now (localStorage + IndexedDB for photos);
-   the trip-code sharing step will swap the storage layer, not the screens. */
+   Everything is stored on this phone first (localStorage + IndexedDB for photos);
+   with a trip code, the shared parts are also kept in step with a friend's phone (see 친구랑 같이 쓰기). */
 (function () {
   "use strict";
 
@@ -75,7 +75,8 @@
     trash: I('<path d="M4.5 7h15M9.5 7V4.8h5V7M6.5 7l.9 12.2a1.5 1.5 0 0 0 1.5 1.3h6.2a1.5 1.5 0 0 0 1.5-1.3L17.5 7"/><path d="M10 11v6M14 11v6"/>'),
     clock: I('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>'),
     store: I('<path d="M5 8.5h14l-1 11H6z"/><path d="M9 8.5V7a3 3 0 0 1 6 0v1.5"/>'),
-    bolt: I('<path d="M13 3 5 13.5h6L10 21l8-10.5h-6z"/>')
+    bolt: I('<path d="M13 3 5 13.5h6L10 21l8-10.5h-6z"/>'),
+    sync: I('<path d="M19.5 12a7.5 7.5 0 0 1-13 5.1M4.5 12a7.5 7.5 0 0 1 13-5.1"/><path d="M17.8 3.6v3.6h-3.6M6.2 20.4v-3.6h3.6"/>')
   };
 
   /* ---------- weather text ("비 🌧️ 23°/17°") → parts ---------- */
@@ -128,8 +129,15 @@
   function save() {
     state.savedAt = Date.now();
     if (!lsSet(LS_STATE, state)) toast("폰 저장 공간이 부족해서 저장하지 못했어요");
+    onLocalChange();
   }
   function saveUI() { lsSet(LS_UI, ui); }
+  /* 친구랑 같이 쓰기: which trip this phone follows + what it last agreed on with the server (stays on this phone) */
+  const LS_SYNC = "sht.sync.v1";
+  const sync = Object.assign({ code: "", me: "", cursor: null, base: {}, ts: {}, cfg: null, err: "", last: 0 }, lsGet(LS_SYNC) || {});
+  sync.base = sync.base || {}; sync.ts = sync.ts || {}; sync.err = "";
+  function saveSync() { lsSet(LS_SYNC, sync); }
+  let syncT = 0, pushing = false, pushAgain = false, pulling = false, pullLater = false, lastToast = 0;
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
 
   /* ---------- 낮 / 밤 테마 ---------- */
@@ -885,7 +893,7 @@
   /* ---------- LOG ---------- */
   const logEditing = {};
   function logHtml() {
-    let s = pageHead("기록", "날마다 사진 · 한 줄 기록", true) + '<p class="lognote">사진이랑 그날 기록은 지금은 이 폰에만 저장돼요. 친구랑 같이 보는 건 여행 코드를 붙인 다음부터예요.</p>';
+    let s = pageHead("기록", "날마다 사진 · 한 줄 기록", true) + '<p class="lognote">' + (sync.code ? "기록 글은 친구랑 같이 봐요 · 사진은 각자 폰에만 있어요" : "사진은 이 폰에만 저장돼요 · 더보기 → 친구랑 같이 쓰기를 켜면 기록 글은 친구랑 같이 봐요") + "</p>";
     state.days.forEach((d) => {
       const j = state.journal[d.id] || {}, ph = j.photos || [];
       s += '<section class="logday" id="log-' + d.id + '" style="--c:' + dayC(d) + '"><div class="hd"><span class="rd">' + esc(d.n) + '</span><div><span class="m">' + esc(d.date) + "</span><b>" + esc(d.title) + "</b></div></div>" +
@@ -979,9 +987,9 @@
       row("w-edit-go", "grid", "홈 위젯 편집", "넣고 빼고 순서 바꾸기") +
       '<div class="setrow"><div class="top"><span class="ri">' + ICON.eye + '</span><span class="rt"><b>홈 화면 미리보기</b><span>날짜에 따라 바뀌는 홈을 미리 볼 수 있어요</span></span></div>' +
       '<label class="selbox"><select data-change="preview" aria-label="홈 화면 미리보기">' + opts.map((o) => '<option value="' + o[0] + '"' + (ui.preview === o[0] ? " selected" : "") + ">" + esc(o[1]) + "</option>").join("") + "</select></label></div>" +
-      row("share-soon", "users", "친구랑 같이 쓰기", "여행 코드 연결 · 준비 중") +
+      row("share", "users", "친구랑 같이 쓰기", shareSub()) +
       row("backup", "download", "데이터 백업 파일 받기", "일정 · 정산 · 기록 글 (사진 빼고)") +
-      '<button class="row" type="button" data-act="reset"><span class="ri">' + ICON.undo + '</span><span class="rt"><b>처음 데이터로 되돌리기</b><span>바꾼 일정 · 정산 · 기록 글이 다 지워져요</span></span></button>' +
+      '<button class="row" type="button" data-act="reset"><span class="ri">' + ICON.undo + '</span><span class="rt"><b>처음 데이터로 되돌리기</b><span>' + (sync.code ? "같이 쓰는 중이라 친구 폰도 같이 되돌아가요" : "바꾼 일정 · 정산 · 기록 글이 다 지워져요") + "</span></span></button>" +
       "</div>";
     return s;
   }
@@ -1518,6 +1526,364 @@
     toast("'" + (item.ko || "장소") + "' 지웠어요", { label: "되돌리기", fn: () => { list.splice(Math.min(idx, list.length), 0, item); save(); render(); } }, 5000);
   }
 
+  /* ---------- 친구랑 같이 쓰기 (여행 코드) ----------
+     Shared through a tiny Supabase table, reached only via two functions that need the trip code:
+       같이: 일정 · 다녀옴/건너뛰기 · 출발 전 할 일 · 정산 · 메모 · 정보 · 링크 · 숙소/항공 · 기록 글
+       각자: 필수 준비물 · 필수 앱 (and their ticks) · 사진 · 화면 설정
+     Every piece is its own row (one expense, one memo, one tick, one day…), so two people changing
+     different things never overwrite each other; the same piece changed twice → the later one stays.
+     Offline-first: everything still saves on the phone; changes wait and go out once there's signal. */
+  const CODE_ABC = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+  function syncCfg() {
+    const c = window.TRIP_SYNC || {}, o = sync.cfg || {};
+    return { url: String(o.url || c.url || "").trim().replace(/\/+$/, ""), key: String(o.key || c.key || "").trim() };
+  }
+  const syncReady = () => { const c = syncCfg(); return !!(c.url && c.key); };
+  function normCode(s) {
+    const t = String(s || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    return t.length >= 10 ? t.slice(0, 2) + "-" + t.slice(2, 6) + "-" + t.slice(6, 10) : "";
+  }
+  function newCode() {
+    const a = new Uint32Array(8);
+    try { crypto.getRandomValues(a); } catch (e) { for (let i = 0; i < 8; i++) a[i] = Math.floor(Math.random() * 4294967295); }
+    let s = "SH";
+    for (let i = 0; i < 8; i++) s += CODE_ABC[a[i] % CODE_ABC.length];
+    return normCode(s);
+  }
+  /* server times → fixed-width UTC strings ("2026-10-31T03:12:45.123456Z") so plain string compare works */
+  function tsKey(s) {
+    s = String(s || "");
+    const m = s.match(/\.(\d+)/), us = m ? (m[1] + "000000").slice(3, 6) : "000";
+    const d = new Date(s.replace(" ", "T").replace(/\.(\d+)/, (x, f) => "." + (f + "000").slice(0, 3)).replace(/([+-]\d\d)$/, "$1:00"));
+    return isNaN(d) ? s : d.toISOString().slice(0, 23) + us + "Z";
+  }
+  const tsMinus = (k, ms) => new Date(Date.parse(k.replace(/(\.\d{3})\d+Z$/, "$1Z")) - ms).toISOString();
+  const b64e = (s) => btoa(unescape(encodeURIComponent(s)));
+  const b64d = (s) => decodeURIComponent(escape(atob(s)));
+  function inviteLink() {
+    const c = syncCfg(), fixed = window.TRIP_SYNC && window.TRIP_SYNC.url && window.TRIP_SYNC.url.replace(/\/+$/, "") === c.url;
+    return location.origin + location.pathname + "#join=" + encodeURIComponent(sync.code) + (fixed ? "" : "&s=" + encodeURIComponent(b64e(JSON.stringify([c.url, c.key]))));
+  }
+  /* a bare code or a whole invite link (or the whole message around it); a link also carries the server */
+  function parseInvite(text) {
+    const t = String(text || "").trim();
+    const m = t.match(/[#&?]join=([^&\s]+)/), sm = t.match(/[#&?]s=([^&\s]+)/);
+    const out = { code: normCode(m ? decodeURIComponent(m[1]) : t), cfg: null };
+    if (sm) { try { const a = JSON.parse(b64d(decodeURIComponent(sm[1]))); if (a && safeUrl(a[0]) && a[1]) out.cfg = { url: safeUrl(a[0]).replace(/\/+$/, ""), key: String(a[1]) }; } catch (e) {} }
+    return out;
+  }
+  async function rpc(fn, body) {
+    const c = syncCfg();
+    if (!c.url || !c.key) throw new Error("noconfig");
+    const h = { "Content-Type": "application/json", apikey: c.key };
+    if (!/^sb_/.test(c.key)) h.Authorization = "Bearer " + c.key; /* old-style anon key (a JWT) */
+    const ctl = typeof AbortController === "function" ? new AbortController() : null;
+    const tm = ctl ? setTimeout(() => ctl.abort(), 15000) : 0;
+    try {
+      const r = await fetch(c.url + "/rest/v1/rpc/" + fn, { method: "POST", headers: h, body: JSON.stringify(body), cache: "no-store", signal: ctl ? ctl.signal : undefined });
+      if (!r.ok) { let t = ""; try { t = await r.text(); } catch (e) {} throw new Error("http " + r.status + " " + t.slice(0, 200)); }
+      return await r.json();
+    } finally { clearTimeout(tm); }
+  }
+
+  /* state ⇄ rows. Ordered lists go as one row per item plus one row for the order,
+     so two people adding to the same list at once both keep what they added. */
+  const LISTS = {
+    day: [() => state.days, (a) => { state.days = a; }],
+    todo: [() => state.prep.todo, (a) => { state.prep.todo = a; }],
+    link: [() => state.prep.links, (a) => { state.prep.links = a; }],
+    info: [() => state.infos, (a) => { state.infos = a; }],
+    memo: [() => state.memos, (a) => { state.memos = a; }]
+  };
+  const personalIds = () => { const s = new Set(); state.prep.pack.concat(state.prep.apps).forEach((x) => s.add(x.id)); return s; };
+  function flatten() {
+    const m = {}, per = personalIds();
+    m.trip = state.trip; m.hotel = state.hotel; m.flight = state.flight;
+    Object.keys(LISTS).forEach((n) => {
+      const a = LISTS[n][0]();
+      a.forEach((x) => { if (!x.id) x.id = newId(n[0]); m[n + ":" + x.id] = x; });
+      m["o:" + n] = a.map((x) => x.id);
+    });
+    m.settle = { members: state.settle.members, rate: state.settle.rate };
+    state.settle.expenses.forEach((e) => { m["x:" + e.id] = e; });
+    Object.keys(state.journal).forEach((d) => { const t = (state.journal[d] || {}).text; if (t) m["j:" + d] = t; });
+    Object.keys(state.done).forEach((id) => { if (state.done[id] && !per.has(id)) m["done:" + id] = true; });
+    Object.keys(state.skip).forEach((id) => { if (state.skip[id]) m["skip:" + id] = true; });
+    return m;
+  }
+  /* sort a list by the last order everyone agreed on; items the order doesn't know yet go last */
+  function orderList(n) {
+    let o = null;
+    try { o = JSON.parse(sync.base["o:" + n] || "null"); } catch (e) {}
+    if (!Array.isArray(o) || !LISTS[n]) return;
+    const L = LISTS[n], at = (x) => { const i = o.indexOf(x.id); return i < 0 ? 1e6 : i; };
+    L[1](L[0]().map((x, i) => [x, i]).sort((a, b) => at(a[0]) - at(b[0]) || a[1] - b[1]).map((q) => q[0]));
+  }
+  function applyKey(k, v) {
+    const p = k.indexOf(":"), kind = p < 0 ? k : k.slice(0, p), id = p < 0 ? "" : k.slice(p + 1);
+    if (LISTS[kind]) {
+      const a = LISTS[kind][0](), i = a.findIndex((x) => x.id === id);
+      if (!v) { if (i >= 0) a.splice(i, 1); }
+      else if (i >= 0) a[i] = v;
+      else { a.push(v); orderList(kind); }
+      return;
+    }
+    switch (kind) {
+      case "trip": case "hotel": case "flight": if (v && typeof v === "object") state[kind] = v; break;
+      case "o": orderList(id); break;
+      case "settle": if (v) { state.settle.members = v.members || []; state.settle.rate = v.rate || ""; } break;
+      case "x": {
+        const i = state.settle.expenses.findIndex((e) => e.id === id);
+        if (!v) { if (i >= 0) state.settle.expenses.splice(i, 1); }
+        else if (i >= 0) state.settle.expenses[i] = v;
+        else { state.settle.expenses.push(v); state.settle.expenses.sort((a, b) => (a.at || 0) - (b.at || 0)); }
+        break;
+      }
+      case "j": { const j = (state.journal[id] = state.journal[id] || {}); if (v) j.text = v; else delete j.text; break; }
+      case "done": if (v) state.done[id] = true; else delete state.done[id]; break;
+      case "skip": if (v) state.skip[id] = true; else delete state.skip[id]; break;
+    }
+  }
+  /* the server hands objects back with their keys re-sorted, so compare in one fixed key order */
+  function s2(v) {
+    if (v === undefined || typeof v === "function") return "null";
+    if (v === null || typeof v !== "object") return JSON.stringify(v);
+    if (Array.isArray(v)) return "[" + v.map(s2).join(",") + "]";
+    return "{" + Object.keys(v).sort().filter((k) => v[k] !== undefined && typeof v[k] !== "function").map((k) => JSON.stringify(k) + ":" + s2(v[k])).join(",") + "}";
+  }
+  const baseOf = (k) => (sync.base[k] == null ? "null" : sync.base[k]);
+  function pendingRows() {
+    const cur = flatten(), rows = [];
+    Object.keys(cur).forEach((k) => { if (baseOf(k) !== s2(cur[k])) rows.push({ k, v: cur[k] }); });
+    Object.keys(sync.base).forEach((k) => { if (!(k in cur) && sync.base[k] !== "null") rows.push({ k, v: null }); });
+    return rows;
+  }
+
+  /* don't pull changes in while someone is typing, dragging or has an edit form open —
+     the form would save onto an old copy. It just waits for the next round. */
+  function busy() {
+    const ae = document.activeElement;
+    if (ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName) && (view.contains(ae) || sheet.contains(ae))) return true;
+    if (rg || drag || press) return true;
+    if (!sheet.hidden && !/^(ck-|dt-|share)/.test(sheetKey()) && sheet.querySelector(".sh-body input, .sh-body textarea, .sh-body select")) return true;
+    return false;
+  }
+  function onLocalChange() {
+    if (!sync.code) return;
+    clearTimeout(syncT);
+    syncT = setTimeout(syncNow, 700);
+  }
+  async function syncPush() {
+    if (!sync.code || !syncReady()) return;
+    if (pushing) { pushAgain = true; return; }
+    const rows = pendingRows();
+    if (!rows.length) return;
+    pushing = true;
+    try {
+      for (let i = 0; i < rows.length; i += 400) {
+        const part = rows.slice(i, i + 400);
+        const res = await rpc("trip_push", { p_code: sync.code, p_rows: part, p_by: sync.me || null });
+        part.forEach((r) => { sync.base[r.k] = s2(r.v); });
+        (res || []).forEach((x) => { const t = tsKey(x.ts); if (!sync.ts[x.k] || t > sync.ts[x.k]) sync.ts[x.k] = t; });
+      }
+      sync.err = ""; sync.last = Date.now();
+    } catch (e) { sync.err = String((e && e.message) || e); }
+    finally {
+      pushing = false; saveSync();
+      if (pushAgain) { pushAgain = false; setTimeout(syncNow, 300); }
+    }
+  }
+  async function syncPull() {
+    if (!sync.code || pulling || !syncReady()) return;
+    if (busy()) { pullLater = true; return; }
+    pulling = true;
+    try {
+      const rows = await rpc("trip_pull", { p_code: sync.code, p_since: sync.cursor ? tsMinus(sync.cursor, 30000) : null });
+      if (busy()) { pullLater = true; return; }
+      const cur = flatten(), who = new Set();
+      let changed = 0, cursor = sync.cursor;
+      (rows || []).forEach((r) => {
+        const ts = tsKey(r.ts), s = s2(r.v);
+        if (!cursor || ts > cursor) cursor = ts;
+        if (sync.ts[r.k] && sync.ts[r.k] >= ts) return;
+        const mine = s2(cur[r.k]), pending = mine !== baseOf(r.k);
+        sync.ts[r.k] = ts; sync.base[r.k] = s;
+        if (pending || mine === s) return; /* my unsent change is newer: it goes out next and wins */
+        applyKey(r.k, r.v); changed++;
+        if (r.by_name && r.by_name !== sync.me) who.add(r.by_name);
+      });
+      sync.cursor = cursor; sync.err = ""; sync.last = Date.now();
+      if (changed) {
+        state = norm(state);
+        if (!lsSet(LS_STATE, state)) toast("폰 저장 공간이 부족해서 저장하지 못했어요");
+        redraw();
+        if (who.size && Date.now() - lastToast > 45000) { lastToast = Date.now(); toast(Array.from(who).join(", ") + " 님이 바꾼 내용이 들어왔어요"); }
+      }
+    } catch (e) { sync.err = String((e && e.message) || e); }
+    finally { pulling = false; saveSync(); }
+  }
+  async function syncNow() {
+    await syncPush();
+    await syncPull();
+    if (pendingRows().length && !pushing && !sync.err) await syncPush();
+    refreshSyncText();
+  }
+  function redraw() {
+    render();
+    const k = sheetKey();
+    if (k.indexOf("dt-") === 0) { if (findItem(k.slice(3))) detailSheet(k.slice(3)); else closeSheet(); }
+    else if (k.indexOf("ck-") === 0) ckSheet(k.slice(3));
+  }
+  const retry = () => { if (pullLater && sync.code) { pullLater = false; setTimeout(() => { if (!busy()) syncPull(); else pullLater = true; }, 400); } };
+  document.addEventListener("focusout", retry);
+  document.addEventListener("pointerup", retry);
+  setInterval(() => { if (sync.code && !document.hidden) syncNow(); else refreshSyncText(); }, 10000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && sync.code) syncNow(); });
+  window.addEventListener("online", () => { if (sync.code) syncNow(); });
+
+  /* start · join · leave */
+  async function createTrip() {
+    Object.assign(sync, { code: newCode(), cursor: null, base: {}, ts: {}, err: "" });
+    await syncPush();
+    if (sync.err || pendingRows().length) { const e = sync.err || "push"; Object.assign(sync, { code: "", base: {}, ts: {}, err: "" }); saveSync(); throw new Error(e); }
+    await syncPull();
+  }
+  async function joinTrip(code) {
+    const rows = await rpc("trip_pull", { p_code: code, p_since: null });
+    if (!(rows || []).some((r) => r.v !== null)) throw new Error("nocode");
+    /* the shared half comes from the trip; my own packing list, apps and photos stay as they are */
+    const per = personalIds();
+    if (rows.some((r) => r.k.indexOf("day:") === 0 && r.v)) state.days = [];
+    state.prep.todo = []; state.prep.links = []; state.infos = []; state.memos = []; state.settle.expenses = [];
+    Object.keys(state.journal).forEach((d) => { if (state.journal[d]) delete state.journal[d].text; });
+    Object.keys(state.done).forEach((id) => { if (!per.has(id)) delete state.done[id]; });
+    state.skip = {};
+    Object.assign(sync, { code, cursor: null, base: {}, ts: {}, err: "" });
+    rows.forEach((r) => {
+      const ts = tsKey(r.ts);
+      sync.base[r.k] = s2(r.v); sync.ts[r.k] = ts;
+      if (!sync.cursor || ts > sync.cursor) sync.cursor = ts;
+    });
+    rows.forEach((r) => applyKey(r.k, r.v));
+    Object.keys(LISTS).forEach(orderList);
+    state = norm(state);
+    lsSet(LS_STATE, state);
+    sync.last = Date.now();
+    saveSync();
+    render();
+  }
+  function leaveTrip() { Object.assign(sync, { code: "", cursor: null, base: {}, ts: {}, err: "" }); saveSync(); }
+
+  function syncStatus() {
+    if (!sync.code) return "";
+    const n = pendingRows().length;
+    if (sync.err) return (/noconfig/.test(sync.err) ? "저장소 연결 정보가 없어요" : "지금은 연결이 안 돼요") + (n ? " · 보낼 것 " + n + "개 대기 중" : "") + " · 연결되면 알아서 맞춰요";
+    if (!sync.last) return "맞추는 중…";
+    const s = Math.round((Date.now() - sync.last) / 1000);
+    return (s < 60 ? "방금" : s < 3600 ? Math.round(s / 60) + "분 전" : Math.round(s / 3600) + "시간 전") + " 맞췄어요" + (n ? " · 보낼 것 " + n + "개" : "");
+  }
+  const shareSub = () => (sync.code ? sync.code + " · " + syncStatus() : "여행 코드로 친구랑 연결");
+  function refreshSyncText() {
+    const st = document.getElementById("syncSt");
+    if (st) st.textContent = syncStatus();
+    const r = view.querySelector('[data-act="share"] .rt span');
+    if (r) r.textContent = shareSub();
+  }
+  const SHARE_INFO = '<div class="shinfo"><div><b>같이 보는 것</b><span>일정 · 다녀옴/건너뛰기 · 출발 전 할 일 · 정산 · 메모 · 정보 · 링크 · 숙소/항공 · 기록 글</span></div>' +
+    "<div><b>각자 따로</b><span>필수 준비물 · 필수 앱 체크 · 사진 · 화면 설정</span></div></div>";
+  function meChips() {
+    const ms = state.settle.members || [];
+    if (!ms.length) return "";
+    return '<div class="field"><span>나는 누구?</span><div class="chips">' + ms.map((p) => '<button class="btn sm chipbtn" type="button" data-act="sync-me" data-p="' + esc(p) + '" aria-pressed="' + (sync.me === p) + '">' + esc(p) + "</button>").join("") + "</div></div>";
+  }
+  function joinBox(prefill, ph) {
+    return '<div class="addline"><input id="joinCode" placeholder="' + ph + '" autocomplete="off" autocapitalize="characters" spellcheck="false" value="' + esc(prefill || "") + '"><button class="btn primary" type="button" data-act="sync-join">참여</button></div>';
+  }
+  function shareSheet(prefill) {
+    const c = syncCfg();
+    let body;
+    if (sync.code) {
+      body = '<div class="codebox"><span class="lbl">우리 여행 코드</span><b class="mono">' + esc(sync.code) + '</b><span class="sub" id="syncSt">' + esc(syncStatus()) + "</span></div>" +
+        '<div class="shbtns"><button class="btn primary" type="button" data-act="sync-invite">' + ICON.users + "초대 보내기</button>" +
+        '<button class="btn" type="button" data-act="sync-now">' + ICON.sync + "지금 맞추기</button></div>" +
+        meChips() + SHARE_INFO +
+        '<button class="btn ghost danger" type="button" data-act="sync-leave">이 폰에서 같이 쓰기 그만두기</button>';
+    } else if (!c.url || !c.key) {
+      body = '<p class="note">친구한테 받은 초대 링크가 있으면 붙여넣고 참여를 누르면 끝이에요.</p>' + meChips() +
+        joinBox(prefill, "초대 링크 붙여넣기") +
+        '<details class="fold"><summary><span class="ft">처음 시작하는 사람 · 저장소 연결</span><span class="chev" aria-hidden="true"></span></summary><div class="fold-b form">' +
+        '<p class="note">무료 Supabase 프로젝트 하나가 필요해요. 만드는 법은 GitHub 저장소의 SUPABASE_SETUP.md에 있어요.</p>' +
+        field("surl", "Project URL", c.url, { ph: "https://xxxx.supabase.co" }) + field("skey", "Publishable key", c.key, { ph: "sb_publishable_…" }) +
+        '<button class="btn primary" type="button" data-act="sync-cfg">연결</button></div></details>' + SHARE_INFO;
+    } else {
+      body = meChips() +
+        '<button class="bigopt main" type="button" data-act="sync-create"><span class="ri">' + ICON.plus + '</span><span class="rt"><b>새 여행 코드 만들기</b><span>지금 이 폰에 있는 일정으로 시작해요</span></span></button>' +
+        '<div class="ordiv"><span>친구가 이미 만들었으면</span></div>' +
+        joinBox(prefill, "SH-XXXX-XXXX 또는 초대 링크") +
+        '<p class="note">참여하면 일정 · 정산 같은 같이 보는 내용이 친구 것으로 바뀌어요. 준비물 · 앱 체크랑 사진은 그대로예요.</p>' + SHARE_INFO +
+        '<button class="btn ghost sm" type="button" data-act="sync-cfgclear">저장소 연결 바꾸기</button>';
+    }
+    openSheet({ key: "share", title: "친구랑 같이 쓰기", body });
+  }
+  async function onSyncAct(act, t) {
+    if (act === "sync-me") { sync.me = t.getAttribute("data-p"); saveSync(); shareSheet(document.getElementById("joinCode") ? document.getElementById("joinCode").value : ""); return; }
+    if (act === "sync-now") {
+      t.disabled = true; await syncNow(); t.disabled = false;
+      toast(sync.err ? "지금은 연결이 안 돼요 · 연결되면 알아서 맞춰요" : "맞췄어요");
+      return;
+    }
+    if (act === "sync-cfg") {
+      const v = formVals(), url = safeUrl(v.surl).replace(/\/+$/, "");
+      if (!url || !v.skey) { toast("URL이랑 키를 둘 다 넣어주세요"); return; }
+      sync.cfg = { url, key: v.skey }; saveSync();
+      t.disabled = true;
+      try { await rpc("trip_pull", { p_code: "SH-TEST-0000", p_since: null }); shareSheet(); toast("저장소랑 연결됐어요"); }
+      catch (e) { t.disabled = false; toast(/http 404/.test(e.message) ? "연결은 됐는데 SQL을 아직 안 돌린 것 같아요" : /http 401|http 403/.test(e.message) ? "키가 맞지 않아요" : "연결이 안 돼요 · URL을 확인해 주세요", null, 4000); }
+      return;
+    }
+    if (act === "sync-cfgclear") { sync.cfg = null; saveSync(); shareSheet(); return; }
+    const needMe = () => { if (!sync.me && (state.settle.members || []).length) { toast("'나는 누구?'를 먼저 골라주세요"); return true; } return false; };
+    if (act === "sync-create") {
+      if (needMe()) return;
+      t.disabled = true;
+      try { await createTrip(); shareSheet(); render(); toast("여행 코드를 만들었어요 · 초대 보내기로 친구한테 보내세요", null, 4000); }
+      catch (e) { t.disabled = false; toast("코드를 만들지 못했어요 · 인터넷이랑 저장소 연결을 확인해 주세요", null, 4000); }
+      return;
+    }
+    if (act === "sync-join") {
+      const inp = document.getElementById("joinCode"), inv = parseInvite(inp ? inp.value : "");
+      if (!inv.code) { toast("코드를 확인해 주세요 (SH-XXXX-XXXX)"); return; }
+      if (needMe()) return;
+      if (inv.cfg) { sync.cfg = inv.cfg; saveSync(); }
+      if (!syncReady()) { toast("코드만으로는 안 돼요 · 초대 링크를 통째로 붙여넣어 주세요", null, 4000); return; }
+      t.disabled = true;
+      try { await joinTrip(inv.code); shareSheet(); toast("같이 쓰기 시작! " + inv.code); }
+      catch (e) { t.disabled = false; toast(/nocode/.test(e.message) ? "그 코드로 된 여행을 못 찾았어요" : "연결이 안 돼요 · 잠시 후 다시 해주세요", null, 4000); }
+      return;
+    }
+    if (act === "sync-invite") {
+      const link = inviteLink(), text = "상하이 여행 앱 같이 쓰자! 앱 → 더보기 → 친구랑 같이 쓰기 → 아래 링크 통째로 붙여넣기\n" + link;
+      if (navigator.share) { try { await navigator.share({ text }); return; } catch (e) { if (e && e.name === "AbortError") return; } }
+      copyText(text, "초대 메시지를 복사했어요 · 카톡에 붙여넣어 보내세요");
+      return;
+    }
+    if (act === "sync-leave") {
+      if (!t.classList.contains("armed")) { t.classList.add("armed"); t.textContent = "한 번 더 누르면 그만둬요 · 이 폰 내용은 그대로"; return; }
+      leaveTrip(); shareSheet(); render(); toast("같이 쓰기를 그만뒀어요");
+    }
+  }
+  /* opened from an invite link: keep the server info, then show the join box */
+  function takeInviteFromUrl() {
+    if (!/[#&]join=/.test(location.hash)) return;
+    const full = location.href, inv = parseInvite(full);
+    try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
+    if (!inv.code) return;
+    if (sync.code === inv.code) { toast("이미 이 여행 코드로 같이 쓰고 있어요"); return; }
+    if (inv.cfg && !sync.code) { sync.cfg = inv.cfg; saveSync(); }
+    if (sync.code) { shareSheet(); toast("지금은 다른 여행 코드에 연결돼 있어요 · 그만두기 후 참여해 주세요", null, 5000); return; }
+    shareSheet(full);
+  }
+
   /* ---------- events ---------- */
   document.addEventListener("submit", (e) => e.preventDefault());
   document.addEventListener("click", (e) => {
@@ -1533,6 +1899,7 @@
     if (!t) return;
     if (!t.hasAttribute("data-act")) { window.open(t.getAttribute("data-href"), "_blank", "noopener"); return; }
     const act = t.getAttribute("data-act"), id = t.getAttribute("data-id");
+    if (act.indexOf("sync-") === 0) { onSyncAct(act, t); return; }
     switch (act) {
       case "tab": closeSheet(); editing = false; go(t.getAttribute("data-tab")); return;
       case "go-plan": closeSheet(); go("plan", { day: t.getAttribute("data-day") }); return;
@@ -1673,7 +2040,7 @@
       case "memo-edit": memoSheet(id); return;
       case "link-add": linkSheet(null); return;
       case "link-edit": linkSheet(id); return;
-      case "share-soon": toast("여행 코드는 다음 단계에서 붙일게요"); return;
+      case "share": shareSheet(); return;
       case "backup": {
         const blob = new Blob([JSON.stringify(state, null, 1)], { type: "application/json" });
         const a = document.createElement("a");
@@ -1782,6 +2149,8 @@
   document.querySelectorAll("[data-icon]").forEach((el) => { el.innerHTML = ICON[el.getAttribute("data-icon")] || ""; });
   applyTheme();
   render();
+  takeInviteFromUrl();
+  if (sync.code) setTimeout(syncNow, 400);
   try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (ui.tab === "plan") { fitPlan(); drawMap(); } }); } catch (e) {}
   setInterval(applyTheme, 60000);
   document.addEventListener("visibilitychange", () => { if (!document.hidden) { applyTheme(); if (ui.tab === "home" && !editing) render(); } });
