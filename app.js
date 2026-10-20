@@ -455,7 +455,10 @@
       let lab = "";
       items.forEach((it) => {
         const w = Math.ceil(textW(it.t)) + 18, hh = 23, g = it.r + 5;
-        const cand = [[it.x + g, it.y - hh / 2], [it.x - g - w, it.y - hh / 2], [it.x - w / 2, it.y - g - hh], [it.x - w / 2, it.y + g], [it.x + g - 4, it.y - hh - 6], [it.x - g - w + 4, it.y + 6]];
+        const cand = [[it.x + g, it.y - hh / 2], [it.x - g - w, it.y - hh / 2], [it.x - w / 2, it.y - g - hh], [it.x - w / 2, it.y + g],
+          [it.x + g - 4, it.y - hh - 6], [it.x - g - w + 4, it.y - hh - 6], [it.x + g - 4, it.y + 6], [it.x - g - w + 4, it.y + 6],
+          [it.x + g + 22, it.y - hh / 2], [it.x - g - w - 22, it.y - hh / 2], [it.x - w / 2, it.y - g - hh - 20], [it.x - w / 2, it.y + g + 20],
+          [it.x + g + 14, it.y - hh - 20], [it.x - g - w - 14, it.y - hh - 20], [it.x + g + 14, it.y + 20], [it.x - g - w - 14, it.y + 20]];
         let pick = null;
         for (const q of cand) { const r = [q[0], q[1], q[0] + w, q[1] + hh]; if (inside(r) && !hit(r)) { pick = r; break; } }
         if (!pick) { let best = Infinity; for (const q of cand) { const r = [q[0], q[1], q[0] + w, q[1] + hh]; if (!inside(r)) continue; const o = over(r); if (o < best) { best = o; pick = r; } } }
@@ -487,12 +490,25 @@
     }
     return s + "</svg>";
   }
+  /* size the map so the list under it ends on a clean row line right at the tab bar */
+  function fitPlan() {
+    const mw = $(".mapwrap"), bar = $(".tabbar");
+    if (!mw || !bar) return;
+    mw.style.height = "";
+    const H = window.innerHeight, cur = mw.getBoundingClientRect().height, sy = window.scrollY;
+    const want = bar.getBoundingClientRect().top + sy;
+    const minH = Math.round(H * 0.48), maxH = Math.round(H * 0.62);
+    const edges = Array.from(view.querySelectorAll(".plist .swipe")).map((el) => el.getBoundingClientRect().bottom + sy).sort((a, b) => a - b);
+    let pick = null;
+    for (const e of edges) { const h = cur - (e - want); if (h >= minH) pick = Math.min(h, maxH); }
+    if (pick != null && Math.abs(pick - cur) > 1) mw.style.height = Math.round(pick) + "px";
+  }
   function drawMap() {
     const el = document.getElementById("map");
     if (!el) return;
     const day = planDay(), bar = $(".daybar"), r = el.getBoundingClientRect();
-    const padT = bar ? Math.max(90, bar.getBoundingClientRect().bottom - r.top + 54) : 110;
-    el.innerHTML = routeMap(day, Math.round(r.width), Math.round(r.height), { padT, padB: 92, padL: 44, padR: 44, uid: "p" });
+    const padT = bar ? Math.max(84, bar.getBoundingClientRect().bottom - r.top + 40) : 104;
+    el.innerHTML = routeMap(day, Math.round(r.width), Math.round(r.height), { padT, padB: 78, padL: 40, padR: 40, uid: "p" });
   }
 
   /* ---------- HOME: full-screen night view + widgets below ---------- */
@@ -987,7 +1003,7 @@
     document.querySelectorAll(".tabbar button").forEach((b) => {
       if (b.getAttribute("data-tab") === ui.tab) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
     });
-    if (ui.tab === "plan") drawMap();
+    if (ui.tab === "plan") { fitPlan(); drawMap(); }
     if (ui.tab === "home") heroMount();
     hydratePhotos(view);
     window.scrollTo(0, y);
@@ -1757,7 +1773,7 @@
   });
 
   let rsz;
-  window.addEventListener("resize", () => { clearTimeout(rsz); rsz = setTimeout(() => { if (ui.tab === "plan") drawMap(); }, 150); });
+  window.addEventListener("resize", () => { clearTimeout(rsz); rsz = setTimeout(() => { if (ui.tab === "plan") { fitPlan(); drawMap(); } }, 150); });
 
   /* ---------- start ---------- */
   const setAppH = () => { document.documentElement.style.setProperty("--app-h", window.innerHeight + "px"); };
@@ -1766,7 +1782,7 @@
   document.querySelectorAll("[data-icon]").forEach((el) => { el.innerHTML = ICON[el.getAttribute("data-icon")] || ""; });
   applyTheme();
   render();
-  try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (ui.tab === "plan") drawMap(); }); } catch (e) {}
+  try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (ui.tab === "plan") { fitPlan(); drawMap(); } }); } catch (e) {}
   setInterval(applyTheme, 60000);
   document.addEventListener("visibilitychange", () => { if (!document.hidden) { applyTheme(); if (ui.tab === "home" && !editing) render(); } });
   if (mqDark) { try { mqDark.addEventListener("change", applyTheme); } catch (e) { try { mqDark.addListener(applyTheme); } catch (e2) {} } }

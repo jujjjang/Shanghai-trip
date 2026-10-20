@@ -98,7 +98,7 @@
   --f-zh: "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", sans-serif;
   --f-hero: "Noto Serif SC", "Songti SC", "STSong", serif;
   --f-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
-  --tabbar-h: 58px;
+  --tabbar-h: 54px;
   --safe-b: env(safe-area-inset-bottom, 0px);
   --safe-t: env(safe-area-inset-top, 0px);
   --hero-ink: #FFFFFF;
@@ -178,7 +178,7 @@ img { max-width: 100%; }
 /* ---------- tab bar ---------- */
 .tabbar {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
-  height: calc(var(--tabbar-h) + var(--safe-b)); padding: 6px 6px var(--safe-b);
+  height: calc(var(--tabbar-h) + var(--safe-b)); padding: 4px 6px var(--safe-b);
   background: var(--tab-bg); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
   border-top: 1px solid var(--line);
   display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
