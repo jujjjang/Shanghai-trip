@@ -325,7 +325,7 @@
   /* ---------- night-sky art: moon, gold sparkles, skyline with lit windows ---------- */
   const spark = (x, y, r) => '<path class="tw" fill="#FFD36B" d="M' + x + " " + (y - r) + "Q" + (x + r * .18) + " " + (y - r * .18) + " " + (x + r) + " " + y + "Q" + (x + r * .18) + " " + (y + r * .18) + " " + x + " " + (y + r) +
     "Q" + (x - r * .18) + " " + (y + r * .18) + " " + (x - r) + " " + y + "Q" + (x - r * .18) + " " + (y - r * .18) + " " + x + " " + (y - r) + 'Z"/>';
-  function skyArt(h) {
+  function skyArt(h, small) {
     const dy = h - 190;
     const dots = [[24, 30, 1], [70, 18, .8], [118, 44, 1.1], [160, 12, .7], [196, 34, 1], [252, 14, .8], [300, 18, .9], [366, 40, .8], [190, 80, .7], [52, 84, .8], [140, 104, .6], [18, 120, .7], [96, 132, .7], [228, 108, .6]].filter((s) => s[1] < h - 56);
     const gold = [[44, 50, 5.5], [150, 30, 4.2], [214, 72, 3.4], [338, 22, 4.6], [104, 100, 3.2], [380, 92, 3.4]].filter((s) => s[1] < h - 50);
@@ -339,7 +339,9 @@
       dots.map((s, i) => '<circle class="' + (i % 2 ? "tw" : "") + '" fill="#FFFFFF" cx="' + s[0] + '" cy="' + s[1] + '" r="' + s[2] + '" opacity=".75"/>').join("") +
       gold.map((s) => spark(s[0], s[1], s[2])).join("") +
       '<circle cx="236" cy="44" r="40" fill="url(#mglow)"/><circle cx="236" cy="44" r="16" fill="#FFE7A8" mask="url(#moonm)"/>' +
-      '<g transform="translate(0 ' + dy + ')">' +
+      '<linearGradient id="skyf" gradientUnits="userSpaceOnUse" x1="0" y1="' + (h - 46) + '" x2="0" y2="' + h + '"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#000"/></linearGradient>' +
+      '<mask id="skym"><rect width="390" height="' + h + '" fill="url(#skyf)"/></mask>' +
+      '<g mask="url(#skym)"><g transform="' + (small ? "translate(" + f1(390 - 390 * .76) + " " + f1(h - 190 * .76) + ") scale(.76)" : "translate(0 " + dy + ")") + '">' +
       '<circle cx="280" cy="128" r="62" fill="url(#pglow)"/>' +
       '<path fill="url(#bfade)" d="M218 190V152h8v-12h8v50zM242 190v-40h8v40zM372 190v-48h10v48zM354 190v-36h12v36z"/>' +
       '<polygon fill="url(#bfade)" points="300,190 300,110 303,110 303,94 306,94 306,82 309,82 311,60 313,82 316,82 316,94 319,94 319,110 322,110 322,190"/>' +
@@ -349,9 +351,9 @@
       '<circle cx="280" cy="43" r="1.8" fill="#FFD36B"/>' +
       win.map((w) => '<rect fill="#FFD68A" opacity=".8" x="' + w[0] + '" y="' + w[1] + '" width="2.2" height="2.2"/>').join("") +
       '<circle cx="280" cy="152" r="11" fill="url(#hpearl)"/><circle cx="280" cy="98" r="7.5" fill="url(#hpearl)"/><circle cx="280" cy="70" r="3.6" fill="url(#hpearl)"/>' +
-      '<ellipse cx="276.5" cy="148" rx="3.6" ry="2.2" fill="#fff" opacity=".7" transform="rotate(-30 276.5 148)"/></g></svg>';
+      '<ellipse cx="276.5" cy="148" rx="3.6" ry="2.2" fill="#fff" opacity=".7" transform="rotate(-30 276.5 148)"/></g></g></svg>';
   }
-  const pageHead = (title, sub) => '<header class="phead">' + skyArt(250) + "<h1>" + esc(title) + "</h1>" + (sub ? '<span class="sub">' + esc(sub) + "</span>" : "") + "</header>";
+  const pageHead = (title, sub) => '<header class="phead">' + skyArt(172, true) + "<h1>" + esc(title) + "</h1>" + (sub ? '<span class="sub">' + esc(sub) + "</span>" : "") + "</header>";
 
   /* ---------- the illustrated route map ---------- */
   /* rough centre lines of 황푸강 and 쑤저우강 (WGS-84), enough to place the day's stops */
@@ -585,15 +587,14 @@
     const n = visible(day).indexOf(st) + 1;
     const lbl = nx ? '<span class="pc-tag on">다음 갈 곳</span>' : done ? '<span class="pc-tag">다녀옴 ✓</span>' : sk ? '<span class="pc-tag">건너뜀</span>' : '<span class="pc-tag">' + (nextId && list.findIndex((x) => x.id === nextId) > i ? "지나온 곳" : "이따 갈 곳") + "</span>";
     const info = st.memo || st.desc || st.hours || "";
-    /* same slots on every card: picture (or drawn stand-in), name, zh, stars/tags, two lines of note, buttons */
+    /* same slots on every card: picture (or drawn stand-in), name + zh, one note line, buttons */
     return '<div class="hc-slide"><article class="pc' + (done || sk ? " dim" : "") + '" data-act="detail" data-id="' + st.id + '" style="--c:' + dayC(day) + '">' +
       '<div class="pc-ph"><div class="pc-ph0" aria-hidden="true"><i></i><i></i><b>' + n + "</b></div>" + (th ? imgHtml(th, "", st.ko, "this.remove()") : "") + "</div>" +
-      '<div class="pc-b"><div class="pc-top">' + lbl + '<span class="mono pc-n">' + (i + 1) + " / " + list.length + "</span></div>" +
+      '<div class="pc-b"><div class="pc-top">' + lbl + '<span class="pc-r">' + starsHtml(st.pri) + '<span class="mono pc-n">' + (i + 1) + " / " + list.length + "</span></span></div>" +
       '<div class="pc-row"><span class="numdot">' + (done ? ICON.check : n) + '</span><div class="pc-t">' +
       '<a class="wn-name" href="' + google(st.ko) + '"' + EXT + "><span>" + esc(st.ko) + '</span><span class="ext" aria-label="구글 검색">↗</span></a>' +
       '<span class="zhs">' + esc(st.zh || " ") + "</span></div></div>" +
-      '<div class="pc-chips">' + starsHtml(st.pri) + tagsHtml(st) + "</div>" +
-      '<div class="pc-info">' + (info ? esc(info) : "") + "</div>" +
+      '<div class="pc-info">' + tagsHtml(st) + (info ? "<span>" + esc(info) + "</span>" : "") + "</div>" +
       '<div class="acts3">' + (q ? '<a class="btn primary" href="' + amap(q) + '"' + EXT + ">" + ICON.map + "고덕지도</a>" +
         '<a class="btn" href="' + apple(q) + '"' + EXT + '><span class="ic">' + ICON.nav + "</span>길찾기</a>" +
         '<button class="btn" type="button" data-act="taxi" data-id="' + st.id + '"><span class="ic">' + ICON.taxi + "</span>택시</button>" : "") + "</div>" +
@@ -772,7 +773,7 @@
     return s;
   }
   /* every row can be swiped left to show 삭제; long-press a place row to drag it (its shops move with it) */
-  const swipeWrap = (id, inner) => '<div class="swipe" data-sw="' + id + '"><button class="sw-del" type="button" data-act="row-del" data-id="' + id + '" tabindex="-1" aria-label="삭제"><span class="sw-ic">' + ICON.trash + "</span>삭제</button>" + inner + "</div>";
+  const swipeWrap = (id, inner) => '<div class="swipe" data-sw="' + id + '"><button class="sw-del" type="button" data-act="row-del" data-id="' + id + '" tabindex="-1" aria-label="삭제"><span class="sw-ic">' + ICON.trash + "</span></button>" + inner + "</div>";
   function prowHtml(st, n, nextId, afterNext, c) {
     const done = isDone(st.id), sk = isSkip(st.id), nx = st.id === nextId, has = !!placeOf(st);
     const num = done ? ICON.check : sk ? ICON.skip : has ? n : "·";
