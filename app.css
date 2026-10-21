@@ -894,10 +894,12 @@ body[data-tab="home"] { background: linear-gradient(var(--bg), var(--bg)) top ce
 .hart .stkl { stroke: #2A2E6E; } .hart .stkf { fill: #2A2E6E; }
 .hart .win { fill: #FFD68A; opacity: .8; }
 .hero-art .dy, .hart .dy { display: none; }
-.cl path { fill: #FFFFFF; } .cl .clsh { display: none; }
-.cl { animation: drift 34s ease-in-out infinite alternate; }
-.cl.slow { animation-duration: 46s; animation-direction: alternate-reverse; }
-@keyframes drift { from { translate: -8px 0; } to { translate: 10px 0; } }
+.cl path { fill: #FFFFFF; }
+/* clouds cross the whole sky slowly and come back round; with 동작 줄이기 they just stay put */
+.cl.mv { animation-name: cross; animation-timing-function: linear; animation-iteration-count: infinite; }
+@keyframes cross { from { translate: var(--a) 0; } to { translate: var(--b) 0; } }
+.sunglow { transform-box: fill-box; transform-origin: center; animation: breathe 7s ease-in-out infinite alternate; }
+@keyframes breathe { from { opacity: .7; transform: scale(.94); } to { opacity: 1; transform: scale(1.05); } }
 
 /* 낮: clear light-blue sky (#A6DAF4); the skyline sits just a shade darker than the sky, baby-pink pearls,
    and the text over the sky turns deep blue so it stays readable */
@@ -906,7 +908,7 @@ body[data-tab="home"] { background: linear-gradient(var(--bg), var(--bg)) top ce
 [data-theme="light"] .hero-art .hs0 { stop-color: #97D1F0; }
 [data-theme="light"] .hero-art .hs1 { stop-color: #A9DBF4; }
 [data-theme="light"] .hero-art .hs2 { stop-color: #C2E5F7; }
-[data-theme="light"] .hero-art .hs3 { stop-color: #DBF0FA; }
+[data-theme="light"] .hero-art .hs3 { stop-color: #E8F6FC; }
 [data-theme="light"] .hero-art .hg { stop-color: #FFFFFF; }
 [data-theme="light"] .hero-art .far { fill: #C3E2F4; opacity: 1; }
 [data-theme="light"] .hero-art .hb0 { stop-color: #A9D3EE; }
@@ -923,10 +925,9 @@ body[data-tab="home"] { background: linear-gradient(var(--bg), var(--bg)) top ce
 [data-theme="light"] .hero-art .hw1 { stop-color: #9CCFEE; }
 [data-theme="light"] .hero-art .hw2 { stop-color: #8EC5EA; }
 [data-theme="light"] .hero-art .hr { stop-color: #FFFFFF; }
-[data-theme="light"] .hero-art .hzl { stroke: #FFFFFF; stroke-opacity: .45; }
+[data-theme="light"] .hero-art .hzl { stroke: #FFFFFF; stroke-opacity: .75; }
 [data-theme="light"] .hero-art .shim rect { fill: #FFFFFF; }
 [data-theme="light"] .hero-art .shim { opacity: .7; }
-[data-theme="light"] .hero-art .cl, [data-theme="light"] .hart .cl { opacity: .6; }
 [data-theme="light"] .hart .bt, [data-theme="light"] .hart .bb { stop-color: #ABD4EE; }
 [data-theme="light"] .hart .stkl { stroke: #ABD4EE; }
 [data-theme="light"] .hart .stkf { fill: #ABD4EE; }
@@ -991,16 +992,42 @@ button.hchip svg { width: 11px; height: 11px; margin-right: -2px; opacity: .8; t
   --m-river-hi: #E2F2FB;
   --m-river-ink: #69A4CB;
   --m-district: #8CBAD7;
-  --m-blob: #FBE1EB;
+  --m-blob: #E2F1FA;
   --m-label: #FFFFFF;
   --m-label-ink: #2C4766;
   --tab-bg: rgba(253, 247, 250, 0.94);
 }
-[data-theme="light"] .rm-route { stroke: #5FA2CF; }
-[data-theme="light"] .rm-arrow { stroke: #4F95C4; }
 [data-theme="light"] .rm-lab rect { filter: drop-shadow(0 2px 6px rgba(50, 110, 160, .16)); }
 [data-theme="light"] .rm-pin .sh { fill: #1E4A70; }
 [data-theme="light"] .plist { box-shadow: 0 -10px 30px rgba(50, 110, 160, .1); }
 [data-theme="light"] .tabbar { border-top-color: #F1E3EA; }
 [data-theme="light"] .tabbar button { color: #93A5B8; }
-[data-theme="light"] .tabbar button[aria-current="page"] { color: #3F8DC2; }
+[data-theme="light"] .tabbar button[aria-current="page"] { color: var(--accent); }
+
+/* 낮: every accent — icons, numbers, ticks, buttons, day colours — moves from violet to the sky palette */
+[data-theme="light"] {
+  --surface-2: #EEF6FB;
+  --inner: #F4F9FD;
+  --line: #DDEAF3;
+  --line-2: #E9F1F7;
+  --ink: #1C2A3B;
+  --ink-2: #435669;
+  --muted: #62778C;
+  --soft: #8A9DB1;
+  --faint: #B4C6D6;
+  --accent: #3A8AC3;
+  --accent-2: #4F9AD0;
+  --accent-soft: #E2F0FA;
+  --primary-bg: #3485BF;
+  --primary-ink: #FFFFFF;
+  --cta-bg: #3485BF;
+  --cta-ink: #FFFFFF;
+  --shadow: 0 10px 28px rgba(50, 110, 160, 0.12);
+  --shadow-sm: 0 6px 18px rgba(50, 110, 160, 0.09);
+  --d1: #4A99D1; --d2: #E38BAD; --d3: #52ADA3; --d4: #8C9FB4;
+}
+[data-theme="light"] .group-h, :root[data-theme="light"] .group-h { color: #3A5672; }
+[data-theme="light"] .phead + .group-h { color: #3A5672; }
+[data-theme="light"] .hedit.done, [data-theme="light"] .hero .hedit.done { color: var(--accent); }
+[data-theme="light"] .prows > li.dragging > .swipe > .prow { box-shadow: 0 12px 30px rgba(50, 110, 160, .2); }
+[data-theme="light"] .tabbar button { color: var(--soft); }

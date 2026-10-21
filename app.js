@@ -350,8 +350,8 @@
       '<g class="nt">' + dots.map((s, i) => '<circle class="' + (i % 2 ? "tw" : "") + '" fill="#FFFFFF" cx="' + s[0] + '" cy="' + s[1] + '" r="' + s[2] + '" opacity=".75"/>').join("") +
       gold.map((s) => spark(s[0], s[1], s[2])).join("") +
       (small ? '<circle cx="322" cy="70" r="30" fill="url(#mglow)"/><circle cx="322" cy="70" r="11.5" fill="#FFE7A8" mask="url(#moonm)"/>' : '<circle cx="236" cy="44" r="40" fill="url(#mglow)"/><circle cx="236" cy="44" r="16" fill="#FFE7A8" mask="url(#moonm)"/>') + "</g>" +
-      '<g class="dy">' + (small ? '<circle cx="322" cy="68" r="48" fill="url(#psun)"/><circle cx="322" cy="68" r="9.5" fill="#FFFFFF" opacity=".5"/>' + cloud(226, 52, .42, .7, "slow")
-        : '<circle cx="236" cy="44" r="56" fill="url(#psun)"/><circle cx="236" cy="44" r="12" fill="#FFFFFF" opacity=".5"/>' + cloud(150, 40, .5, .7)) + "</g>" +
+      '<g class="dy">' + (small ? '<circle class="sunglow" cx="322" cy="68" r="48" fill="url(#psun)"/><circle cx="322" cy="68" r="9.5" fill="#FFFFFF" opacity=".5"/>' + cloud(214, 120, .42, .75, 90) + cloud(64, 142, .34, .6, 110)
+        : '<circle cx="236" cy="44" r="56" fill="url(#psun)"/><circle cx="236" cy="44" r="12" fill="#FFFFFF" opacity=".5"/>' + cloud(150, 40, .5, .7, 140)) + "</g>" +
       '<linearGradient id="skyf" gradientUnits="userSpaceOnUse" x1="0" y1="' + (h - 46) + '" x2="0" y2="' + h + '"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#000"/></linearGradient>' +
       '<mask id="skym"><rect width="390" height="' + h + '" fill="url(#skyf)"/></mask>' +
       '<g mask="url(#skym)"><g transform="' + (small ? "translate(" + f1(390 - 390 * .76) + " " + f1(h - 190 * .76) + ") scale(.76)" : "translate(0 " + dy + ")") + '">' +
@@ -553,9 +553,16 @@
   }
   /* the view behind the home screen: Lujiazui skyline over the river. One drawing for both themes —
      밤: stars, moon, lit windows / 낮: soft blue sky, a faint sun and a couple of faint clouds. Colours come from CSS (.hero-art …). */
-  const cloud = (x, y, s, o, cls) => '<g class="cl' + (cls ? " " + cls : "") + '" transform="translate(' + x + " " + y + ") scale(" + s + ')" opacity="' + o + '">' +
-    '<path d="M-44 0 Q-46 -12 -32 -14 Q-30 -30 -12 -28 Q-2 -44 18 -36 Q34 -40 38 -24 Q52 -22 50 -8 Q54 0 44 2 L-38 2 Q-46 2 -44 0 Z"/>' +
-    '<path class="clsh" d="M-40 0 Q-20 -6 0 -4 Q24 -8 46 -2 Q50 0 44 2 L-38 2 Q-44 2 -40 0 Z"/></g>';
+  /* a soft cloud; with dur it drifts across the whole sky (starting where it is drawn) and loops */
+  function cloud(x, y, s, o, dur, w) {
+    let mv = "";
+    if (dur) {
+      const m = 60 * s + 30, W = w || 390, span = W + 2 * m, p = (x + m) / span;
+      mv = ' data-dur="' + dur + '" data-ph="' + f1(p * dur) + '" style="--a:' + f1(-(x + m)) + "px;--b:" + f1(W - x + m) + "px;animation-duration:" + dur + "s;animation-delay:" + f1(-p * dur) + 's"';
+    }
+    return '<g class="cl' + (dur ? " mv" : "") + '"' + mv + ' transform="translate(' + x + " " + y + ") scale(" + s + ')" opacity="' + o + '">' +
+      '<path d="M-44 0 Q-46 -12 -32 -14 Q-30 -30 -12 -28 Q-2 -44 18 -36 Q34 -40 38 -24 Q52 -22 50 -8 Q54 0 44 2 L-38 2 Q-46 2 -44 0 Z"/></g>';
+  }
   let heroSvg = "";
   function heroArt() {
     if (heroSvg) return heroSvg;
@@ -590,6 +597,7 @@
       '<linearGradient id="hw" x1="0" y1="0" x2="0" y2="1"><stop class="hw0" offset="0"/><stop class="hw1" offset=".35"/><stop class="hw2" offset="1"/></linearGradient>' +
       '<radialGradient id="hglow" cx=".5" cy=".5" r=".5"><stop class="hg" offset="0" stop-opacity=".5"/><stop class="hg" offset="1" stop-opacity="0"/></radialGradient>' +
       '<radialGradient id="hm" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFE7A8" stop-opacity=".32"/><stop offset="1" stop-color="#FFE7A8" stop-opacity="0"/></radialGradient>' +
+      '<radialGradient id="hhaze" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".85"/><stop offset=".55" stop-color="#FFFFFF" stop-opacity=".35"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>' +
       '<radialGradient id="hsun" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".55"/><stop offset=".4" stop-color="#FFFFFF" stop-opacity=".18"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>' +
       '<radialGradient id="hp" cx=".36" cy=".32" r=".75"><stop class="hp0" offset="0"/><stop class="hp1" offset=".38"/><stop class="hp2" offset=".78"/><stop class="hp3" offset="1"/></radialGradient>' +
       '<linearGradient id="hb" x1="0" y1="0" x2="0" y2="1"><stop class="hb0" offset="0"/><stop class="hb1" offset="1"/></linearGradient>' +
@@ -597,8 +605,9 @@
       '<mask id="hmm"><rect width="390" height="760" fill="#fff"/><circle cx="363" cy="231" r="12.5" fill="#000"/></mask></defs>' +
       '<rect width="390" height="480" fill="url(#hs)"/>' +
       '<g class="nt">' + stars + gold + '<circle cx="356" cy="238" r="44" fill="url(#hm)"/><circle cx="356" cy="238" r="14" fill="#FFE7A8" mask="url(#hmm)"/></g>' +
-      '<g class="dy"><circle cx="352" cy="232" r="70" fill="url(#hsun)"/><circle cx="352" cy="232" r="12" fill="#FFFFFF" opacity=".5"/>' +
-      cloud(64, 262, .9, .7) + cloud(280, 318, .7, .6, "slow") + "</g>" +
+      '<g class="dy"><circle class="sunglow" cx="352" cy="232" r="76" fill="url(#hsun)"/><circle cx="352" cy="232" r="12" fill="#FFFFFF" opacity=".55"/>' +
+      cloud(330, 40, .5, .5, 140) + cloud(64, 262, .9, .75, 105) + cloud(206, 236, .5, .55, 125) + cloud(286, 316, .72, .65, 115) + cloud(130, 352, .58, .6, 98) + cloud(40, 304, .45, .5, 132) +
+      '<ellipse cx="195" cy="470" rx="320" ry="70" fill="url(#hhaze)"/></g>' +
       '<ellipse cx="200" cy="470" rx="280" ry="110" fill="url(#hglow)"/>' +
       '<g class="far">' + far + "</g>" +
       '<rect y="470" width="390" height="290" fill="url(#hw)"/>' +
@@ -1021,6 +1030,14 @@
   /* ---------- render ---------- */
   const view = $("#view");
   const TABS = { home: homeHtml, plan: planHtml, log: logHtml, money: moneyHtml, more: moreHtml };
+  /* clouds keep drifting from where they were when the screen is redrawn: their place comes from the clock */
+  function syncClouds(root) {
+    const now = Date.now() / 1000;
+    root.querySelectorAll(".cl.mv").forEach((g) => {
+      const d = +g.getAttribute("data-dur") || 0, ph = +g.getAttribute("data-ph") || 0;
+      if (d) g.style.animationDelay = (-((now + ph) % d)).toFixed(2) + "s";
+    });
+  }
   function render() {
     const y = window.scrollY, keep = {};
     view.querySelectorAll("[data-keep]").forEach((el) => { if (el.id) keep[el.id] = el.value; });
@@ -1029,6 +1046,7 @@
     if (!TABS[ui.tab]) ui.tab = "home";
     if (ui.tab !== "home") editing = false;
     view.innerHTML = TABS[ui.tab]();
+    syncClouds(view);
     document.body.setAttribute("data-tab", ui.tab);
     Object.keys(keep).forEach((id) => { const el = document.getElementById(id); if (el && el.tagName !== "SELECT" && id !== "mNames" && id !== "mRate") el.value = keep[id]; });
     view.querySelectorAll(".wlist").forEach((el, i) => { if (wl[i]) el.scrollTop = wl[i]; });
