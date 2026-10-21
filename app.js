@@ -78,6 +78,7 @@
     bolt: I('<path d="M13 3 5 13.5h6L10 21l8-10.5h-6z"/>'),
     pass: I('<rect x="5" y="3.5" width="14" height="17" rx="2"/><circle cx="12" cy="10.5" r="3"/><path d="M9 16.5h6"/>'),
     card: I('<rect x="3.5" y="6" width="17" height="12" rx="2"/><path d="M3.5 10h17M7 14.5h3"/>'),
+    heart: I('<path d="M12 20.2s-7.6-4.6-7.6-10.4A4.3 4.3 0 0 1 12 7.3a4.3 4.3 0 0 1 7.6 2.5c0 5.8-7.6 10.4-7.6 10.4z"/>'),
     plug: I('<path d="M9 3.5v4M15 3.5v4"/><path d="M6.5 7.5h11v3a5.5 5.5 0 0 1-11 0z"/><path d="M12 16v4.5"/>'),
     sync: I('<path d="M19.5 12a7.5 7.5 0 0 1-13 5.1M4.5 12a7.5 7.5 0 0 1 13-5.1"/><path d="M17.8 3.6v3.6h-3.6M6.2 20.4v-3.6h3.6"/>')
   };
@@ -110,6 +111,19 @@
     d.settle = d.settle || {}; d.settle.members = d.settle.members || []; d.settle.expenses = d.settle.expenses || [];
     d.days = d.days || []; d.days.forEach((x) => { x.stops = x.stops || []; });
     d.done = d.done || {}; d.skip = d.skip || {}; d.journal = d.journal || {}; d.placePhotos = d.placePhotos || {};
+    d.posts = d.posts || []; d.postPhotos = d.postPhotos || {}; d.likes = d.likes || {};
+    /* 기록 used to be one text box + photos per day: each becomes that day's first post, with the same id on every phone */
+    Object.keys(d.journal).forEach((dayId) => {
+      const j = d.journal[dayId] || {}, ph = (j.photos || []).filter(Boolean);
+      if (j.text || ph.length) {
+        const id = "p-" + dayId, day = d.days.find((x) => x.id === dayId);
+        let p = d.posts.find((x) => x.id === id);
+        if (!p) { p = { id, day: dayId, at: day && day.iso ? Date.parse(day.iso + "T21:00:00+08:00") : 0, by: "", text: "" }; d.posts.push(p); }
+        if (j.text && !p.text) p.text = j.text;
+        if (ph.length) { d.postPhotos[id] = (d.postPhotos[id] || []).concat(ph); p.ph = d.postPhotos[id].length; }
+      }
+      delete d.journal[dayId];
+    });
     /* things added after the first version: map points, short map labels, place photos */
     const seed = seedById();
     const fill = (it) => {
@@ -722,7 +736,7 @@
     if (ph.k === "after") {
       let places = 0, photos = 0;
       state.days.forEach((d) => {
-        photos += ((state.journal[d.id] || {}).photos || []).length;
+        photos += dayPics(d.id).length;
         d.stops.forEach((st) => { if (isDone(st.id)) places++; (st.spots || []).forEach((p) => { if (isDone(p.id)) places++; }); });
       });
       Object.keys(state.placePhotos).forEach((k) => { photos += state.placePhotos[k].length; });
@@ -831,7 +845,7 @@
       }
       case "fx": return wrapW(id, '<div class="hd"><span class="lbl">환율 계산</span><span class="mono sub">' + (state.settle.rate ? "1 : " + esc(state.settle.rate) : "") + "</span></div>" + '<div class="wfx">' + fxHtml("wfx") + "</div>");
       case "photos": {
-        const d = ctx.day, ph = d ? ((state.journal[d.id] || {}).photos || []) : [];
+        const d = ctx.day, ph = d ? dayPics(d.id) : [];
         const lbl = ctx.ph.k === "during" ? "오늘 사진" : d ? d.date + " 사진" : "사진";
         return wrapW(id, '<div class="hd"><span class="lbl">' + esc(lbl) + '</span><span class="mono sub">' + ph.length + "장</span></div>" +
           '<div class="wphotos">' + ph.slice(-2).reverse().map((pid) => '<button type="button" data-act="view" data-day="' + d.id + '" data-i="' + ph.indexOf(pid) + '" aria-label="사진 크게 보기"><img data-pid="' + esc(pid) + '" alt=""></button>').join("") +
@@ -986,23 +1000,147 @@
   function setDone(id, on) { if (on) { state.done[id] = true; delete state.skip[id]; } else delete state.done[id]; save(); }
   function setSkip(id, on) { if (on) { state.skip[id] = true; delete state.done[id]; } else delete state.skip[id]; save(); }
 
-  /* ---------- LOG ---------- */
-  const logEditing = {};
-  function logHtml() {
-    let s = pageHead("기록", "날마다 사진 · 한 줄 기록", true) + '<p class="lognote">' + (sync.code ? "기록 글은 친구랑 같이 봐요 · 사진은 각자 폰에만 있어요" : "사진은 이 폰에만 저장돼요 · 더보기 → 친구랑 같이 쓰기를 켜면 기록 글은 친구랑 같이 봐요") + "</p>";
-    state.days.forEach((d) => {
-      const j = state.journal[d.id] || {}, ph = j.photos || [];
-      s += '<section class="logday" id="log-' + d.id + '" style="--c:' + dayC(d) + '"><div class="hd"><span class="rd">' + esc(d.n) + '</span><div><span class="m">' + esc(d.date) + "</span><b>" + esc(d.title) + "</b></div></div>" +
-        '<div class="photos">' + ph.map((id, i) => '<button type="button" data-act="view" data-day="' + d.id + '" data-i="' + i + '" aria-label="사진 ' + (i + 1) + ' 크게 보기"><img data-pid="' + esc(id) + '" alt=""></button>').join("") +
-        "<label>" + ICON.camera + '<span>사진 추가</span><input class="vh" type="file" accept="image/*" multiple data-upload="' + d.id + '"></label></div>' +
-        (j.text && !logEditing[d.id]
-          ? '<div class="jview"><p>' + esc(j.text) + '</p><button class="icon-btn" type="button" data-act="log-edit" data-day="' + d.id + '" aria-label="' + esc(d.date) + ' 기록 고치기">' + ICON.pen + "</button></div>"
-          : '<textarea class="journal" id="jr-' + d.id + '" data-journal="' + d.id + '" placeholder="오늘 어땠는지 적어두기" aria-label="' + esc(d.date) + ' 기록">' + esc(j.text || "") + "</textarea>" +
-            '<div class="jfoot"><span class="saved" data-saved="' + d.id + '"></span><button class="btn sm primary" type="button" data-act="log-save" data-day="' + d.id + '">저장</button></div>') +
-        "</section>";
-    });
-    return s;
+  /* ---------- LOG: a feed of posts (photos + a few lines), by day ---------- */
+  const postsOf = (dayId) => state.posts.filter((p) => p.day === dayId).sort((a, b) => (a.at || 0) - (b.at || 0));
+  const postPics = (id) => state.postPhotos[id] || [];
+  const dayPics = (dayId) => postsOf(dayId).reduce((a, p) => a.concat(postPics(p.id)), []);
+  const meName = () => sync.me || "";
+  const hhmm = (ts) => { const t = new Date(ts); return pad(t.getHours()) + ":" + pad(t.getMinutes()); };
+  const likeNames = (id) => Object.keys(state.likes).filter((k) => state.likes[k] && k.indexOf(id + "|") === 0).map((k) => k.slice(id.length + 1));
+  function whoColor(name) {
+    const i = (state.settle.members || []).indexOf(name);
+    return i === 0 ? "var(--d1)" : i === 1 ? "var(--d2)" : i === 2 ? "var(--d3)" : "var(--accent)";
   }
+  function postHtml(p) {
+    const pics = postPics(p.id), who = p.by || "", nm = who || meName() || "나", place = p.place ? findItem(p.place) : null;
+    const likes = likeNames(p.id), mine = !!state.likes[p.id + "|" + (meName() || "나")];
+    let ph = "";
+    if (pics.length) {
+      ph = '<div class="pph"><div class="pstrip">' + pics.map((pid, i) => '<button type="button" data-act="post-view" data-id="' + p.id + '" data-i="' + i + '" aria-label="사진 크게 보기"><img data-pid="' + esc(pid) + '" alt=""></button>').join("") + "</div>" +
+        (pics.length > 1 ? '<span class="pcount mono">1 / ' + pics.length + '</span><div class="pdots">' + pics.map((x, i) => '<i class="' + (i ? "" : "on") + '"></i>').join("") + "</div>" : "") + "</div>";
+    } else if (p.ph) ph = '<div class="pmiss">' + ICON.camera + "<span>사진 " + p.ph + "장 · " + esc(who || "친구") + " 폰에만 있어요</span></div>";
+    return '<article class="post" id="post-' + p.id + '">' +
+      '<header class="post-h"><span class="av" style="background:' + whoColor(nm) + '">' + esc(nm.slice(0, 1)) + '</span><div class="who"><b>' + esc(nm) + "</b><span>" +
+      esc([p.at ? hhmm(p.at) : "", place ? place.item.label || shortName(place.item.ko) : ""].filter(Boolean).join(" · ")) + "</span></div>" +
+      '<button class="icon-btn" type="button" data-act="post-edit" data-id="' + p.id + '" aria-label="기록 고치기">' + ICON.more + "</button></header>" +
+      ph + (p.text ? '<p class="ptext">' + esc(p.text) + "</p>" : "") +
+      '<footer class="pf"><button class="heart' + (mine ? " on" : "") + '" type="button" data-act="post-like" data-id="' + p.id + '" aria-pressed="' + mine + '" aria-label="좋아요">' + ICON.heart + "</button>" +
+      (likes.length ? '<span class="likes">' + esc(likes.join(", ")) + "</span>" : "") + "</footer></article>";
+  }
+  function logHtml() {
+    const sel = ui.logDay && findDay(ui.logDay) ? ui.logDay : "all";
+    let s = pageHead("기록", "날마다 사진 · 한 줄 기록", true);
+    s += '<div class="lchips" role="tablist" aria-label="날짜 고르기"><button type="button" class="lchip' + (sel === "all" ? " on" : "") + '" data-act="log-day" data-v="all" aria-pressed="' + (sel === "all") + '">전체</button>' +
+      state.days.map((d) => '<button type="button" class="lchip' + (sel === d.id ? " on" : "") + '" data-act="log-day" data-v="' + d.id + '" aria-pressed="' + (sel === d.id) + '" style="--c:' + dayC(d) + '"><i>' + esc(d.n) + "</i>" + esc(String(d.date).split(" ")[0]) + "</button>").join("") + "</div>";
+    s += '<p class="lognote2">' + (sync.code ? "글은 친구랑 같이 봐요 · 사진은 올린 사람 폰에만 있어요" : "사진은 이 폰에만 저장돼요") + "</p>";
+    (sel === "all" ? state.days : [findDay(sel)]).forEach((d) => {
+      const list = postsOf(d.id);
+      s += '<section class="fday" id="log-' + d.id + '" style="--c:' + dayC(d) + '"><div class="fday-h"><span class="rd">' + esc(d.n) + '</span><div><span class="m">' + esc(d.date) + "</span><b>" + esc(d.title) + "</b></div>" +
+        (list.length ? '<span class="cnt">' + list.length + "개</span>" : "") + "</div>" +
+        (list.length ? list.map(postHtml).join("") : '<button class="fempty" type="button" data-act="post-new" data-day="' + d.id + '">' + ICON.plus + "<span>이날 첫 기록 남기기</span></button>") + "</section>";
+    });
+    return s + '<div class="fpad"></div><button class="fab" type="button" data-act="post-new" data-day="' + (sel !== "all" ? sel : "") + '" aria-label="기록 쓰기">' + ICON.plus + "</button>";
+  }
+  /* writing / editing a post: photos, a few lines, which day, and (if you like) which place */
+  let cmp = null;
+  function defaultLogDay() {
+    const ph = phase();
+    return ph.k === "during" ? ph.day.id : ui.logDay && findDay(ui.logDay) ? ui.logDay : (state.days[0] || {}).id;
+  }
+  function postSheet(id, dayId) {
+    const p = id ? state.posts.find((x) => x.id === id) : null;
+    const fresh = !cmp || cmp.id !== (p ? p.id : null) || (!p && !cmp.text && !cmp.add.length);
+    if (fresh) cmp = { id: p ? p.id : null, day: p ? p.day : dayId || defaultLogDay(), text: p ? p.text || "" : "", place: p ? p.place || "" : "", keep: p ? postPics(p.id).slice() : [], add: [] };
+    drawPostSheet();
+  }
+  function cmpRead() {
+    const t = document.getElementById("cmpText"), pl = document.getElementById("cmpPlace");
+    if (t) cmp.text = t.value;
+    if (pl) cmp.place = pl.value;
+  }
+  function drawPostSheet() {
+    const d = findDay(cmp.day) || state.days[0], stops = d ? d.stops : [];
+    const rm = (k, i) => '<button type="button" data-act="cmp-rm" data-k="' + k + '" data-i="' + i + '" aria-label="사진 빼기">' + ICON.x + "</button>";
+    const thumbs = cmp.keep.map((pid, i) => '<div class="cth"><img data-pid="' + esc(pid) + '" alt="">' + rm("keep", i) + "</div>").join("") +
+      cmp.add.map((a, i) => '<div class="cth"><img src="' + a.url + '" alt="">' + rm("add", i) + "</div>").join("");
+    openSheet({
+      key: "post-edit", title: cmp.id ? "기록 고치기" : "새 기록",
+      body: '<div class="cpics">' + thumbs + '<label class="cadd">' + ICON.camera + '<span>사진 넣기</span><input class="vh" type="file" accept="image/*" multiple data-post-pick></label></div>' +
+        '<label class="field"><span class="vh">내용</span><textarea id="cmpText" placeholder="어땠어? 한 줄이라도 좋아요" style="min-height:110px">' + esc(cmp.text) + "</textarea></label>" +
+        '<div class="field"><span>날짜</span><div class="chips">' + state.days.map((x) => '<button class="btn sm chipbtn" type="button" data-act="cmp-day" data-v="' + x.id + '" aria-pressed="' + (x.id === cmp.day) + '">' +
+          esc((isNum(x.n) ? "Day " + x.n : "귀국") + " · " + String(x.date).split(" ")[0]) + "</button>").join("") + "</div></div>" +
+        '<label class="field"><span>장소 · 안 골라도 돼요</span><select id="cmpPlace"><option value="">선택 안 함</option>' +
+          stops.map((st) => '<option value="' + st.id + '"' + (cmp.place === st.id ? " selected" : "") + ">" + esc(shortName(st.ko)) + "</option>").join("") + "</select></label>",
+      foot: (cmp.id ? '<button class="btn danger" type="button" data-act="sh" data-k="del">삭제</button>' : "") +
+        '<span class="grow"></span><button class="btn" type="button" data-act="sh-close">취소</button><button class="btn primary" type="button" data-act="sh" data-k="save">' + (cmp.id ? "저장" : "올리기") + "</button>",
+      on(k, v, btn) {
+        cmpRead();
+        if (k === "del") {
+          if (!armDelete(btn)) return;
+          deletePost(cmp.id); cmp = null; closeSheet(); render(); toast("지웠어요");
+        } else if (k === "save") savePost(btn);
+      }
+    });
+  }
+  function dropPhoto(pid) {
+    photoDB.del(pid).catch(() => {});
+    if (urlCache[pid]) { URL.revokeObjectURL(urlCache[pid]); delete urlCache[pid]; }
+  }
+  function deletePost(id) {
+    postPics(id).forEach(dropPhoto);
+    delete state.postPhotos[id];
+    state.posts = state.posts.filter((x) => x.id !== id);
+    Object.keys(state.likes).forEach((k) => { if (k.indexOf(id + "|") === 0) delete state.likes[k]; });
+    save();
+  }
+  async function savePost(btn) {
+    const text = (cmp.text || "").trim();
+    if (!text && !cmp.keep.length && !cmp.add.length) { toast("사진이나 글을 넣어주세요"); return; }
+    btn.disabled = true;
+    let p = cmp.id ? state.posts.find((x) => x.id === cmp.id) : null;
+    const isNew = !p;
+    if (!p) p = { id: newId("p"), at: Date.now(), by: meName() };
+    const ids = cmp.keep.slice();
+    if (cmp.add.length) {
+      toast("사진 넣는 중…", null, 60000);
+      for (const a of cmp.add) {
+        try { const blob = await shrink(a.file), pid = newId("ph"); await photoDB.put(pid, blob); ids.push(pid); } catch (e) {}
+        URL.revokeObjectURL(a.url);
+      }
+    }
+    postPics(p.id).filter((x) => ids.indexOf(x) < 0).forEach(dropPhoto);
+    if (ids.length) state.postPhotos[p.id] = ids; else delete state.postPhotos[p.id];
+    p.text = text; p.day = cmp.day;
+    if (cmp.place) p.place = cmp.place; else delete p.place;
+    if (!p.by || p.by === meName()) { if (ids.length) p.ph = ids.length; else delete p.ph; }
+    if (isNew) state.posts.push(p);
+    cmp = null;
+    save(); closeSheet();
+    if (ui.logDay && ui.logDay !== "all" && ui.logDay !== p.day) { ui.logDay = p.day; saveUI(); }
+    if (ui.tab !== "log") go("log"); else render();
+    const el = document.getElementById("post-" + p.id);
+    if (el) el.scrollIntoView({ block: "center", behavior: "smooth" });
+    toast(isNew ? "올렸어요" : "고쳤어요");
+  }
+  /* a photo in the day's posts (viewer 지우기) */
+  function removePic(pid) {
+    const p = state.posts.find((x) => postPics(x.id).indexOf(pid) >= 0);
+    if (!p) return;
+    const arr = state.postPhotos[p.id];
+    arr.splice(arr.indexOf(pid), 1);
+    if (!arr.length) delete state.postPhotos[p.id];
+    if (!p.by || p.by === meName()) { if (arr.length) p.ph = arr.length; else delete p.ph; }
+    if (!p.text && !arr.length && !p.ph) deletePost(p.id);
+    dropPhoto(pid);
+  }
+  document.addEventListener("scroll", (e) => {
+    const el = e.target;
+    if (!el || !el.classList || !el.classList.contains("pstrip")) return;
+    const i = Math.round(el.scrollLeft / Math.max(1, el.clientWidth)), box = el.parentNode;
+    const c = box.querySelector(".pcount");
+    if (c) c.textContent = i + 1 + " / " + el.children.length;
+    box.querySelectorAll(".pdots i").forEach((d, k) => d.classList.toggle("on", k === i));
+  }, true);
 
   /* ---------- MONEY ---------- */
   let armedExp = null, armedTimer = null;
@@ -1435,7 +1573,8 @@
   function vItems() {
     if (!vSrc) return [];
     if (vSrc.kind === "place") { const f = findItem(vSrc.id); return f ? placeImgs(f.item) : []; }
-    return ((state.journal[vSrc.id] || {}).photos || []).map((p) => ({ p }));
+    if (vSrc.kind === "post") return postPics(vSrc.id).map((p) => ({ p }));
+    return dayPics(vSrc.id).map((p) => ({ p }));
   }
   function showViewer() {
     const list = vItems();
@@ -1463,11 +1602,14 @@
     toast(n ? "사진 " + n + "장 넣었어요" : "사진을 넣지 못했어요");
     return n;
   }
+  /* photos from the home widget become a photo-only post on that day */
   async function addPhotos(dayId, files) {
-    const j = (state.journal[dayId] = state.journal[dayId] || {});
-    j.photos = j.photos || [];
-    await putPhotos(j.photos, files);
-    render();
+    const arr = [];
+    await putPhotos(arr, files);
+    if (!arr.length) return;
+    const p = { id: newId("p"), day: dayId, at: Date.now(), by: meName(), text: "", ph: arr.length };
+    state.posts.push(p); state.postPhotos[p.id] = arr;
+    save(); render();
   }
   async function addPlacePhotos(id, files) {
     const arr = (state.placePhotos[id] = state.placePhotos[id] || []);
@@ -1698,7 +1840,8 @@
     todo: [() => state.prep.todo, (a) => { state.prep.todo = a; }],
     link: [() => state.prep.links, (a) => { state.prep.links = a; }],
     info: [() => state.infos, (a) => { state.infos = a; }],
-    memo: [() => state.memos, (a) => { state.memos = a; }]
+    memo: [() => state.memos, (a) => { state.memos = a; }],
+    post: [() => state.posts, (a) => { state.posts = a; }]
   };
   const personalIds = () => { const s = new Set(); state.prep.pack.concat(state.prep.apps).forEach((x) => s.add(x.id)); return s; };
   function flatten() {
@@ -1711,7 +1854,7 @@
     });
     m.settle = { members: state.settle.members, rate: state.settle.rate };
     state.settle.expenses.forEach((e) => { m["x:" + e.id] = e; });
-    Object.keys(state.journal).forEach((d) => { const t = (state.journal[d] || {}).text; if (t) m["j:" + d] = t; });
+    Object.keys(state.likes).forEach((k) => { if (state.likes[k]) m["like:" + k] = true; });
     Object.keys(state.done).forEach((id) => { if (state.done[id] && !per.has(id)) m["done:" + id] = true; });
     Object.keys(state.skip).forEach((id) => { if (state.skip[id]) m["skip:" + id] = true; });
     return m;
@@ -1744,7 +1887,8 @@
         else { state.settle.expenses.push(v); state.settle.expenses.sort((a, b) => (a.at || 0) - (b.at || 0)); }
         break;
       }
-      case "j": { const j = (state.journal[id] = state.journal[id] || {}); if (v) j.text = v; else delete j.text; break; }
+      case "j": { const j = (state.journal[id] = state.journal[id] || {}); if (v) j.text = v; else delete j.text; break; } /* from a phone still on the old app */
+      case "like": if (v) state.likes[id] = true; else delete state.likes[id]; break;
       case "done": if (v) state.done[id] = true; else delete state.done[id]; break;
       case "skip": if (v) state.skip[id] = true; else delete state.skip[id]; break;
     }
@@ -1859,7 +2003,7 @@
     /* the shared half comes from the trip; my own packing list, apps and photos stay as they are */
     const per = personalIds();
     if (rows.some((r) => r.k.indexOf("day:") === 0 && r.v)) state.days = [];
-    state.prep.todo = []; state.prep.links = []; state.infos = []; state.memos = []; state.settle.expenses = [];
+    state.prep.todo = []; state.prep.links = []; state.infos = []; state.memos = []; state.settle.expenses = []; state.posts = []; state.likes = {};
     Object.keys(state.journal).forEach((d) => { if (state.journal[d]) delete state.journal[d].text; });
     Object.keys(state.done).forEach((id) => { if (!per.has(id)) delete state.done[id]; });
     state.skip = {};
@@ -2008,7 +2152,18 @@
     switch (act) {
       case "tab": closeSheet(); editing = false; go(t.getAttribute("data-tab")); return;
       case "go-plan": closeSheet(); go("plan", { day: t.getAttribute("data-day") }); return;
-      case "go-log": go("log", { focus: "log-" + t.getAttribute("data-day") }); return;
+      case "go-log": ui.logDay = t.getAttribute("data-day") || "all"; go("log"); return;
+      case "log-day": ui.logDay = t.getAttribute("data-v") || "all"; saveUI(); render(); { const c = $(".lchips"); if (c) window.scrollTo({ top: Math.max(0, c.getBoundingClientRect().top + window.scrollY - 70) }); } return;
+      case "post-new": postSheet(null, t.getAttribute("data-day") || null); return;
+      case "post-edit": postSheet(id); return;
+      case "post-view": vSrc = { kind: "post", id }; vIdx = +t.getAttribute("data-i") || 0; showViewer(); return;
+      case "post-like": {
+        const k = id + "|" + (meName() || "나");
+        if (state.likes[k]) delete state.likes[k]; else state.likes[k] = true;
+        save(); render(); return;
+      }
+      case "cmp-day": cmpRead(); cmp.day = t.getAttribute("data-v"); { const d = findDay(cmp.day); if (!d || !d.stops.some((x) => x.id === cmp.place)) cmp.place = ""; } drawPostSheet(); return;
+      case "cmp-rm": cmpRead(); cmp[t.getAttribute("data-k")].splice(+t.getAttribute("data-i"), 1); drawPostSheet(); return;
       case "day-step": {
         const i = state.days.indexOf(planDay()) + (+t.getAttribute("data-d") || 0);
         if (state.days[i]) { ui.day = state.days[i].id; saveUI(); render(); window.scrollTo(0, 0); const p = $(".plan"); if (p) p.classList.add(+t.getAttribute("data-d") > 0 ? "in-r" : "in-l"); }
@@ -2033,13 +2188,6 @@
         return;
       }
       case "ck-sheet": ckSheet(t.getAttribute("data-list")); return;
-      case "log-edit": { const d = t.getAttribute("data-day"); logEditing[d] = true; render(); const ta = document.getElementById("jr-" + d); if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); } return; }
-      case "log-save": {
-        const d = t.getAttribute("data-day"), ta = document.getElementById("jr-" + d);
-        if (ta) { (state.journal[d] = state.journal[d] || {}).text = ta.value.trim(); save(); }
-        delete logEditing[d]; render(); toast("저장했어요");
-        return;
-      }
       case "row-del": deleteRow(id); return;
       case "photo-sheet": photoSheet(id); return;
       case "to-widgets": { const z = $("#wzone"); if (z) window.scrollTo({ top: z.getBoundingClientRect().top + window.scrollY - 8, behavior: "smooth" }); return; }
@@ -2089,11 +2237,11 @@
         const x = vItems()[vIdx];
         if (!x) return;
         if (x.u) { const f = findItem(vSrc.id); if (f) { f.item.img = ""; delete f.item.imgSrc; } }
-        else {
-          const arr = vSrc.kind === "place" ? state.placePhotos[vSrc.id] || [] : (state.journal[vSrc.id] || {}).photos || [];
+        else if (vSrc.kind === "place") {
+          const arr = state.placePhotos[vSrc.id] || [];
           const k = arr.indexOf(x.p); if (k >= 0) arr.splice(k, 1);
-          photoDB.del(x.p).catch(() => {}); if (urlCache[x.p]) { URL.revokeObjectURL(urlCache[x.p]); delete urlCache[x.p]; }
-        }
+          dropPhoto(x.p);
+        } else removePic(x.p);
         save(); render();
         if (vSrc.kind === "place" && sheetKey() === "dt-" + vSrc.id) detailSheet(vSrc.id);
         showViewer(); toast("사진을 뺐어요");
@@ -2185,6 +2333,12 @@
       }
       return;
     }
+    if (t.hasAttribute("data-post-pick")) {
+      const files = Array.from(t.files || []);
+      t.value = "";
+      if (files.length && cmp) { cmpRead(); files.forEach((f) => cmp.add.push({ file: f, url: URL.createObjectURL(f) })); drawPostSheet(); }
+      return;
+    }
     if (t.hasAttribute("data-upload")) {
       const files = Array.from(t.files || []);
       t.value = "";
@@ -2206,17 +2360,6 @@
   const jTimers = {};
   document.addEventListener("input", (e) => {
     const t = e.target;
-    if (t.hasAttribute("data-journal")) {
-      const d = t.getAttribute("data-journal");
-      clearTimeout(jTimers[d]);
-      jTimers[d] = setTimeout(() => {
-        (state.journal[d] = state.journal[d] || {}).text = t.value;
-        logEditing[d] = true;
-        save();
-        const s = document.querySelector('[data-saved="' + d + '"]'); if (s) s.textContent = "저장됨";
-      }, 500);
-      return;
-    }
     if (t.hasAttribute("data-fx")) {
       const rate = +state.settle.rate || 0, v = parseFloat(String(t.value).replace(/[,\s]/g, ""));
       const box = t.closest(".fxpair"), y = t.getAttribute("data-fx") === "y";
