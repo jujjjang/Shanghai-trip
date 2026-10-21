@@ -111,7 +111,7 @@
     d.settle = d.settle || {}; d.settle.members = d.settle.members || []; d.settle.expenses = d.settle.expenses || [];
     d.days = d.days || []; d.days.forEach((x) => { x.stops = x.stops || []; });
     d.done = d.done || {}; d.skip = d.skip || {}; d.journal = d.journal || {}; d.placePhotos = d.placePhotos || {};
-    d.posts = d.posts || []; d.postPhotos = d.postPhotos || {}; d.likes = d.likes || {};
+    d.posts = d.posts || []; d.postPhotos = d.postPhotos || {}; d.likes = d.likes || {}; d.shared = d.shared || {};
     /* 기록 used to be one text box + photos per day: each becomes that day's first post, with the same id on every phone */
     Object.keys(d.journal).forEach((dayId) => {
       const j = d.journal[dayId] || {}, ph = (j.photos || []).filter(Boolean);
@@ -199,7 +199,7 @@
   const urlCache = {};
   function photoUrl(id) {
     if (urlCache[id]) return Promise.resolve(urlCache[id]);
-    return photoDB.get(id).then((b) => (b ? (urlCache[id] = URL.createObjectURL(b)) : ""));
+    return photoDB.get(id).then((b) => b || fetchShared(id)).then((b) => (b ? (urlCache[id] = URL.createObjectURL(b)) : ""));
   }
   function hydratePhotos(root) {
     root.querySelectorAll("img[data-pid]").forEach((img) => {
@@ -222,7 +222,7 @@
   function placeImgs(it) {
     const out = [];
     if (it && it.img) out.push({ u: it.img });
-    ((it && state.placePhotos[it.id]) || []).forEach((p) => out.push({ p }));
+    if (it) picsOf(it.id, state.placePhotos[it.id]).forEach((p) => out.push({ p }));
     return out;
   }
   function imgHtml(x, cls, alt, onerr) {
@@ -739,7 +739,7 @@
         photos += dayPics(d.id).length;
         d.stops.forEach((st) => { if (isDone(st.id)) places++; (st.spots || []).forEach((p) => { if (isDone(p.id)) places++; }); });
       });
-      Object.keys(state.placePhotos).forEach((k) => { photos += state.placePhotos[k].length; });
+      Object.keys(Object.assign({}, state.placePhotos, state.shared)).forEach((k) => { if (!state.posts.some((x) => x.id === k)) photos += picsOf(k, state.placePhotos[k]).length; });
       return '<div class="hc-one"><article class="pc"><div class="pc-b"><div class="pc-top"><span class="pc-tag on">다녀온 여행 한눈에</span></div>' +
         '<div class="stat3"><div><span>다녀온 곳</span><b>' + places + "곳</b></div><div><span>사진</span><b>" + photos + "장</b></div><div><span>함께 쓴 돈</span><b>" + totalFmt(settleCalc()) + "</b></div></div>" +
         '<div class="wn-foot"><button class="btn cta" type="button" data-act="tab" data-tab="log">' + ICON.log + "기록 보기</button></div></div></article></div>";
@@ -1002,7 +1002,7 @@
 
   /* ---------- LOG: a feed of posts (photos + a few lines), by day ---------- */
   const postsOf = (dayId) => state.posts.filter((p) => p.day === dayId).sort((a, b) => (a.at || 0) - (b.at || 0));
-  const postPics = (id) => state.postPhotos[id] || [];
+  const postPics = (id) => picsOf(id, state.postPhotos[id]);
   const dayPics = (dayId) => postsOf(dayId).reduce((a, p) => a.concat(postPics(p.id)), []);
   const meName = () => sync.me || "";
   const hhmm = (ts) => { const t = new Date(ts); return pad(t.getHours()) + ":" + pad(t.getMinutes()); };
@@ -1018,7 +1018,7 @@
     if (pics.length) {
       ph = '<div class="pph"><div class="pstrip">' + pics.map((pid, i) => '<button type="button" data-act="post-view" data-id="' + p.id + '" data-i="' + i + '" aria-label="사진 크게 보기"><img data-pid="' + esc(pid) + '" alt=""></button>').join("") + "</div>" +
         (pics.length > 1 ? '<span class="pcount mono">1 / ' + pics.length + '</span><div class="pdots">' + pics.map((x, i) => '<i class="' + (i ? "" : "on") + '"></i>').join("") + "</div>" : "") + "</div>";
-    } else if (p.ph) ph = '<div class="pmiss">' + ICON.camera + "<span>사진 " + p.ph + "장 · " + esc(who || "친구") + " 폰에만 있어요</span></div>";
+    } else if (p.ph) ph = '<div class="pmiss">' + ICON.camera + "<span>사진 " + p.ph + "장 · " + esc(who || "친구") + " 폰에서 올라오는 중이에요</span></div>";
     return '<article class="post" id="post-' + p.id + '">' +
       '<header class="post-h"><span class="av" style="background:' + whoColor(nm) + '">' + esc(nm.slice(0, 1)) + '</span><div class="who"><b>' + esc(nm) + "</b><span>" +
       esc([p.at ? hhmm(p.at) : "", place ? place.item.label || shortName(place.item.ko) : ""].filter(Boolean).join(" · ")) + "</span></div>" +
@@ -1032,7 +1032,7 @@
     let s = pageHead("기록", "날마다 사진 · 한 줄 기록", true);
     s += '<div class="lchips" role="tablist" aria-label="날짜 고르기"><button type="button" class="lchip' + (sel === "all" ? " on" : "") + '" data-act="log-day" data-v="all" aria-pressed="' + (sel === "all") + '">전체</button>' +
       state.days.map((d) => '<button type="button" class="lchip' + (sel === d.id ? " on" : "") + '" data-act="log-day" data-v="' + d.id + '" aria-pressed="' + (sel === d.id) + '" style="--c:' + dayC(d) + '"><i>' + esc(d.n) + "</i>" + esc(String(d.date).split(" ")[0]) + "</button>").join("") + "</div>";
-    s += '<p class="lognote2">' + (sync.code ? "글은 친구랑 같이 봐요 · 사진은 올린 사람 폰에만 있어요" : "사진은 이 폰에만 저장돼요") + "</p>";
+    s += '<p class="lognote2">' + (sync.code ? "글이랑 사진 모두 친구랑 같이 봐요" : "지금은 이 폰에만 저장돼요 · 더보기 → 친구랑 같이 쓰기를 켜면 같이 봐요") + "</p>";
     (sel === "all" ? state.days : [findDay(sel)]).forEach((d) => {
       const list = postsOf(d.id);
       s += '<section class="fday" id="log-' + d.id + '" style="--c:' + dayC(d) + '"><div class="fday-h"><span class="rd">' + esc(d.n) + '</span><div><span class="m">' + esc(d.date) + "</span><b>" + esc(d.title) + "</b></div>" +
@@ -1088,7 +1088,7 @@
   }
   function deletePost(id) {
     postPics(id).forEach(dropPhoto);
-    delete state.postPhotos[id];
+    delete state.postPhotos[id]; delete state.shared[id];
     state.posts = state.posts.filter((x) => x.id !== id);
     Object.keys(state.likes).forEach((k) => { if (k.indexOf(id + "|") === 0) delete state.likes[k]; });
     save();
@@ -1108,12 +1108,16 @@
         URL.revokeObjectURL(a.url);
       }
     }
+    const oldLocal = state.postPhotos[p.id] || [], added = ids.filter((x) => cmp.keep.indexOf(x) < 0);
     postPics(p.id).filter((x) => ids.indexOf(x) < 0).forEach(dropPhoto);
-    if (ids.length) state.postPhotos[p.id] = ids; else delete state.postPhotos[p.id];
+    const local = ids.filter((x) => oldLocal.indexOf(x) >= 0 || added.indexOf(x) >= 0);
+    if (local.length) state.postPhotos[p.id] = local; else delete state.postPhotos[p.id];
+    setShared(p.id, (state.shared[p.id] || []).filter((x) => ids.indexOf(x) >= 0));
     p.text = text; p.day = cmp.day;
     if (cmp.place) p.place = cmp.place; else delete p.place;
     if (!p.by || p.by === meName()) { if (ids.length) p.ph = ids.length; else delete p.ph; }
     if (isNew) state.posts.push(p);
+    upSoon();
     cmp = null;
     save(); closeSheet();
     if (ui.logDay && ui.logDay !== "all" && ui.logDay !== p.day) { ui.logDay = p.day; saveUI(); }
@@ -1126,11 +1130,10 @@
   function removePic(pid) {
     const p = state.posts.find((x) => postPics(x.id).indexOf(pid) >= 0);
     if (!p) return;
-    const arr = state.postPhotos[p.id];
-    arr.splice(arr.indexOf(pid), 1);
-    if (!arr.length) delete state.postPhotos[p.id];
-    if (!p.by || p.by === meName()) { if (arr.length) p.ph = arr.length; else delete p.ph; }
-    if (!p.text && !arr.length && !p.ph) deletePost(p.id);
+    unlinkPic(p.id, pid, state.postPhotos);
+    const left = postPics(p.id).length;
+    if (!p.by || p.by === meName()) { if (left) p.ph = left; else delete p.ph; }
+    if (!p.text && !left && !p.ph) deletePost(p.id);
     dropPhoto(pid);
   }
   document.addEventListener("scroll", (e) => {
@@ -1609,11 +1612,12 @@
     if (!arr.length) return;
     const p = { id: newId("p"), day: dayId, at: Date.now(), by: meName(), text: "", ph: arr.length };
     state.posts.push(p); state.postPhotos[p.id] = arr;
-    save(); render();
+    save(); render(); upSoon();
   }
   async function addPlacePhotos(id, files) {
     const arr = (state.placePhotos[id] = state.placePhotos[id] || []);
     await putPhotos(arr, files);
+    upSoon();
     render(); detailSheet(id);
   }
 
@@ -1855,6 +1859,8 @@
     m.settle = { members: state.settle.members, rate: state.settle.rate };
     state.settle.expenses.forEach((e) => { m["x:" + e.id] = e; });
     Object.keys(state.likes).forEach((k) => { if (state.likes[k]) m["like:" + k] = true; });
+    /* one row per shared photo, so two people adding or removing photos never overwrite each other */
+    Object.keys(state.shared).forEach((o) => (state.shared[o] || []).forEach((pid) => { m["ph:" + o + ":" + pid] = 1; }));
     Object.keys(state.done).forEach((id) => { if (state.done[id] && !per.has(id)) m["done:" + id] = true; });
     Object.keys(state.skip).forEach((id) => { if (state.skip[id]) m["skip:" + id] = true; });
     return m;
@@ -1889,6 +1895,18 @@
       }
       case "j": { const j = (state.journal[id] = state.journal[id] || {}); if (v) j.text = v; else delete j.text; break; } /* from a phone still on the old app */
       case "like": if (v) state.likes[id] = true; else delete state.likes[id]; break;
+      case "ph": {
+        const c = id.lastIndexOf(":"), o = id.slice(0, c), pid = id.slice(c + 1);
+        if (!o || !validPid(pid)) break;
+        const a = (state.shared[o] || []).filter((x) => x !== pid);
+        if (v) { a.push(pid); a.sort(); }
+        setShared(o, a);
+        if (!v) { /* removed on the other phone: gone here too */
+          [state.postPhotos, state.placePhotos].forEach((mp) => { const l = mp[o]; if (l && l.indexOf(pid) >= 0) { l.splice(l.indexOf(pid), 1); if (!l.length) delete mp[o]; } });
+          dropPhoto(pid);
+        }
+        break;
+      }
       case "done": if (v) state.done[id] = true; else delete state.done[id]; break;
       case "skip": if (v) state.skip[id] = true; else delete state.skip[id]; break;
     }
@@ -1976,6 +1994,7 @@
     await syncPull();
     if (pendingRows().length && !pushing && !sync.err) await syncPush();
     refreshSyncText();
+    uploadPending();
   }
   function redraw() {
     render();
@@ -1990,6 +2009,73 @@
   document.addEventListener("visibilitychange", () => { if (!document.hidden && sync.code) syncNow(); });
   window.addEventListener("online", () => { if (sync.code) syncNow(); });
 
+  /* ---------- 사진도 같이: photos go to a public Supabase Storage bucket under the trip code ----------
+     Each post / place keeps a synced list of photo ids that are on the server ("shared"); the phone that
+     took a photo uploads it in the background, the other phone downloads it once and keeps it. */
+  const BUCKET = "trip-photos";
+  const validPid = (x) => typeof x === "string" && /^ph[a-z0-9]{4,40}$/.test(x);
+  function picsOf(owner, local) {
+    const out = (state.shared[owner] || []).filter(validPid);
+    (local || []).forEach((x) => { if (out.indexOf(x) < 0) out.push(x); });
+    return out;
+  }
+  function setShared(owner, list) { if (list && list.length) state.shared[owner] = list; else delete state.shared[owner]; }
+  function unlinkPic(owner, pid, localMap) {
+    const a = localMap[owner];
+    if (a) { const k = a.indexOf(pid); if (k >= 0) a.splice(k, 1); if (!a.length) delete localMap[owner]; }
+    setShared(owner, (state.shared[owner] || []).filter((x) => x !== pid));
+  }
+  const objUrl = (pid) => syncCfg().url + "/storage/v1/object/" + BUCKET + "/" + encodeURIComponent(sync.code) + "/" + pid + ".jpg";
+  const fetching = {};
+  function fetchShared(pid) {
+    if (!validPid(pid) || !sync.code || !syncReady()) return Promise.resolve(null);
+    if (fetching[pid]) return fetching[pid];
+    return (fetching[pid] = fetch(objUrl(pid).replace("/object/", "/object/public/"), { cache: "force-cache" })
+      .then((r) => (r.ok ? r.blob() : null))
+      .then((b) => { if (b && b.size) { photoDB.put(pid, b).catch(() => {}); return b; } return null; })
+      .catch(() => null)
+      .finally(() => { delete fetching[pid]; }));
+  }
+  function pendingUploads() {
+    const jobs = [];
+    [state.postPhotos, state.placePhotos].forEach((map) => Object.keys(map).forEach((o) => {
+      if (map === state.postPhotos && !state.posts.some((x) => x.id === o)) return; /* post was deleted */
+      (map[o] || []).forEach((pid) => { if (validPid(pid) && (state.shared[o] || []).indexOf(pid) < 0) jobs.push([o, pid]); });
+    }));
+    return jobs;
+  }
+  let upBusy = false, upWait = 0, upT = 0;
+  const upSoon = () => { if (!sync.code) return; clearTimeout(upT); upT = setTimeout(uploadPending, 1200); };
+  async function uploadPending() {
+    if (upBusy || !sync.code || !syncReady() || Date.now() < upWait) return;
+    const jobs = pendingUploads();
+    if (!jobs.length) { if (sync.photoErr) { sync.photoErr = ""; saveSync(); } return; }
+    upBusy = true;
+    let done = 0;
+    try {
+      for (const [o, pid] of jobs.slice(0, 8)) {
+        const blob = await photoDB.get(pid);
+        if (!blob) { unlinkPic(o, pid, state.postPhotos[o] ? state.postPhotos : state.placePhotos); continue; }
+        const c = syncCfg(), h = { apikey: c.key, "Content-Type": blob.type || "image/jpeg", "x-upsert": "false" };
+        if (!/^sb_/.test(c.key)) h.Authorization = "Bearer " + c.key;
+        const r = await fetch(objUrl(pid), { method: "POST", headers: h, body: blob });
+        let ok = r.ok;
+        if (!ok) { const t = await r.text().catch(() => ""); ok = r.status === 409 || /duplicate|already exists/i.test(t); if (!ok) throw new Error("up " + r.status + " " + t.slice(0, 160)); }
+        if ((state.shared[o] || []).indexOf(pid) < 0) state.shared[o] = (state.shared[o] || []).concat(pid).sort();
+        done++;
+      }
+      sync.photoErr = "";
+    } catch (e) {
+      const m = String((e && e.message) || e);
+      sync.photoErr = /up (400|401|403|404)/.test(m) ? "setup" : "net";
+      upWait = Date.now() + (sync.photoErr === "setup" ? 300000 : 30000);
+    } finally {
+      upBusy = false; saveSync();
+      if (done) save(); /* the new shared lists go out with the next sync round */
+      refreshSyncText();
+    }
+  }
+
   /* start · join · leave */
   async function createTrip() {
     Object.assign(sync, { code: newCode(), cursor: null, base: {}, ts: {}, err: "" });
@@ -2003,7 +2089,7 @@
     /* the shared half comes from the trip; my own packing list, apps and photos stay as they are */
     const per = personalIds();
     if (rows.some((r) => r.k.indexOf("day:") === 0 && r.v)) state.days = [];
-    state.prep.todo = []; state.prep.links = []; state.infos = []; state.memos = []; state.settle.expenses = []; state.posts = []; state.likes = {};
+    state.prep.todo = []; state.prep.links = []; state.infos = []; state.memos = []; state.settle.expenses = []; state.posts = []; state.likes = {}; state.shared = {};
     Object.keys(state.journal).forEach((d) => { if (state.journal[d]) delete state.journal[d].text; });
     Object.keys(state.done).forEach((id) => { if (!per.has(id)) delete state.done[id]; });
     state.skip = {};
@@ -2021,7 +2107,7 @@
     saveSync();
     render();
   }
-  function leaveTrip() { Object.assign(sync, { code: "", cursor: null, base: {}, ts: {}, err: "" }); saveSync(); }
+  function leaveTrip() { Object.assign(sync, { code: "", cursor: null, base: {}, ts: {}, err: "", photoErr: "" }); saveSync(); }
 
   function syncStatus() {
     if (!sync.code) return "";
@@ -2029,7 +2115,9 @@
     if (sync.err) return (/noconfig/.test(sync.err) ? "저장소 연결 정보가 없어요" : "지금은 연결이 안 돼요") + (n ? " · 보낼 것 " + n + "개 대기 중" : "") + " · 연결되면 알아서 맞춰요";
     if (!sync.last) return "맞추는 중…";
     const s = Math.round((Date.now() - sync.last) / 1000);
-    return (s < 60 ? "방금" : s < 3600 ? Math.round(s / 60) + "분 전" : Math.round(s / 3600) + "시간 전") + " 맞췄어요" + (n ? " · 보낼 것 " + n + "개" : "");
+    const up = pendingUploads().length;
+    return (s < 60 ? "방금" : s < 3600 ? Math.round(s / 60) + "분 전" : Math.round(s / 3600) + "시간 전") + " 맞췄어요" + (n ? " · 보낼 것 " + n + "개" : "") +
+      (sync.photoErr === "setup" ? " · 사진 공유는 저장소 설정이 필요해요" : up ? " · 사진 " + up + "장 올리는 중" : "");
   }
   const shareSub = () => (sync.code ? sync.code + " · " + syncStatus() : "여행 코드로 친구랑 연결");
   function refreshSyncText() {
@@ -2038,8 +2126,8 @@
     const r = view.querySelector('[data-act="share"] .rt span');
     if (r) r.textContent = shareSub();
   }
-  const SHARE_INFO = '<div class="shinfo"><div><b>같이 보는 것</b><span>일정 · 다녀옴/건너뛰기 · 출발 전 할 일 · 정산 · 메모 · 정보 · 링크 · 숙소/항공 · 기록 글</span></div>' +
-    "<div><b>각자 따로</b><span>필수 준비물 · 필수 앱 체크 · 사진 · 화면 설정</span></div></div>";
+  const SHARE_INFO = '<div class="shinfo"><div><b>같이 보는 것</b><span>일정 · 다녀옴/건너뛰기 · 출발 전 할 일 · 정산 · 메모 · 정보 · 링크 · 숙소/항공 · 기록(글 · 사진 · 하트) · 장소 사진</span></div>' +
+    "<div><b>각자 따로</b><span>필수 준비물 · 필수 앱 체크 · 화면 설정</span></div></div>";
   function meChips() {
     const ms = state.settle.members || [];
     if (!ms.length) return "";
@@ -2069,7 +2157,7 @@
         '<button class="bigopt main" type="button" data-act="sync-create"><span class="ri">' + ICON.plus + '</span><span class="rt"><b>새 여행 코드 만들기</b><span>지금 이 폰에 있는 일정으로 시작해요</span></span></button>' +
         '<div class="ordiv"><span>친구가 이미 만들었으면</span></div>' +
         joinBox(prefill, "SH-XXXX-XXXX 또는 초대 링크") +
-        '<p class="note">참여하면 일정 · 정산 같은 같이 보는 내용이 친구 것으로 바뀌어요. 준비물 · 앱 체크랑 사진은 그대로예요.</p>' + SHARE_INFO +
+        '<p class="note">참여하면 일정 · 정산 · 기록 같은 같이 보는 내용이 친구 것으로 바뀌어요. 준비물 · 앱 체크는 그대로고, 이 폰에 있던 사진은 친구 여행에 다시 올라가요.</p>' + SHARE_INFO +
         '<button class="btn ghost sm" type="button" data-act="sync-cfgclear">저장소 연결 바꾸기</button>';
     }
     openSheet({ key: "share", title: "친구랑 같이 쓰기", body });
@@ -2237,11 +2325,8 @@
         const x = vItems()[vIdx];
         if (!x) return;
         if (x.u) { const f = findItem(vSrc.id); if (f) { f.item.img = ""; delete f.item.imgSrc; } }
-        else if (vSrc.kind === "place") {
-          const arr = state.placePhotos[vSrc.id] || [];
-          const k = arr.indexOf(x.p); if (k >= 0) arr.splice(k, 1);
-          dropPhoto(x.p);
-        } else removePic(x.p);
+        else if (vSrc.kind === "place") { unlinkPic(vSrc.id, x.p, state.placePhotos); dropPhoto(x.p); }
+        else removePic(x.p);
         save(); render();
         if (vSrc.kind === "place" && sheetKey() === "dt-" + vSrc.id) detailSheet(vSrc.id);
         showViewer(); toast("사진을 뺐어요");
