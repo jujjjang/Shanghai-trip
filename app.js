@@ -145,7 +145,7 @@
     d.settle = d.settle || {}; d.settle.members = d.settle.members || []; d.settle.expenses = d.settle.expenses || [];
     d.days = d.days || []; d.days.forEach((x) => { x.stops = x.stops || []; });
     d.done = d.done || {}; d.skip = d.skip || {}; d.journal = d.journal || {}; d.placePhotos = d.placePhotos || {};
-    d.posts = d.posts || []; d.postPhotos = d.postPhotos || {}; d.likes = d.likes || {}; d.shared = d.shared || {}; d.tasks = d.tasks || []; d.layAck = d.layAck || {};
+    d.posts = d.posts || []; d.postPhotos = d.postPhotos || {}; d.likes = d.likes || {}; d.shared = d.shared || {}; d.tasks = d.tasks || []; d.layAck = d.layAck || {}; d.avatars = d.avatars || {};
     /* 메모 is a single personal note now: older separate memos are folded into it */
     if (d.memos.length > 1) d.memos = [{ id: d.memos[0].id, text: d.memos.map((m) => m.text).filter(Boolean).join("\n\n"), at: d.memos[0].at }];
     /* 기록 used to be one text box + photos per day: each becomes that day's first post, with the same id on every phone */
@@ -1111,6 +1111,31 @@
   const meName = () => sync.me || "";
   const hhmm = (ts) => { const t = new Date(ts); return pad(t.getHours()) + ":" + pad(t.getMinutes()); };
   const likeNames = (id) => Object.keys(state.likes).filter((k) => state.likes[k] && k.indexOf(id + "|") === 0).map((k) => k.slice(id.length + 1));
+  /* each person's round icon in 기록: a Shanghai thing or an animal, picked in 여행 인원 (or by tapping your own) */
+  const AV_TOWER = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M12 1.8v3.4M12 8.4v3.2M12 17.8v4.4M9.7 17.2l-2.7 5M14.3 17.2l2.7 5"/><circle cx="12" cy="6.8" r="1.6" fill="#F6BCD0"/><circle cx="12" cy="14.6" r="3.2" fill="#F6BCD0"/></svg>';
+  const AVS = [["tower", ""], ["panda", "🐼"], ["dumpling", "🥟"], ["boba", "🧋"], ["lantern", "🏮"], ["dragon", "🐉"],
+    ["cat", "🐱"], ["bunny", "🐰"], ["bear", "🐻"], ["dog", "🐶"], ["pig", "🐷"], ["chick", "🐥"]];
+  const AV_DEF = ["tower", "dumpling", "panda", "bunny"];
+  function avKey(name) {
+    const k = state.avatars[name];
+    if (k && AVS.some((a) => a[0] === k)) return k;
+    const i = (state.settle.members || []).indexOf(name);
+    return i >= 0 && i < AV_DEF.length ? AV_DEF[i] : "";
+  }
+  function avGlyph(k) { if (k === "tower") return AV_TOWER; const a = AVS.find((x) => x[0] === k); return a ? '<i class="em">' + a[1] + "</i>" : ""; }
+  function avHtml(name) {
+    const g = avGlyph(avKey(name));
+    return '<span class="av' + (g ? " pic" : "") + '" style="--c:' + whoColor(name) + '">' + (g || esc(String(name).slice(0, 1))) + "</span>";
+  }
+  let avBack = "";
+  function avSheet(name, back) {
+    avBack = back || "";
+    const cur = avKey(name);
+    openSheet({
+      key: "av", center: true, title: name + " 아이콘",
+      body: '<div class="avgrid">' + AVS.map((a) => '<button type="button" class="avopt' + (a[0] === cur ? " on" : "") + '" data-act="av-set" data-p="' + esc(name) + '" data-k="' + a[0] + '" aria-pressed="' + (a[0] === cur) + '" style="--c:' + whoColor(name) + '"><span class="av pic">' + avGlyph(a[0]) + "</span></button>").join("") + "</div>"
+    });
+  }
   function whoColor(name) {
     const i = (state.settle.members || []).indexOf(name);
     return i === 0 ? "var(--d1)" : i === 1 ? "var(--d2)" : i === 2 ? "var(--d3)" : "var(--accent)";
@@ -1124,7 +1149,7 @@
         (pics.length > 1 ? '<span class="pcount mono">1 / ' + pics.length + '</span><div class="pdots">' + pics.map((x, i) => '<i class="' + (i ? "" : "on") + '"></i>').join("") + "</div>" : "") + "</div>";
     } else if (p.ph) ph = '<div class="pmiss">' + ICON.camera + "<span>사진 " + p.ph + "장 · " + esc(who || "친구") + " 폰에서 올라오는 중이에요</span></div>";
     return '<article class="post" id="post-' + p.id + '">' +
-      '<header class="post-h"><span class="av" style="background:' + whoColor(nm) + '">' + esc(nm.slice(0, 1)) + '</span><div class="who"><b>' + esc(nm) + "</b><span>" +
+      '<header class="post-h">' + (nm === (meName() || "나") ? '<button class="avbtn" type="button" data-act="av-pick" data-p="' + esc(nm) + '" aria-label="내 아이콘 바꾸기">' + avHtml(nm) + "</button>" : avHtml(nm)) + '<div class="who"><b>' + esc(nm) + "</b><span>" +
       esc([p.at ? hhmm(p.at) : "", place ? place.item.label || shortName(place.item.ko) : ""].filter(Boolean).join(" · ")) + "</span></div>" +
       '<button class="icon-btn" type="button" data-act="post-edit" data-id="' + p.id + '" aria-label="기록 고치기">' + ICON.more + "</button></header>" +
       ph + (p.text ? '<p class="ptext">' + esc(p.text) + "</p>" : "") +
@@ -1635,8 +1660,8 @@
     const ms = state.settle.members || [];
     openSheet({
       key: "members", title: "여행 인원",
-      body: '<p class="note">기록 · 정산 · 친구랑 같이 쓰기에 쓰여요.</p>' +
-        (ms.length ? '<div class="cklist">' + ms.map((n) => '<div class="li"><span class="ck">' + esc(n) + '</span><button class="icon-btn" type="button" data-act="mem-del" data-p="' + esc(n) + '" aria-label="' + esc(n) + ' 빼기">' + ICON.x + "</button></div>").join("") + "</div>" : '<p class="empty">아직 아무도 없어요</p>') +
+      body: '<p class="note">기록 · 정산 · 친구랑 같이 쓰기에 쓰여요. 동그라미를 누르면 기록에 뜨는 아이콘을 고를 수 있어요.</p>' +
+        (ms.length ? '<div class="cklist mems">' + ms.map((n) => '<div class="li"><button class="avbtn" type="button" data-act="av-pick" data-p="' + esc(n) + '" data-back="members" aria-label="' + esc(n) + ' 아이콘 고르기">' + avHtml(n) + '</button><span class="ck">' + esc(n) + '</span><button class="icon-btn" type="button" data-act="mem-del" data-p="' + esc(n) + '" aria-label="' + esc(n) + ' 빼기">' + ICON.x + "</button></div>").join("") + "</div>" : '<p class="empty">아직 아무도 없어요</p>') +
         '<div class="addline"><input id="memNew" placeholder="이름 추가" autocomplete="off" enterkeyhint="done"><button class="btn primary" type="button" data-act="mem-add">추가</button></div>'
     });
   }
@@ -1991,6 +2016,7 @@
     Object.keys(state.likes).forEach((k) => { if (state.likes[k]) m["like:" + k] = true; });
     if (state.layout) m.layout = state.layout;
     Object.keys(state.layAck).forEach((k) => { if (state.layAck[k]) m["lay:" + k] = true; });
+    Object.keys(state.avatars).forEach((k) => { if (state.avatars[k]) m["av:" + k] = state.avatars[k]; });
     /* one row per shared photo, so two people adding or removing photos never overwrite each other */
     Object.keys(state.shared).forEach((o) => (state.shared[o] || []).forEach((pid) => { m["ph:" + o + ":" + pid] = 1; }));
     Object.keys(state.done).forEach((id) => { if (state.done[id] && !per.has(id)) m["done:" + id] = true; });
@@ -2029,6 +2055,7 @@
       case "like": if (v) state.likes[id] = true; else delete state.likes[id]; break;
       case "layout": state.layout = v || null; if (takeLayout(v)) layoutIn = v.by || "친구"; break;
       case "lay": if (v) state.layAck[id] = true; else delete state.layAck[id]; break;
+      case "av": if (v) state.avatars[id] = String(v); else delete state.avatars[id]; break;
       case "ph": {
         const c = id.lastIndexOf(":"), o = id.slice(0, c), pid = id.slice(c + 1);
         if (!o || !validPid(pid)) break;
@@ -2224,7 +2251,7 @@
     /* the shared half comes from the trip; my own packing list, apps and photos stay as they are */
     const per = personalIds();
     if (rows.some((r) => r.k.indexOf("day:") === 0 && r.v)) state.days = [];
-    state.prep.todo = []; state.prep.links = []; state.infos = []; state.settle.expenses = []; state.posts = []; state.likes = {}; state.shared = {}; state.tasks = []; state.layout = null; state.layAck = {};
+    state.prep.todo = []; state.prep.links = []; state.infos = []; state.settle.expenses = []; state.posts = []; state.likes = {}; state.shared = {}; state.tasks = []; state.layout = null; state.layAck = {}; state.avatars = {};
     Object.keys(state.journal).forEach((d) => { if (state.journal[d]) delete state.journal[d].text; });
     Object.keys(state.done).forEach((id) => { if (!per.has(id)) delete state.done[id]; });
     state.skip = {};
@@ -2404,6 +2431,12 @@
         sendLayout(); editing = false; render(); toast("저장했어요 · 친구 폰이 처음 연결될 때 이 배치(모든 날짜)로 시작해요"); return;
       }
       case "members": membersSheet(); return;
+      case "av-pick": avSheet(t.getAttribute("data-p"), t.getAttribute("data-back")); return;
+      case "av-set": {
+        state.avatars[t.getAttribute("data-p")] = t.getAttribute("data-k"); save(); render();
+        if (avBack === "members") membersSheet(); else closeSheet();
+        return;
+      }
       case "mem-del": {
         const n = t.getAttribute("data-p");
         state.settle.members = state.settle.members.filter((x) => x !== n);
