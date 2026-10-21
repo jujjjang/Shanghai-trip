@@ -156,7 +156,7 @@
     const t = wantDark() ? "dark" : "light", root = document.documentElement;
     if (root.getAttribute("data-theme") !== t) root.setAttribute("data-theme", t);
     const m = document.getElementById("themeColor");
-    if (m) m.setAttribute("content", t === "dark" ? "#0A0E2E" : "#2A63C4");
+    if (m) m.setAttribute("content", t === "dark" ? "#0A0E2E" : "#6A86C4");
   }
 
   /* photos live in IndexedDB as shrunk JPEG blobs, keyed by id */
@@ -332,7 +332,7 @@
       '<span class="mono note" aria-hidden="true">=</span><label class="cin"><span>₩</span><input id="' + pre + 'W" data-keep data-fx="w" inputmode="decimal" placeholder="0" autocomplete="off" aria-label="원"></label></div>';
   }
 
-  /* ---------- page-header sky: 밤 = moon, gold sparkles, lit windows / 낮 = sun and clouds ---------- */
+  /* ---------- page-header sky: 밤 = moon, gold sparkles, lit windows / 낮 = soft blue, faint sun ---------- */
   const spark = (x, y, r) => '<path class="tw" fill="#FFD36B" d="M' + x + " " + (y - r) + "Q" + (x + r * .18) + " " + (y - r * .18) + " " + (x + r) + " " + y + "Q" + (x + r * .18) + " " + (y + r * .18) + " " + x + " " + (y + r) +
     "Q" + (x - r * .18) + " " + (y + r * .18) + " " + (x - r) + " " + y + "Q" + (x - r * .18) + " " + (y - r * .18) + " " + x + " " + (y - r) + 'Z"/>';
   function skyArt(h, small) {
@@ -342,16 +342,16 @@
     const win = [[225, 160], [233, 166], [247, 156], [304, 122], [314, 134], [309, 152], [345, 112], [352, 142], [358, 162], [377, 150], [365, 168], [228, 170]];
     return '<svg class="hart" viewBox="0 0 390 ' + h + '" preserveAspectRatio="' + (small ? "xMaxYMax meet" : "xMaxYMax slice") + '" aria-hidden="true"><defs>' +
       '<linearGradient id="bfade" gradientUnits="userSpaceOnUse" x1="0" y1="' + (60 + dy) + '" x2="0" y2="' + (190 + dy) + '"><stop class="bt" offset="0"/><stop class="bt" offset=".7"/><stop class="bb" offset="1"/></linearGradient>' +
-      '<radialGradient id="hpearl" cx=".36" cy=".32" r=".75"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".4" stop-color="#F7C6EE"/><stop offset=".8" stop-color="#B58BF2"/><stop offset="1" stop-color="#7A5BD6"/></radialGradient>' +
+      '<radialGradient id="hpearl" cx=".36" cy=".32" r=".75"><stop class="pp0" offset="0"/><stop class="pp1" offset=".4"/><stop class="pp2" offset=".8"/><stop class="pp3" offset="1"/></radialGradient>' +
       '<radialGradient id="pglow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#E9A8FF" stop-opacity=".55"/><stop offset="1" stop-color="#E9A8FF" stop-opacity="0"/></radialGradient>' +
       '<radialGradient id="mglow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFE7A8" stop-opacity=".35"/><stop offset="1" stop-color="#FFE7A8" stop-opacity="0"/></radialGradient>' +
       '<mask id="moonm"><rect x="0" y="0" width="390" height="' + h + '" fill="#fff"/><circle cx="' + (small ? 327 : 243) + '" cy="' + (small ? 66 : 38) + '" r="' + (small ? 10.5 : 15) + '" fill="#000"/></mask></defs>' +
-      '<radialGradient id="psun" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFF4C4" stop-opacity=".9"/><stop offset=".35" stop-color="#FFF1BC" stop-opacity=".45"/><stop offset="1" stop-color="#FFF1BC" stop-opacity="0"/></radialGradient>' +
+      '<radialGradient id="psun" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".55"/><stop offset=".4" stop-color="#FFFFFF" stop-opacity=".18"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>' +
       '<g class="nt">' + dots.map((s, i) => '<circle class="' + (i % 2 ? "tw" : "") + '" fill="#FFFFFF" cx="' + s[0] + '" cy="' + s[1] + '" r="' + s[2] + '" opacity=".75"/>').join("") +
       gold.map((s) => spark(s[0], s[1], s[2])).join("") +
       (small ? '<circle cx="322" cy="70" r="30" fill="url(#mglow)"/><circle cx="322" cy="70" r="11.5" fill="#FFE7A8" mask="url(#moonm)"/>' : '<circle cx="236" cy="44" r="40" fill="url(#mglow)"/><circle cx="236" cy="44" r="16" fill="#FFE7A8" mask="url(#moonm)"/>') + "</g>" +
-      '<g class="dy">' + (small ? '<circle cx="322" cy="68" r="44" fill="url(#psun)"/><circle cx="322" cy="68" r="10.5" fill="#FFF9E3"/>' + cloud(232, 46, .42, .8) + cloud(372, 118, .36, .7, "slow") + cloud(196, 128, .34, .6, "slow")
-        : '<circle cx="236" cy="44" r="56" fill="url(#psun)"/><circle cx="236" cy="44" r="14" fill="#FFF9E3"/>' + cloud(150, 40, .5, .8) + cloud(340, 70, .45, .7, "slow")) + "</g>" +
+      '<g class="dy">' + (small ? '<circle cx="322" cy="68" r="48" fill="url(#psun)"/><circle cx="322" cy="68" r="9.5" fill="#FFFFFF" opacity=".5"/>' + cloud(226, 52, .42, .24, "slow")
+        : '<circle cx="236" cy="44" r="56" fill="url(#psun)"/><circle cx="236" cy="44" r="12" fill="#FFFFFF" opacity=".5"/>' + cloud(150, 40, .5, .24)) + "</g>" +
       '<linearGradient id="skyf" gradientUnits="userSpaceOnUse" x1="0" y1="' + (h - 46) + '" x2="0" y2="' + h + '"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#000"/></linearGradient>' +
       '<mask id="skym"><rect width="390" height="' + h + '" fill="url(#skyf)"/></mask>' +
       '<g mask="url(#skym)"><g transform="' + (small ? "translate(" + f1(390 - 390 * .76) + " " + f1(h - 190 * .76) + ") scale(.76)" : "translate(0 " + dy + ")") + '">' +
@@ -552,11 +552,10 @@
     return { ph, day };
   }
   /* the view behind the home screen: Lujiazui skyline over the river. One drawing for both themes —
-     밤: stars, moon, lit windows / 낮: blue sky, sun, clouds. Colours come from CSS (.hero-art …). */
+     밤: stars, moon, lit windows / 낮: soft blue sky, a faint sun and a couple of faint clouds. Colours come from CSS (.hero-art …). */
   const cloud = (x, y, s, o, cls) => '<g class="cl' + (cls ? " " + cls : "") + '" transform="translate(' + x + " " + y + ") scale(" + s + ')" opacity="' + o + '">' +
     '<path d="M-44 0 Q-46 -12 -32 -14 Q-30 -30 -12 -28 Q-2 -44 18 -36 Q34 -40 38 -24 Q52 -22 50 -8 Q54 0 44 2 L-38 2 Q-46 2 -44 0 Z"/>' +
     '<path class="clsh" d="M-40 0 Q-20 -6 0 -4 Q24 -8 46 -2 Q50 0 44 2 L-38 2 Q-44 2 -40 0 Z"/></g>';
-  const birds = (x, y, s) => '<g class="dy bird" transform="translate(' + x + " " + y + ") scale(" + s + ')"><path d="M0 0 Q4 -4 8 0 Q12 -4 16 0"/><path d="M22 -9 Q25 -12 28 -9 Q31 -12 34 -9"/><path d="M12 -18 Q14.6 -20.6 17.2 -18 Q19.8 -20.6 22.4 -18"/></g>';
   let heroSvg = "";
   function heroArt() {
     if (heroSvg) return heroSvg;
@@ -591,16 +590,15 @@
       '<linearGradient id="hw" x1="0" y1="0" x2="0" y2="1"><stop class="hw0" offset="0"/><stop class="hw1" offset=".35"/><stop class="hw2" offset="1"/></linearGradient>' +
       '<radialGradient id="hglow" cx=".5" cy=".5" r=".5"><stop class="hg" offset="0" stop-opacity=".5"/><stop class="hg" offset="1" stop-opacity="0"/></radialGradient>' +
       '<radialGradient id="hm" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFE7A8" stop-opacity=".32"/><stop offset="1" stop-color="#FFE7A8" stop-opacity="0"/></radialGradient>' +
-      '<radialGradient id="hsun" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFF4C4" stop-opacity=".9"/><stop offset=".35" stop-color="#FFF1BC" stop-opacity=".45"/><stop offset="1" stop-color="#FFF1BC" stop-opacity="0"/></radialGradient>' +
-      '<radialGradient id="hp" cx=".36" cy=".32" r=".75"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".38" stop-color="#FFC2EC"/><stop offset=".78" stop-color="#C37BF0"/><stop offset="1" stop-color="#7B4FD0"/></radialGradient>' +
+      '<radialGradient id="hsun" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".55"/><stop offset=".4" stop-color="#FFFFFF" stop-opacity=".18"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>' +
+      '<radialGradient id="hp" cx=".36" cy=".32" r=".75"><stop class="hp0" offset="0"/><stop class="hp1" offset=".38"/><stop class="hp2" offset=".78"/><stop class="hp3" offset="1"/></radialGradient>' +
       '<linearGradient id="hb" x1="0" y1="0" x2="0" y2="1"><stop class="hb0" offset="0"/><stop class="hb1" offset="1"/></linearGradient>' +
       '<linearGradient id="hr" x1="0" y1="0" x2="0" y2="1"><stop class="hr" offset="0" stop-opacity=".5"/><stop class="hr" offset="1" stop-opacity="0"/></linearGradient>' +
       '<mask id="hmm"><rect width="390" height="760" fill="#fff"/><circle cx="363" cy="231" r="12.5" fill="#000"/></mask></defs>' +
       '<rect width="390" height="480" fill="url(#hs)"/>' +
       '<g class="nt">' + stars + gold + '<circle cx="356" cy="238" r="44" fill="url(#hm)"/><circle cx="356" cy="238" r="14" fill="#FFE7A8" mask="url(#hmm)"/></g>' +
-      '<g class="dy"><circle cx="352" cy="232" r="64" fill="url(#hsun)"/><circle cx="352" cy="232" r="13" fill="#FFF9E3"/>' +
-      cloud(338, 44, .62, .55) + cloud(62, 252, .9, .92) + cloud(268, 300, .74, .9, "slow") + cloud(150, 334, .56, .8) + cloud(368, 352, .6, .75, "slow") + cloud(18, 368, .5, .7) + "</g>" +
-      birds(222, 214, .9) +
+      '<g class="dy"><circle cx="352" cy="232" r="70" fill="url(#hsun)"/><circle cx="352" cy="232" r="12" fill="#FFFFFF" opacity=".5"/>' +
+      cloud(64, 262, .9, .26) + cloud(280, 318, .7, .22, "slow") + "</g>" +
       '<ellipse cx="200" cy="470" rx="280" ry="110" fill="url(#hglow)"/>' +
       '<g class="far">' + far + "</g>" +
       '<rect y="470" width="390" height="290" fill="url(#hw)"/>' +
