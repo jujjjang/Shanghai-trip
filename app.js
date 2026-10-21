@@ -626,6 +626,8 @@
     ui.wsets[k] = w;
     return w;
   }
+  function setEdge(bot) { const r = document.documentElement; if (r.classList.contains("edge-b") !== !!bot) r.classList.toggle("edge-b", !!bot); }
+  function edgeByScroll() { const r = document.documentElement, max = r.scrollHeight - window.innerHeight; if (max > 24) setEdge(window.scrollY > max / 2); else if (window.scrollY <= 0) setEdge(false); }
   function setWidgets(list) { ui.wsets = ui.wsets || {}; ui.wsets[wKey()] = list; saveUI(); }
   /* 친구 첫 배치: my widgets for every home view go out as one shared row. A friend's phone takes them on only the first
      time it sees one (a fresh install), then says so with a "lay:<name>" row; after that their widgets are theirs. */
@@ -945,9 +947,9 @@
       }
       case "fx": return wrapW(id, '<div class="hd"><span class="lbl">환율 계산</span><span class="mono sub">' + (state.settle.rate ? "1 : " + esc(state.settle.rate) : "") + "</span></div>" + '<div class="wfx">' + fxHtml("wfx") + "</div>");
       case "photos": {
-        const d = ctx.ph.k === "after" ? state.days[state.days.length - 1] : ctx.day, list = d ? postsOf(d.id) : [], p = list[list.length - 1];
+        const d = ctx.ph.k === "after" ? state.days[state.days.length - 1] : ctx.ph.k === "before" ? preDay() : ctx.day, list = d ? postsOf(d.id) : [], p = list[list.length - 1];
         const pic = p ? postPics(p.id)[0] : "";
-        const lbl = ctx.ph.k === "during" && d && d.iso === todayIso() ? "오늘 기록" : d ? d.date + " 기록" : "기록";
+        const lbl = ctx.ph.k === "during" && d && d.iso === todayIso() ? "오늘 기록" : d && d.pre ? "여행 전 기록" : d ? d.date + " 기록" : "기록";
         return wrapW(id, '<div class="hd"><span class="lbl">' + esc(lbl) + '</span><span class="mono sub">' + (list.length ? list.length + "개" : "") + "</span></div>" +
           (p ? '<div class="wpost">' + (pic ? '<img data-pid="' + esc(pic) + '" alt="">' : "") + '<span class="' + (pic ? "t" : "t only") + '">' + esc(p.text || "사진 기록") + "</span></div>" : '<span class="sub">아직 기록이 없어요</span>') +
           '<button class="wpost-add" type="button" data-act="post-new" data-day="' + (d ? d.id : "") + '">' + ICON.plus + "기록 쓰기</button>",
@@ -1129,16 +1131,22 @@
       '<footer class="pf"><button class="heart' + (mine ? " on" : "") + '" type="button" data-act="post-like" data-id="' + p.id + '" aria-pressed="' + mine + '" aria-label="좋아요">' + ICON.heart + "</button>" +
       (likes.length ? '<span class="likes">' + esc(likes.join(", ")) + "</span>" : "") + "</footer></article>";
   }
+  /* 기록 has one extra "day" before Day 1 for anything written while getting ready */
+  const PRE = "before";
+  function preDay() { return { id: PRE, n: "", date: "출발 전까지", title: "여행 전", stops: [], pre: true }; }
+  function logDay(id) { return id === PRE ? preDay() : findDay(id); }
+  function logC(d) { return d.pre ? "var(--accent)" : dayC(d); }
   function logHtml() {
-    const sel = ui.logDay && findDay(ui.logDay) ? ui.logDay : "all";
+    const sel = ui.logDay && logDay(ui.logDay) ? ui.logDay : "all";
     let s = pageHead("기록", "날마다 사진 · 한 줄 기록", true);
     s += '<div class="lchips" role="tablist" aria-label="날짜 고르기"><button type="button" class="lchip' + (sel === "all" ? " on" : "") + '" data-act="log-day" data-v="all" aria-pressed="' + (sel === "all") + '">전체</button>' +
+      '<button type="button" class="lchip txt' + (sel === PRE ? " on" : "") + '" data-act="log-day" data-v="' + PRE + '" aria-pressed="' + (sel === PRE) + '">여행 전</button>' +
       state.days.map((d) => '<button type="button" class="lchip' + (sel === d.id ? " on" : "") + '" data-act="log-day" data-v="' + d.id + '" aria-pressed="' + (sel === d.id) + '" style="--c:' + dayC(d) + '"><i>' + esc(d.n) + "</i>" + esc(String(d.date).split(" ")[0]) + "</button>").join("") + "</div>";
-    (sel === "all" ? state.days : [findDay(sel)]).forEach((d) => {
+    (sel === "all" ? (postsOf(PRE).length ? [preDay()] : []).concat(state.days) : [logDay(sel)]).forEach((d) => {
       const list = postsOf(d.id);
-      s += '<section class="fday" id="log-' + d.id + '" style="--c:' + dayC(d) + '"><div class="fday-h"><span class="rd">' + esc(d.n) + '</span><div><span class="m">' + esc(d.date) + "</span><b>" + esc(d.title) + "</b></div>" +
+      s += '<section class="fday" id="log-' + d.id + '" style="--c:' + logC(d) + '"><div class="fday-h"><span class="rd">' + (d.pre ? ICON.plane : esc(d.n)) + '</span><div><span class="m">' + esc(d.date) + "</span><b>" + esc(d.title) + "</b></div>" +
         (list.length ? '<span class="cnt">' + list.length + "개</span>" : "") + "</div>" +
-        (list.length ? list.map(postHtml).join("") : '<button class="fempty" type="button" data-act="post-new" data-day="' + d.id + '">' + ICON.plus + "<span>이날 첫 기록 남기기</span></button>") + "</section>";
+        (list.length ? list.map(postHtml).join("") : '<button class="fempty" type="button" data-act="post-new" data-day="' + d.id + '">' + ICON.plus + "<span>" + (d.pre ? "출발 전 기록 남기기" : "이날 첫 기록 남기기") + "</span></button>") + "</section>";
     });
     return s + '<div class="fpad"></div><button class="fab" type="button" data-act="post-new" data-day="' + (sel !== "all" ? sel : "") + '" aria-label="기록 쓰기">' + ICON.plus + "</button>";
   }
@@ -1146,7 +1154,7 @@
   let cmp = null;
   function defaultLogDay() {
     const ph = phase();
-    return ph.k === "during" ? ph.day.id : ui.logDay && findDay(ui.logDay) ? ui.logDay : (state.days[0] || {}).id;
+    return ph.k === "during" ? ph.day.id : ui.logDay && logDay(ui.logDay) ? ui.logDay : ph.k === "before" ? PRE : (state.days[0] || {}).id;
   }
   function postSheet(id, dayId) {
     const p = id ? state.posts.find((x) => x.id === id) : null;
@@ -1160,7 +1168,7 @@
     if (pl) cmp.place = pl.value;
   }
   function drawPostSheet() {
-    const d = findDay(cmp.day) || state.days[0], stops = d ? d.stops : [];
+    const d = logDay(cmp.day) || state.days[0], stops = d ? d.stops : [];
     const rm = (k, i) => '<button type="button" data-act="cmp-rm" data-k="' + k + '" data-i="' + i + '" aria-label="사진 빼기">' + ICON.x + "</button>";
     const thumbs = cmp.keep.map((pid, i) => '<div class="cth"><img data-pid="' + esc(pid) + '" alt="">' + rm("keep", i) + "</div>").join("") +
       cmp.add.map((a, i) => '<div class="cth"><img src="' + a.url + '" alt="">' + rm("add", i) + "</div>").join("");
@@ -1168,10 +1176,10 @@
       key: "post-edit", title: cmp.id ? "기록 고치기" : "새 기록",
       body: '<div class="cpics">' + thumbs + '<label class="cadd">' + ICON.camera + '<span>사진 넣기</span><input class="vh" type="file" accept="image/*" multiple data-post-pick></label></div>' +
         '<label class="field"><span class="vh">내용</span><textarea id="cmpText" placeholder="어땠어? 한 줄이라도 좋아요" style="min-height:110px">' + esc(cmp.text) + "</textarea></label>" +
-        '<div class="field"><span>날짜</span><div class="chips">' + state.days.map((x) => '<button class="btn sm chipbtn" type="button" data-act="cmp-day" data-v="' + x.id + '" aria-pressed="' + (x.id === cmp.day) + '">' +
+        '<div class="field"><span>날짜</span><div class="chips">' + '<button class="btn sm chipbtn" type="button" data-act="cmp-day" data-v="' + PRE + '" aria-pressed="' + (cmp.day === PRE) + '">여행 전</button>' + state.days.map((x) => '<button class="btn sm chipbtn" type="button" data-act="cmp-day" data-v="' + x.id + '" aria-pressed="' + (x.id === cmp.day) + '">' +
           esc((isNum(x.n) ? "Day " + x.n : "귀국") + " · " + String(x.date).split(" ")[0]) + "</button>").join("") + "</div></div>" +
-        '<label class="field"><span>장소 · 안 골라도 돼요</span><select id="cmpPlace"><option value="">선택 안 함</option>' +
-          stops.map((st) => '<option value="' + st.id + '"' + (cmp.place === st.id ? " selected" : "") + ">" + esc(shortName(st.ko)) + "</option>").join("") + "</select></label>",
+        (stops.length ? '<label class="field"><span>장소 · 안 골라도 돼요</span><select id="cmpPlace"><option value="">선택 안 함</option>' +
+          stops.map((st) => '<option value="' + st.id + '"' + (cmp.place === st.id ? " selected" : "") + ">" + esc(shortName(st.ko)) + "</option>").join("") + "</select></label>" : ""),
       foot: (cmp.id ? '<button class="btn danger" type="button" data-act="sh" data-k="del">삭제</button>' : "") +
         '<span class="grow"></span><button class="btn" type="button" data-act="sh-close">취소</button><button class="btn primary" type="button" data-act="sh" data-k="save">' + (cmp.id ? "저장" : "올리기") + "</button>",
       on(k, v, btn) {
@@ -1348,6 +1356,8 @@
     view.innerHTML = TABS[ui.tab]();
     syncClouds(view);
     document.body.setAttribute("data-tab", ui.tab);
+    document.documentElement.setAttribute("data-tab", ui.tab);
+    requestAnimationFrame(edgeByScroll);
     Object.keys(keep).forEach((id) => { const el = document.getElementById(id); if (el && el.tagName !== "SELECT" && id !== "mNames" && id !== "mRate") el.value = keep[id]; });
     view.querySelectorAll(".wlist").forEach((el, i) => { if (wl[i]) el.scrollTop = wl[i]; });
     document.querySelectorAll(".tabbar button").forEach((b) => {
@@ -2372,7 +2382,7 @@
         if (state.likes[k]) delete state.likes[k]; else state.likes[k] = true;
         save(); render(); return;
       }
-      case "cmp-day": cmpRead(); cmp.day = t.getAttribute("data-v"); { const d = findDay(cmp.day); if (!d || !d.stops.some((x) => x.id === cmp.place)) cmp.place = ""; } drawPostSheet(); return;
+      case "cmp-day": cmpRead(); cmp.day = t.getAttribute("data-v"); { const d = logDay(cmp.day); if (!d || !d.stops.some((x) => x.id === cmp.place)) cmp.place = ""; } drawPostSheet(); return;
       case "cmp-rm": cmpRead(); cmp[t.getAttribute("data-k")].splice(+t.getAttribute("data-i"), 1); drawPostSheet(); return;
       case "day-step": {
         const i = state.days.indexOf(planDay()) + (+t.getAttribute("data-d") || 0);
@@ -2624,6 +2634,16 @@
   /* ---------- start ---------- */
   /* pinch-zoom only ever showed the page edges; the app is laid out for the phone already */
   ["gesturestart", "gesturechange"].forEach((ev) => document.addEventListener(ev, (e) => e.preventDefault(), { passive: false }));
+  /* pulling past the top shows the top colour, past the bottom the bottom colour: the page's own (html) background
+     switches by where you are, or, on a page too short to scroll, by which way the finger moves */
+  let edgeY = 0;
+  document.addEventListener("touchstart", (e) => { edgeY = e.touches[0].clientY; }, { passive: true });
+  document.addEventListener("touchmove", (e) => {
+    if (document.documentElement.scrollHeight - window.innerHeight > 24) return;
+    const dy = e.touches[0].clientY - edgeY;
+    if (Math.abs(dy) > 3) setEdge(dy < 0);
+  }, { passive: true });
+  window.addEventListener("scroll", edgeByScroll, { passive: true });
   const setAppH = () => { document.documentElement.style.setProperty("--app-h", window.innerHeight + "px"); };
   setAppH();
   window.addEventListener("resize", setAppH);

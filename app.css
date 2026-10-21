@@ -1180,12 +1180,12 @@ body.sheet-open .fab { visibility: hidden; }
 .view > .fab:not(.phead):not(.hero) { position: fixed; z-index: 20; }
 
 /* no rubber-band or pinch-zoom showing the page's backdrop */
-html, body { overscroll-behavior: none; }
+html, body { overscroll-behavior-x: none; }
 html { touch-action: pan-x pan-y; }
 body { overflow-x: hidden; }
 
 /* 낮: a plane crosses the sky now and then (still with 동작 줄이기) */
-.plane-fly { opacity: .78; transform: translate(300px, 112px) rotate(-17deg); animation: fly 46s linear infinite; }
+.plane-fly { opacity: .6; transform: translate(300px, 112px) rotate(-17deg); animation: fly 46s linear infinite; }
 @keyframes fly { 0% { transform: translate(-80px, 230px) rotate(-17deg); } 55% { transform: translate(480px, 58px) rotate(-17deg); } 100% { transform: translate(480px, 58px) rotate(-17deg); } }
 
 /* 날씨: full width, hour by hour */
@@ -1227,3 +1227,15 @@ body { overflow-x: hidden; }
 .w-send svg { width: 17px; height: 17px; flex: none; }
 .w-send.armed { background: var(--accent); color: #fff; }
 .wgrid .wsent { grid-column: 1 / -1; margin: -2px 6px 2px; text-align: center; font-size: 12px; color: var(--muted); text-shadow: none; }
+
+/* rubber-band edges: the page background is the top colour, or the bottom (tab bar) colour once you're past halfway */
+html { --edge-t: #0B1030; --edge-b: #0A0F2F; }
+html[data-tab="home"] { --edge-t: #060A25; }
+html[data-theme="light"] { --edge-t: #86C8EE; --edge-b: #FDF7FA; }
+html[data-theme="light"][data-tab="home"] { --edge-t: #5AA9DE; }
+html[data-theme="light"][data-tab="plan"] { --edge-t: #62ADDF; }
+html, html[data-theme="light"] { background: var(--edge-t); }
+html.edge-b, html[data-theme="light"].edge-b { background: var(--edge-b); }
+/* 기록: "여행 전" chip is text only, its section badge a small plane */
+.lchip.txt { padding: 0 14px; }
+.fday-h .rd svg { width: 16px; height: 16px; }
