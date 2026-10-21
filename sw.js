@@ -1,6 +1,6 @@
 /* Offline support: the app shell answers from cache at once and refreshes in the background,
    so the trip still opens with no signal in China. Fonts are kept the first time they load. */
-const VERSION = "sht-2026-10-22k";
+const VERSION = "sht-2026-10-22l";
 const FONTS = "sht-fonts";
 const CORE = [
   "./",

@@ -940,16 +940,16 @@ body[data-tab="home"] { background: linear-gradient(var(--bg), var(--bg)) top ce
 
 [data-theme="light"] {
   --bg: #FCF4F7; /* 낮: the page under the sky is a near-white pale pink */
-  --band-home: linear-gradient(180deg, #97D1F0 0, #9BD3F0 calc(var(--safe-t) + 53px), #A6D7F2 calc(var(--safe-t) + 107px), #B4DDF3 calc(var(--safe-t) + 160px), #C6E4F5 calc(var(--safe-t) + 213px), #D7EAF6 calc(var(--safe-t) + 267px), #E5EEF7 calc(var(--safe-t) + 320px), #F1F1F7 calc(var(--safe-t) + 373px), #F9F3F7 calc(var(--safe-t) + 427px), #FCF4F7 calc(var(--safe-t) + 480px));
-  --band-page: linear-gradient(180deg, #97D1F0 0, #9BD3F0 calc(var(--safe-t) + 38px), #A6D7F2 calc(var(--safe-t) + 76px), #B4DDF3 calc(var(--safe-t) + 113px), #C6E4F5 calc(var(--safe-t) + 151px), #D7EAF6 calc(var(--safe-t) + 189px), #E5EEF7 calc(var(--safe-t) + 227px), #F1F1F7 calc(var(--safe-t) + 264px), #F9F3F7 calc(var(--safe-t) + 302px), #FCF4F7 calc(var(--safe-t) + 340px));
+  --band-home: linear-gradient(180deg, #5AA9DE 0, #5FACE0 calc(var(--safe-t) + 48px), #6CB3E4 calc(var(--safe-t) + 96px), #7EBFEA calc(var(--safe-t) + 144px), #98CCEF calc(var(--safe-t) + 192px), #B8DCF3 calc(var(--safe-t) + 240px), #D1E7F5 calc(var(--safe-t) + 288px), #E2ECF6 calc(var(--safe-t) + 336px), #F0F0F7 calc(var(--safe-t) + 384px), #F9F3F7 calc(var(--safe-t) + 432px), #FCF4F7 calc(var(--safe-t) + 480px));
+  --band-page: linear-gradient(180deg, #5AA9DE 0, #5FACE0 calc(var(--safe-t) + 34px), #6CB3E4 calc(var(--safe-t) + 68px), #7EBFEA calc(var(--safe-t) + 102px), #98CCEF calc(var(--safe-t) + 136px), #B8DCF3 calc(var(--safe-t) + 170px), #D1E7F5 calc(var(--safe-t) + 204px), #E2ECF6 calc(var(--safe-t) + 238px), #F0F0F7 calc(var(--safe-t) + 272px), #F9F3F7 calc(var(--safe-t) + 306px), #FCF4F7 calc(var(--safe-t) + 340px));
   --hero-ink: #FFFFFF;
   --hero-soft: rgba(255, 255, 255, 0.94);
   --hero-glass: rgba(70, 140, 200, 0.22);
   --hero-line: rgba(255, 255, 255, 0.6);
   --sky-shadow: 0 1px 2px rgba(60, 130, 190, .35), 0 2px 16px rgba(50, 120, 190, .45);
 }
-html[data-theme="light"] { background: #97D1F0; }
-[data-theme="light"] body { background-color: #97D1F0; }
+html[data-theme="light"] { background: #5AA9DE; }
+[data-theme="light"] body { background-color: #5AA9DE; }
 [data-theme="light"] .hero { background: #94C0E6; color: var(--hero-ink); }
 [data-theme="light"] .wzone { background: linear-gradient(180deg, #94C0E6 0px, #99C3E7 98px, #A5CAEA 196px, #B6D4EE 293px, #CBE0F2 391px, #DAE7F4 489px, #E7ECF5 587px, #F2F0F6 684px, #F9F3F7 782px, #FCF4F7 880px); }
 [data-theme="light"] .htitle, [data-theme="light"] .hero .hz, [data-theme="light"] .phead h1 { text-shadow: var(--sky-shadow); }
@@ -963,7 +963,7 @@ html[data-theme="light"] { background: #97D1F0; }
 [data-theme="light"] .hc-dots i.ok { background: rgba(255, 255, 255, .35); }
 [data-theme="light"] .hc-dots i.on { background: #FFFFFF; }
 [data-theme="light"] .phead + .group-h { color: #2B5079; text-shadow: none; }
-[data-theme="light"] .mapwrap::before { background: linear-gradient(180deg, rgba(151, 209, 240, .95) 0, rgba(166, 218, 244, .5) 55%, rgba(166, 218, 244, 0)); }
+[data-theme="light"] .mapwrap::before { background: linear-gradient(180deg, rgba(90, 169, 222, .95) 0, rgba(132, 195, 236, .55) 55%, rgba(166, 218, 244, 0)); }
 /* the drawn stand-in on a place card with no photo: sky blue into baby pink */
 [data-theme="light"] .pc-ph0 { background: linear-gradient(135deg, #A6DAF4 0%, #C4E6F7 55%, #F8DCE7 100%); }
 [data-theme="light"] .pc-ph0 i { border-color: rgba(255, 255, 255, .65); }
@@ -1034,9 +1034,10 @@ button.hchip svg { width: 11px; height: 11px; margin-right: -2px; opacity: .8; t
 [data-theme="light"] .hero-art .cl path { fill: url(#clg); }
 [data-theme="light"] .hero-art .shim rect:nth-child(3n) { fill: #FFE0EA; }
 
-/* 여행 전 홈: '가기 전에 알아둘 것' cards, same size as the D-day card */
-.pc.brief .pc-b { gap: 8px; height: 100%; }
-.br-h { display: flex; align-items: center; gap: 8px; margin: -2px 0 0; font-family: var(--f-title); font-size: 19px; font-weight: 700; line-height: 1.2; }
+/* 여행 전 홈: '가기 전에 알아둘 것' cards, same size as the D-day card and short enough to show the skyline */
+.pc.brief .pc-b { gap: 7px; }
+.br-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.br-h { display: flex; align-items: center; gap: 8px; margin: 0; font-family: var(--f-title); font-size: 19px; font-weight: 700; line-height: 1.2; }
 .bri { flex: none; width: 28px; height: 28px; border-radius: 9px; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; }
 .bri svg { width: 16px; height: 16px; }
 .btiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
@@ -1055,3 +1056,17 @@ button.hchip svg { width: 11px; height: 11px; margin-right: -2px; opacity: .8; t
 .bchips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: auto; }
 .bchip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px 5px 5px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); font-size: 12px; font-weight: 500; text-decoration: none; }
 .bchip .fv { width: 18px; height: 18px; border-radius: 6px; display: grid; place-items: center; font-size: 9.5px; font-weight: 800; color: #fff; }
+/* every card in the 여행 전 carousel fills the same height; the D-day card's buttons sit at the bottom */
+.hc-slide > .pc { display: flex; flex-direction: column; }
+.hc-slide > .pc > .pc-b { flex: 1; }
+.hc-slide > .pc:not(.brief) > .pc-b { justify-content: space-between; }
+.hc-slide .wn-path { padding: 8px 12px; }
+/* keep the 여행 전 cards short so the tops of the buildings show above them */
+.hc-slide .wn-path { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hc-slide .wn-path .lbl { margin-right: 8px; }
+.pc.brief .pc-b { gap: 6px; }
+.pc.brief .btile, .pc.brief .bwide { padding: 6px 11px 7px; }
+.pc.brief .btile b { font-size: 18px; }
+.pc.brief .bwide b { font-size: 13px; }
+.pc.brief .bchip { padding: 4px 9px 4px 4px; }
+.pc.brief .bchip .fv { width: 17px; height: 17px; }

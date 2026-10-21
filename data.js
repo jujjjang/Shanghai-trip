@@ -515,7 +515,7 @@ window.TRIP_BRIEF = {
    "id": "bag", "icon": "bag", "title": "수하물",
    "tiles": [{ "k": "위탁", "v": "23kg", "u": "× 1개" }, { "k": "기내", "v": "8kg", "u": "× 1개" }],
    "wide": { "k": "보조배터리 · 위탁 불가", "v": "기내만 · 1인 2개 · 100Wh 이하", "warn": true },
-   "note": "라이트 이코노미는 위탁 0개일 수 있어요 · 액체는 100ml 용기, 1L 지퍼백",
+   "note": "액체 100ml·1L 지퍼백 · 라이트 운임은 위탁 0개",
    "links": [{ "t": "동방항공 수하물", "b": "MU", "c": "#1B3E8A", "url": "https://www.ceair.com/global/ko_KRW/Announcement/BaggageService/CarryonBaggage/" }]
   },
   {

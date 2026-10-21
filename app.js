@@ -159,7 +159,7 @@
     const t = wantDark() ? "dark" : "light", root = document.documentElement;
     if (root.getAttribute("data-theme") !== t) root.setAttribute("data-theme", t);
     const m = document.getElementById("themeColor");
-    if (m) m.setAttribute("content", t === "dark" ? "#0A0E2E" : "#97D1F0");
+    if (m) m.setAttribute("content", t === "dark" ? "#0A0E2E" : "#5AA9DE");
   }
 
   /* photos live in IndexedDB as shrunk JPEG blobs, keyed by id */
@@ -597,7 +597,7 @@
     }
     heroSvg = '<svg class="hero-art" viewBox="0 0 390 760" preserveAspectRatio="xMidYMax slice" aria-hidden="true"><defs>' +
       '<linearGradient id="hs" x1="0" y1="0" x2="0" y2="1"><stop class="hs0" offset="0"/><stop class="hs1" offset=".3"/><stop class="hs2" offset=".5"/><stop class="hs3" offset=".62"/></linearGradient>' +
-      '<linearGradient id="hsd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8ACBEE"/><stop offset="0.071" stop-color="#91CEEF"/><stop offset="0.143" stop-color="#97D1F0"/><stop offset="0.214" stop-color="#9DD4F2"/><stop offset="0.286" stop-color="#A4D6F3"/><stop offset="0.357" stop-color="#ADDAF4"/><stop offset="0.429" stop-color="#B7DEF5"/><stop offset="0.5" stop-color="#C0E2F7"/><stop offset="0.571" stop-color="#CBE4F7"/><stop offset="0.643" stop-color="#D6E6F6"/><stop offset="0.714" stop-color="#E2E5F4"/><stop offset="0.786" stop-color="#ECE3F0"/><stop offset="0.857" stop-color="#F5E2EA"/><stop offset="0.929" stop-color="#FBE5E6"/><stop offset="1" stop-color="#FFEAE4"/></linearGradient>' +
+      '<linearGradient id="hsd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5AA9DE"/><stop offset="0.05" stop-color="#64AFE1"/><stop offset="0.1" stop-color="#6EB5E4"/><stop offset="0.15" stop-color="#77BBE8"/><stop offset="0.2" stop-color="#80C1EB"/><stop offset="0.25" stop-color="#8AC6ED"/><stop offset="0.3" stop-color="#94CBEF"/><stop offset="0.35" stop-color="#9DD0F1"/><stop offset="0.4" stop-color="#A7D5F2"/><stop offset="0.45" stop-color="#B0DAF4"/><stop offset="0.5" stop-color="#BADDF5"/><stop offset="0.55" stop-color="#C4E0F5"/><stop offset="0.6" stop-color="#CEE3F6"/><stop offset="0.65" stop-color="#D7E4F5"/><stop offset="0.7" stop-color="#E0E3F3"/><stop offset="0.75" stop-color="#E8E3F1"/><stop offset="0.8" stop-color="#EFE3EE"/><stop offset="0.85" stop-color="#F5E2EA"/><stop offset="0.9" stop-color="#F9E3E7"/><stop offset="0.95" stop-color="#FCE7E6"/><stop offset="1" stop-color="#FFEAE4"/></linearGradient>' +
       '<linearGradient id="hwd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#DCDDF0"/><stop offset=".22" stop-color="#BCD6F0"/><stop offset="1" stop-color="#94C0E6"/></linearGradient>' +
       '<linearGradient id="clg" x1="0" y1="0" x2="0" y2="1"><stop offset=".45" stop-color="#FFFFFF"/><stop offset="1" stop-color="#FBE3EB"/></linearGradient>' +
       '<linearGradient id="hw" x1="0" y1="0" x2="0" y2="1"><stop class="hw0" offset="0"/><stop class="hw1" offset=".35"/><stop class="hw2" offset="1"/></linearGradient>' +
@@ -669,8 +669,7 @@
     }
     const tile = (t) => '<div class="btile"><small>' + esc(t.k) + "</small><b>" + esc(t.v) + (t.u ? "<em>" + esc(t.u) + "</em>" : "") + "</b></div>";
     return '<div class="hc-slide"><article class="pc brief"><div class="pc-b">' +
-      '<div class="pc-top"><span class="pc-tag on">가기 전에 알아둘 것</span><span class="mono pc-n">' + esc(B.checked || "") + " 확인</span></div>" +
-      '<h3 class="br-h"><span class="bri">' + (ICON[c.icon] || ICON.info) + "</span>" + esc(c.title) + "</h3>" +
+      '<div class="br-top"><h3 class="br-h"><span class="bri">' + (ICON[c.icon] || ICON.info) + "</span>" + esc(c.title) + '</h3><span class="mono pc-n">' + esc(B.checked || "") + " 확인</span></div>" +
       '<div class="btiles">' + tiles.map(tile).join("") + "</div>" +
       (wide ? '<div class="bwide' + (wide.warn ? " warn" : "") + '"><small>' + esc(wide.k) + "</small><b>" + esc(wide.v) + "</b></div>" : "") +
       (note ? '<p class="bnote">' + esc(note) + "</p>" : "") +
