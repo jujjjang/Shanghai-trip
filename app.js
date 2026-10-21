@@ -156,7 +156,7 @@
     const t = wantDark() ? "dark" : "light", root = document.documentElement;
     if (root.getAttribute("data-theme") !== t) root.setAttribute("data-theme", t);
     const m = document.getElementById("themeColor");
-    if (m) m.setAttribute("content", t === "dark" ? "#0A0E2E" : "#A6DAF4");
+    if (m) m.setAttribute("content", t === "dark" ? "#0A0E2E" : "#97D1F0");
   }
 
   /* photos live in IndexedDB as shrunk JPEG blobs, keyed by id */

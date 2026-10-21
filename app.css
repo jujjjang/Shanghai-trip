@@ -903,10 +903,10 @@ body[data-tab="home"] { background: linear-gradient(var(--bg), var(--bg)) top ce
    and the text over the sky turns deep blue so it stays readable */
 [data-theme="light"] .hero-art .nt, [data-theme="light"] .hart .nt { display: none; }
 [data-theme="light"] .hero-art .dy, [data-theme="light"] .hart .dy { display: inline; }
-[data-theme="light"] .hero-art .hs0 { stop-color: #A6DAF4; }
-[data-theme="light"] .hero-art .hs1 { stop-color: #B2DFF5; }
-[data-theme="light"] .hero-art .hs2 { stop-color: #C6E7F8; }
-[data-theme="light"] .hero-art .hs3 { stop-color: #DDF1FB; }
+[data-theme="light"] .hero-art .hs0 { stop-color: #97D1F0; }
+[data-theme="light"] .hero-art .hs1 { stop-color: #A9DBF4; }
+[data-theme="light"] .hero-art .hs2 { stop-color: #C2E5F7; }
+[data-theme="light"] .hero-art .hs3 { stop-color: #DBF0FA; }
 [data-theme="light"] .hero-art .hg { stop-color: #FFFFFF; }
 [data-theme="light"] .hero-art .far { fill: #C3E2F4; opacity: 1; }
 [data-theme="light"] .hero-art .hb0 { stop-color: #A9D3EE; }
@@ -938,19 +938,19 @@ body[data-tab="home"] { background: linear-gradient(var(--bg), var(--bg)) top ce
 [data-theme="light"] .hart .pp3 { stop-color: #EFBACD; }
 
 [data-theme="light"] {
-  --bg: #FBF0F4; /* 낮: the page under the sky is a near-white pale pink */
-  --band-home: linear-gradient(180deg, #A6DAF4 0, #B3DFF5 calc(var(--safe-t) + 120px), #C9E6F6 calc(var(--safe-t) + 215px), #E0EBF5 calc(var(--safe-t) + 300px), #F1EEF4 calc(var(--safe-t) + 390px), #FBF0F4 calc(var(--safe-t) + 480px));
-  --band-page: linear-gradient(180deg, #A6DAF4 0, #B0DEF5 calc(var(--safe-t) + 70px), #BEE3F6 calc(var(--safe-t) + 120px), #CFE7F6 calc(var(--safe-t) + 165px), #E0EBF5 calc(var(--safe-t) + 215px), #F0EEF4 calc(var(--safe-t) + 275px), #FBF0F4 calc(var(--safe-t) + 340px));
+  --bg: #FCF4F7; /* 낮: the page under the sky is a near-white pale pink */
+  --band-home: linear-gradient(180deg, #97D1F0 0, #A9DBF4 calc(var(--safe-t) + 120px), #C6E6F6 calc(var(--safe-t) + 215px), #E0EDF5 calc(var(--safe-t) + 300px), #F3F2F6 calc(var(--safe-t) + 390px), #FCF4F7 calc(var(--safe-t) + 480px));
+  --band-page: linear-gradient(180deg, #97D1F0 0, #A4D9F3 calc(var(--safe-t) + 70px), #B6E0F5 calc(var(--safe-t) + 120px), #CBE6F6 calc(var(--safe-t) + 165px), #DFEDF5 calc(var(--safe-t) + 215px), #F1F1F6 calc(var(--safe-t) + 275px), #FCF4F7 calc(var(--safe-t) + 340px));
   --hero-ink: #FFFFFF;
   --hero-soft: rgba(255, 255, 255, 0.94);
   --hero-glass: rgba(70, 140, 200, 0.22);
   --hero-line: rgba(255, 255, 255, 0.6);
   --sky-shadow: 0 1px 2px rgba(60, 130, 190, .35), 0 2px 16px rgba(50, 120, 190, .45);
 }
-html[data-theme="light"] { background: #A6DAF4; }
-[data-theme="light"] body { background-color: #A6DAF4; }
+html[data-theme="light"] { background: #97D1F0; }
+[data-theme="light"] body { background-color: #97D1F0; }
 [data-theme="light"] .hero { background: #8EC5EA; color: var(--hero-ink); }
-[data-theme="light"] .wzone { background: linear-gradient(180deg, #8EC5EA 0, #AAD3EE 150px, #C6DFF2 320px, #DDE8F4 500px, #EFEEF4 690px, #FBF0F4 880px); }
+[data-theme="light"] .wzone { background: linear-gradient(180deg, #8EC5EA 0, #AAD3EE 150px, #C6DFF2 320px, #DEEAF4 500px, #F1F1F6 690px, #FCF4F7 880px); }
 [data-theme="light"] .htitle, [data-theme="light"] .hero .hz, [data-theme="light"] .phead h1 { text-shadow: var(--sky-shadow); }
 [data-theme="light"] .hhint, [data-theme="light"] .phead .sub { text-shadow: 0 1px 8px rgba(50, 120, 190, .5); }
 [data-theme="light"] .hchip, [data-theme="light"] .hero .hchip { color: #FFFFFF; background: var(--hero-glass); border-color: var(--hero-line); }
@@ -962,7 +962,7 @@ html[data-theme="light"] { background: #A6DAF4; }
 [data-theme="light"] .hc-dots i.ok { background: rgba(255, 255, 255, .35); }
 [data-theme="light"] .hc-dots i.on { background: #FFFFFF; }
 [data-theme="light"] .phead + .group-h { color: #2B5079; text-shadow: none; }
-[data-theme="light"] .mapwrap::before { background: linear-gradient(180deg, rgba(166, 218, 244, .95) 0, rgba(166, 218, 244, .5) 55%, rgba(166, 218, 244, 0)); }
+[data-theme="light"] .mapwrap::before { background: linear-gradient(180deg, rgba(151, 209, 240, .95) 0, rgba(166, 218, 244, .5) 55%, rgba(166, 218, 244, 0)); }
 /* the drawn stand-in on a place card with no photo: sky blue into baby pink */
 [data-theme="light"] .pc-ph0 { background: linear-gradient(135deg, #A6DAF4 0%, #C4E6F7 55%, #F8DCE7 100%); }
 [data-theme="light"] .pc-ph0 i { border-color: rgba(255, 255, 255, .65); }
@@ -979,3 +979,28 @@ button.hchip svg { width: 11px; height: 11px; margin-right: -2px; opacity: .8; t
 .pvopt[aria-pressed="true"] { background: var(--primary-bg); color: var(--primary-ink); border-color: transparent; }
 .pvopt[aria-pressed="true"] small { color: inherit; opacity: .7; }
 .pvopt[aria-pressed="true"] svg { visibility: visible; }
+
+/* 낮: home place card floats on a soft blue shadow instead of a dark one */
+[data-theme="light"] .pc { box-shadow: 0 14px 34px rgba(70, 135, 195, .2), 0 0 0 1px rgba(255, 255, 255, .55); }
+/* 낮: 일정 map in sky blue with pale-pink areas, and a matching tab bar */
+[data-theme="light"] {
+  --m-bg: #F1F8FC;
+  --m-dot: #D2E7F3;
+  --m-river: #BEE1F4;
+  --m-river-2: #A3D3EF;
+  --m-river-hi: #E2F2FB;
+  --m-river-ink: #69A4CB;
+  --m-district: #8CBAD7;
+  --m-blob: #FBE1EB;
+  --m-label: #FFFFFF;
+  --m-label-ink: #2C4766;
+  --tab-bg: rgba(253, 247, 250, 0.94);
+}
+[data-theme="light"] .rm-route { stroke: #5FA2CF; }
+[data-theme="light"] .rm-arrow { stroke: #4F95C4; }
+[data-theme="light"] .rm-lab rect { filter: drop-shadow(0 2px 6px rgba(50, 110, 160, .16)); }
+[data-theme="light"] .rm-pin .sh { fill: #1E4A70; }
+[data-theme="light"] .plist { box-shadow: 0 -10px 30px rgba(50, 110, 160, .1); }
+[data-theme="light"] .tabbar { border-top-color: #F1E3EA; }
+[data-theme="light"] .tabbar button { color: #93A5B8; }
+[data-theme="light"] .tabbar button[aria-current="page"] { color: #3F8DC2; }
