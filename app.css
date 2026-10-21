@@ -839,8 +839,8 @@ body[data-tab="home"] { background: var(--bg); }
 .hc-slide { min-width: 0; }
 
 /* ================= v7 ================= */
-.pc-ph { height: 118px; }
-@media (max-height: 720px) { .pc-ph { height: 88px; } }
+.pc-ph { height: 130px; }
+@media (max-height: 720px) { .pc-ph { height: 98px; } }
 .wedit-ic { background: none; color: var(--soft); }
 [data-theme="dark"] .wedit-ic { color: var(--muted); }
 /* tower base lands ~24px under the top of the first card */
