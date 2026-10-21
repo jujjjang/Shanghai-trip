@@ -532,8 +532,8 @@ window.TRIP_BRIEF = {
    "id": "pay", "icon": "card", "title": "결제 · 인터넷",
    "tiles": [{ "k": "알리페이 수수료", "v": "0원", "u": "200위안까지" }, { "k": "200위안 넘으면", "v": "3%", "u": "전체 금액" }],
    "wide": { "k": "로밍", "v": "카톡 · 구글 · 인스타 그대로 돼요" },
-   "note": "현지 유심·eSIM은 카톡·구글이 막혀요 · 고덕지도는 미리 깔기",
-   "links": []
+   "note": "현지 유심·eSIM이면 카톡·구글이 막혀요",
+   "links": [{ "t": "알리페이 등록 방법", "b": "支", "c": "#1677FF", "url": "https://search.naver.com/search.naver?query=%EC%95%8C%EB%A6%AC%ED%8E%98%EC%9D%B4%20%EC%99%B8%EA%B5%AD%EC%9D%B8%20%EC%B9%B4%EB%93%9C%20%EB%93%B1%EB%A1%9D%20%EB%B0%A9%EB%B2%95" }]
   },
   { "id": "airport", "icon": "plane", "title": "공항", "dynamic": true,
     "route": "10호선 → 라오시먼 8호선 환승 → 루자방루" },

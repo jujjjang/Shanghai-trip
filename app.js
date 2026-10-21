@@ -651,6 +651,28 @@
         '<button class="btn" type="button" data-act="taxi" data-id="' + st.id + '"><span class="ic">' + ICON.taxi + "</span>택시</button>" : "") + "</div>" +
       "</div></article></div>";
   }
+  /* airport names in the trip data → the 3-letter codes on a boarding pass */
+  function iata(name) {
+    const n = String(name || "");
+    return /김포|金浦/.test(n) ? "GMP" : /홍차오|虹桥/.test(n) ? "SHA" : /푸동|浦东/.test(n) ? "PVG" : /인천|仁川/.test(n) ? "ICN" : n.slice(0, 3).toUpperCase();
+  }
+  /* 여행 한눈에: both flights, the hotel, then each day with its places as chips (꼭 가기 first) */
+  function tripSumSheet() {
+    const legs = state.flight.legs, h = state.hotel, t = state.trip;
+    const leg = (l) => '<div class="ts-leg"><small>' + esc((l.label || "") + " · " + (l.date || "")) + '</small><b class="mono">' + esc(iata(l.from) + " " + (l.dep || "")) + "</b><em>→ " + esc(iata(l.to) + " " + (l.arr || "")) + "</em></div>";
+    const days = state.days.map((d) => {
+      const w = wxParse(d.wx), list = visible(d).filter((x) => !/공항|체크인|체크아웃/.test(x.ko || "") || d.stops.length <= 2);
+      const sorted = list.filter((x) => x.pri === "must").concat(list.filter((x) => x.pri !== "must"));
+      const chips = sorted.slice(0, 5).map((x) => '<span class="' + (x.pri === "must" ? "m" : "") + '">' + (x.pri === "must" ? "★ " : "") + esc(x.label || shortName(x.ko)) + "</span>").join("") + (sorted.length > 5 ? "<span>+" + (sorted.length - 5) + "</span>" : "");
+      return '<button class="ts-day" type="button" data-act="go-plan" data-day="' + d.id + '" style="--c:' + dayC(d) + '"><span class="ts-n">' + esc(d.n) + '</span><span class="ts-dt mono">' + esc(d.date) + (w.hi ? '<i>' + ICON[w.kind] + esc(w.hi) + "°</i>" : "") + '</span><b class="ts-tt">' + esc(d.title) + '</b><span class="ts-go" aria-hidden="true">›</span>' +
+        (chips ? '<span class="tchips">' + chips + "</span>" : "") + "</button>";
+    }).join("");
+    openSheet({
+      key: "tripsum", title: (t.title || "여행") + " " + (t.nights || "") + " 한눈에",
+      body: '<div class="ts-legs">' + legs.map(leg).join("") + "</div>" +
+        (h.name ? '<div class="ts-hotel"><small>숙소' + (t.nights ? " · " + esc(String(t.nights).split(" ")[0]) : "") + "</small>" + esc(shortName(h.name)) + (h.note ? " · " + esc(h.note.replace(/\s*\(.*?\)\s*/g, " ")) : "") + "</div>" : "") + days
+    });
+  }
   /* 여행 전: after the D-day card, swipe through '가기 전에 알아둘 것' — big numbers, one highlighted line, a note, source chips */
   function briefCard(c) {
     const B = window.TRIP_BRIEF || {}, legs = state.flight.legs, l0 = legs[0] || {}, l1 = legs[1] || {};
@@ -669,7 +691,7 @@
     }
     const tile = (t) => '<div class="btile"><small>' + esc(t.k) + "</small><b>" + esc(t.v) + (t.u ? "<em>" + esc(t.u) + "</em>" : "") + "</b></div>";
     return '<div class="hc-slide"><article class="pc brief"><div class="pc-b">' +
-      '<div class="br-top"><h3 class="br-h"><span class="bri">' + (ICON[c.icon] || ICON.info) + "</span>" + esc(c.title) + '</h3><span class="mono pc-n">' + esc(B.checked || "") + " 확인</span></div>" +
+      '<div class="br-top"><h3 class="br-h"><span class="bri">' + (ICON[c.icon] || ICON.info) + "</span>" + esc(c.title) + '</h3><span class="mono pc-n">' + esc(B.checked || "") + " 기준</span></div>" +
       '<div class="btiles">' + tiles.map(tile).join("") + "</div>" +
       (wide ? '<div class="bwide' + (wide.warn ? " warn" : "") + '"><small>' + esc(wide.k) + "</small><b>" + esc(wide.v) + "</b></div>" : "") +
       (note ? '<p class="bnote">' + esc(note) + "</p>" : "") +
@@ -683,11 +705,15 @@
       const names = d1 ? visible(d1).filter(placeOf).map(mapLabel) : [];
       const cards = ((window.TRIP_BRIEF || {}).cards || []);
       const start = heroIdx.before != null ? Math.min(heroIdx.before, cards.length) : 0;
-      return '<div class="hc-wrap"><div class="hc" id="hc" data-day="before" data-start="' + start + '"><div class="hc-slide"><article class="pc"><div class="pc-b"><div class="pc-top"><span class="pc-tag on">출발까지</span></div>' +
-        '<div class="wn-dday"><b>' + esc(ddayText()) + "</b>" + (l0.no ? "<span>" + esc([l0.date, l0.dep].filter(Boolean).join(" ")) + " · " + esc(l0.from || "") + " 출발 " + esc(l0.no) + "</span>" : "") + "</div>" +
-        (names.length ? '<div class="wn-path"><span class="lbl">첫날</span>' + names.slice(0, 6).map(esc).join(' <i aria-hidden="true">→</i> ') + (names.length > 6 ? " …" : "") + "</div>" : "") +
-        '<div class="wn-foot"><button class="btn cta" type="button" data-act="go-plan" data-day="' + (d1 ? d1.id : "") + '">' + ICON.map + "첫날 일정 보기</button>" +
-        '<button class="btn" type="button" data-act="ck-sheet" data-list="pack">' + ICON.bag + "준비물</button></div></div></article></div>" +
+      const l0f = l0.from || "", l0t = l0.to || "";
+      return '<div class="hc-wrap"><div class="hc" id="hc" data-day="before" data-start="' + start + '">' +
+        '<div class="hc-slide"><div class="bp-wrap"><article class="pc bpass"><div class="bp-main">' +
+        '<span class="pc-tag on">출발까지 · ' + esc(l0.label || "가는 편") + "</span>" +
+        '<div class="bp-route"><div><b class="bp-code">' + esc(iata(l0f)) + "</b><span>" + esc(l0f + " " + (l0.dep || "")) + '</span></div><i class="bp-line" aria-hidden="true">' + ICON.planeF + '</i><div class="r"><b class="bp-code">' + esc(iata(l0t)) + "</b><span>" + esc(l0t + " " + (l0.arr || "")) + "</span></div></div>" +
+        '<div class="bp-kv"><div><small>DATE</small><b>' + esc(l0.date || "") + "</b></div><div><small>FLIGHT</small><b>" + esc(l0.no || "") + "</b></div><div><small>CHECK-IN</small><b>" + esc(String(l0.checkin || "").split("·").pop().replace(/마감/, "").trim() || "—") + "</b></div></div>" +
+        '<button class="btn cta" type="button" data-act="trip-sum">' + ICON.list + "여행 한눈에 보기</button></div>" +
+        '<button class="bp-stub" type="button" data-act="ck-sheet" data-list="pack" aria-label="준비물 보기"><span>출발까지</span><b>' + esc(ddayText()) + "</b><em>" + ICON.bag + "준비물</em></button>" +
+        "</article></div></div>" +
         cards.map(briefCard).join("") + "</div>" +
         '<div class="hc-nav"><button class="hc-arr l" type="button" data-act="hc-step" data-d="-1" aria-label="이전">' + ICON.chevL + "</button>" +
         '<div class="hc-dots" aria-hidden="true">' + "<i></i>".repeat(cards.length + 1) + "</div>" +
@@ -1997,6 +2023,7 @@
         return;
       }
       case "w-addsheet": widgetAddSheet(); return;
+      case "trip-sum": tripSumSheet(); return;
       case "preview-pick": previewSheet(); return;
       case "preview-set": ui.preview = t.getAttribute("data-v") || "auto"; saveUI(); closeSheet(); render(); window.scrollTo(0, 0); return;
       case "w-add": {
