@@ -156,7 +156,7 @@
     const t = wantDark() ? "dark" : "light", root = document.documentElement;
     if (root.getAttribute("data-theme") !== t) root.setAttribute("data-theme", t);
     const m = document.getElementById("themeColor");
-    if (m) m.setAttribute("content", t === "dark" ? "#0A0E2E" : "#6A86C4");
+    if (m) m.setAttribute("content", t === "dark" ? "#0A0E2E" : "#A6DAF4");
   }
 
   /* photos live in IndexedDB as shrunk JPEG blobs, keyed by id */
@@ -350,8 +350,8 @@
       '<g class="nt">' + dots.map((s, i) => '<circle class="' + (i % 2 ? "tw" : "") + '" fill="#FFFFFF" cx="' + s[0] + '" cy="' + s[1] + '" r="' + s[2] + '" opacity=".75"/>').join("") +
       gold.map((s) => spark(s[0], s[1], s[2])).join("") +
       (small ? '<circle cx="322" cy="70" r="30" fill="url(#mglow)"/><circle cx="322" cy="70" r="11.5" fill="#FFE7A8" mask="url(#moonm)"/>' : '<circle cx="236" cy="44" r="40" fill="url(#mglow)"/><circle cx="236" cy="44" r="16" fill="#FFE7A8" mask="url(#moonm)"/>') + "</g>" +
-      '<g class="dy">' + (small ? '<circle cx="322" cy="68" r="48" fill="url(#psun)"/><circle cx="322" cy="68" r="9.5" fill="#FFFFFF" opacity=".5"/>' + cloud(226, 52, .42, .24, "slow")
-        : '<circle cx="236" cy="44" r="56" fill="url(#psun)"/><circle cx="236" cy="44" r="12" fill="#FFFFFF" opacity=".5"/>' + cloud(150, 40, .5, .24)) + "</g>" +
+      '<g class="dy">' + (small ? '<circle cx="322" cy="68" r="48" fill="url(#psun)"/><circle cx="322" cy="68" r="9.5" fill="#FFFFFF" opacity=".5"/>' + cloud(226, 52, .42, .7, "slow")
+        : '<circle cx="236" cy="44" r="56" fill="url(#psun)"/><circle cx="236" cy="44" r="12" fill="#FFFFFF" opacity=".5"/>' + cloud(150, 40, .5, .7)) + "</g>" +
       '<linearGradient id="skyf" gradientUnits="userSpaceOnUse" x1="0" y1="' + (h - 46) + '" x2="0" y2="' + h + '"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#000"/></linearGradient>' +
       '<mask id="skym"><rect width="390" height="' + h + '" fill="url(#skyf)"/></mask>' +
       '<g mask="url(#skym)"><g transform="' + (small ? "translate(" + f1(390 - 390 * .76) + " " + f1(h - 190 * .76) + ") scale(.76)" : "translate(0 " + dy + ")") + '">' +
@@ -598,7 +598,7 @@
       '<rect width="390" height="480" fill="url(#hs)"/>' +
       '<g class="nt">' + stars + gold + '<circle cx="356" cy="238" r="44" fill="url(#hm)"/><circle cx="356" cy="238" r="14" fill="#FFE7A8" mask="url(#hmm)"/></g>' +
       '<g class="dy"><circle cx="352" cy="232" r="70" fill="url(#hsun)"/><circle cx="352" cy="232" r="12" fill="#FFFFFF" opacity=".5"/>' +
-      cloud(64, 262, .9, .26) + cloud(280, 318, .7, .22, "slow") + "</g>" +
+      cloud(64, 262, .9, .7) + cloud(280, 318, .7, .6, "slow") + "</g>" +
       '<ellipse cx="200" cy="470" rx="280" ry="110" fill="url(#hglow)"/>' +
       '<g class="far">' + far + "</g>" +
       '<rect y="470" width="390" height="290" fill="url(#hw)"/>' +
@@ -615,7 +615,7 @@
       '<ellipse cx="189" cy="412" rx="7" ry="4.2" fill="#fff" opacity=".7" transform="rotate(-30 189 412)"/><ellipse cx="191" cy="294" rx="4.6" ry="2.8" fill="#fff" opacity=".7" transform="rotate(-30 191 294)"/>' +
       '<rect x="174" y="474" width="44" height="150" fill="url(#hr)" opacity=".55"/>' +
       '<g class="shim">' + shim + "</g>" +
-      '<path class="hz" d="M0 476 H390" stroke-width="1"/></svg>';
+      '<path class="hzl" d="M0 476 H390" stroke-width="1"/></svg>';
     return heroSvg;
   }
   function placeCard(st, i, list, day, nextId) {
