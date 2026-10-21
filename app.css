@@ -1,5 +1,5 @@
 /* 상하이 여행 앱
-   낮: 위는 동방명주 밤하늘, 아래로 내려가며 밝은 연보라로 풀리는 그라데이션
+   낮: 위는 동방명주 뒤 파란 하늘(해 · 구름), 아래로 내려가며 밝은 연보라로 풀리는 그라데이션
    밤: 화면 전체가 남색 밤하늘
    Headings in Hahmlet, body in IBM Plex Sans KR, numbers in IBM Plex Mono. */
 :root, [data-theme="light"] {
@@ -877,3 +877,65 @@ body[data-tab="home"] { background: linear-gradient(var(--bg), var(--bg)) top ce
 .sh-body > .btn.ghost.danger, .sh-body > .btn.ghost.sm { align-self: center; }
 .sh-body .fold .form { display: flex; flex-direction: column; gap: 10px; }
 .sh-body button.bigopt { text-align: left; width: 100%; font: inherit; cursor: pointer; }
+
+/* ================= sky art colours: 밤 by default, 낮 below ================= */
+.hero-art .hs0 { stop-color: #060A24; } .hero-art .hs1 { stop-color: #101646; } .hero-art .hs2 { stop-color: #26206A; } .hero-art .hs3 { stop-color: #5A3C9C; }
+.hero-art .hw0 { stop-color: #2D2270; } .hero-art .hw1 { stop-color: #211B5E; } .hero-art .hw2 { stop-color: #1C1850; }
+.hero-art .hg { stop-color: #E58BE8; }
+.hero-art .far { fill: #2E2672; opacity: .9; }
+.hero-art .hb0 { stop-color: #1A1650; } .hero-art .hb1 { stop-color: #120F3C; }
+.hero-art .hbs { stroke: #1A1650; }
+.hero-art .ant { stroke: #1E1A58; }
+.hero-art .win { fill: #FFD68A; opacity: .7; }
+.hero-art .hr { stop-color: #FFB8E6; }
+.hero-art .hz { stroke: #B7A9FF; stroke-opacity: .25; }
+.hart .stkl { stroke: #2A2E6E; } .hart .stkf { fill: #2A2E6E; }
+.hart .win { fill: #FFD68A; opacity: .8; }
+.hero-art .dy, .hart .dy { display: none; }
+.cl path { fill: #FFFFFF; } .cl .clsh { fill: #E1ECFA; }
+.cl { animation: drift 28s ease-in-out infinite alternate; }
+.cl.slow { animation-duration: 40s; animation-direction: alternate-reverse; }
+@keyframes drift { from { translate: -9px 0; } to { translate: 11px 0; } }
+.bird path { fill: none; stroke: #2C5698; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+
+[data-theme="light"] .hero-art .nt, [data-theme="light"] .hart .nt { display: none; }
+[data-theme="light"] .hero-art .dy, [data-theme="light"] .hart .dy { display: inline; }
+[data-theme="light"] .hero-art .hs0 { stop-color: #2A63C4; }
+[data-theme="light"] .hero-art .hs1 { stop-color: #4889DA; }
+[data-theme="light"] .hero-art .hs2 { stop-color: #86BBEC; }
+[data-theme="light"] .hero-art .hs3 { stop-color: #CFE7FA; }
+[data-theme="light"] .hero-art .hw0 { stop-color: #6FA3DE; }
+[data-theme="light"] .hero-art .hw1 { stop-color: #5288CE; }
+[data-theme="light"] .hero-art .hw2 { stop-color: #3E72BA; }
+[data-theme="light"] .hero-art .hg { stop-color: #FFFFFF; }
+[data-theme="light"] .hero-art .far { fill: #A9C3E5; opacity: .95; }
+[data-theme="light"] .hero-art .hb0 { stop-color: #6F8FC5; }
+[data-theme="light"] .hero-art .hb1 { stop-color: #5A79B0; }
+[data-theme="light"] .hero-art .hbs { stroke: #5A79B0; }
+[data-theme="light"] .hero-art .ant { stroke: #6F8FC5; }
+[data-theme="light"] .hero-art .win { fill: #F2F8FF; opacity: .5; }
+[data-theme="light"] .hero-art .hr { stop-color: #FFFFFF; }
+[data-theme="light"] .hero-art .hz { stroke: #FFFFFF; stroke-opacity: .4; }
+[data-theme="light"] .hero-art .shim rect { fill: #FFFFFF; }
+[data-theme="light"] .hero-art .pglow { opacity: .55; }
+[data-theme="light"] .hart .bt, [data-theme="light"] .hart .bb { stop-color: #5F82BC; }
+[data-theme="light"] .hart .stkl { stroke: #5F82BC; }
+[data-theme="light"] .hart .stkf { fill: #5F82BC; }
+[data-theme="light"] .hart .win { fill: #F2F8FF; opacity: .5; }
+
+/* 낮: the bands and the space around the home view turn blue too */
+[data-theme="light"] {
+  --band-home: linear-gradient(180deg, #2A63C4 0, #3B78D2 calc(var(--safe-t) + 120px), #5A95DF calc(var(--safe-t) + 215px), #86B6EC calc(var(--safe-t) + 300px), #BFD6F5 calc(var(--safe-t) + 390px), #E8E3F8 calc(var(--safe-t) + 480px));
+  --band-page: linear-gradient(180deg, #2A63C4 0, #3B78D2 calc(var(--safe-t) + 70px), #5793DF calc(var(--safe-t) + 120px), #7FB0EA calc(var(--safe-t) + 165px), #AACDF3 calc(var(--safe-t) + 215px), #D2E1F8 calc(var(--safe-t) + 275px), #E8E3F8 calc(var(--safe-t) + 340px));
+  --hero-soft: rgba(236, 244, 255, 0.86);
+}
+html[data-theme="light"] { background: #2A63C4; }
+[data-theme="light"] body { background-color: #2A63C4; }
+[data-theme="light"] .hero { background: #3E72BA; }
+[data-theme="light"] .wzone { background: linear-gradient(180deg, #3E72BA 0, #5A8ACC 150px, #86A9DE 320px, #B2C6EE 500px, #D3D9F5 690px, #E8E3F8 880px); }
+[data-theme="light"] .hero .hchip, [data-theme="light"] .hero .hedit:not(.done) { background: rgba(16, 48, 112, .3); border-color: rgba(255, 255, 255, .22); }
+[data-theme="light"] .hero .hedit:not(.done) { color: rgba(240, 246, 255, .92); }
+[data-theme="light"] .hero-top, [data-theme="light"] .phead h1, [data-theme="light"] .phead .sub { text-shadow: 0 1px 10px rgba(16, 48, 112, .28); }
+[data-theme="light"] .phead + .group-h { text-shadow: 0 1px 8px rgba(16, 48, 112, .35); }
+[data-theme="light"] .hart .pgl { opacity: .4; }
+[data-theme="light"] .mapwrap::before { background: linear-gradient(180deg, rgba(42, 99, 196, .9) 0, rgba(72, 137, 218, .5) 55%, rgba(72, 137, 218, 0)); }

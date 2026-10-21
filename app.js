@@ -155,6 +155,8 @@
   function applyTheme() {
     const t = wantDark() ? "dark" : "light", root = document.documentElement;
     if (root.getAttribute("data-theme") !== t) root.setAttribute("data-theme", t);
+    const m = document.getElementById("themeColor");
+    if (m) m.setAttribute("content", t === "dark" ? "#0A0E2E" : "#2A63C4");
   }
 
   /* photos live in IndexedDB as shrunk JPEG blobs, keyed by id */
@@ -330,7 +332,7 @@
       '<span class="mono note" aria-hidden="true">=</span><label class="cin"><span>₩</span><input id="' + pre + 'W" data-keep data-fx="w" inputmode="decimal" placeholder="0" autocomplete="off" aria-label="원"></label></div>';
   }
 
-  /* ---------- night-sky art: moon, gold sparkles, skyline with lit windows ---------- */
+  /* ---------- page-header sky: 밤 = moon, gold sparkles, lit windows / 낮 = sun and clouds ---------- */
   const spark = (x, y, r) => '<path class="tw" fill="#FFD36B" d="M' + x + " " + (y - r) + "Q" + (x + r * .18) + " " + (y - r * .18) + " " + (x + r) + " " + y + "Q" + (x + r * .18) + " " + (y + r * .18) + " " + x + " " + (y + r) +
     "Q" + (x - r * .18) + " " + (y + r * .18) + " " + (x - r) + " " + y + "Q" + (x - r * .18) + " " + (y - r * .18) + " " + x + " " + (y - r) + 'Z"/>';
   function skyArt(h, small) {
@@ -344,20 +346,23 @@
       '<radialGradient id="pglow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#E9A8FF" stop-opacity=".55"/><stop offset="1" stop-color="#E9A8FF" stop-opacity="0"/></radialGradient>' +
       '<radialGradient id="mglow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFE7A8" stop-opacity=".35"/><stop offset="1" stop-color="#FFE7A8" stop-opacity="0"/></radialGradient>' +
       '<mask id="moonm"><rect x="0" y="0" width="390" height="' + h + '" fill="#fff"/><circle cx="' + (small ? 327 : 243) + '" cy="' + (small ? 66 : 38) + '" r="' + (small ? 10.5 : 15) + '" fill="#000"/></mask></defs>' +
-      dots.map((s, i) => '<circle class="' + (i % 2 ? "tw" : "") + '" fill="#FFFFFF" cx="' + s[0] + '" cy="' + s[1] + '" r="' + s[2] + '" opacity=".75"/>').join("") +
+      '<radialGradient id="psun" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFF4C4" stop-opacity=".9"/><stop offset=".35" stop-color="#FFF1BC" stop-opacity=".45"/><stop offset="1" stop-color="#FFF1BC" stop-opacity="0"/></radialGradient>' +
+      '<g class="nt">' + dots.map((s, i) => '<circle class="' + (i % 2 ? "tw" : "") + '" fill="#FFFFFF" cx="' + s[0] + '" cy="' + s[1] + '" r="' + s[2] + '" opacity=".75"/>').join("") +
       gold.map((s) => spark(s[0], s[1], s[2])).join("") +
-      (small ? '<circle cx="322" cy="70" r="30" fill="url(#mglow)"/><circle cx="322" cy="70" r="11.5" fill="#FFE7A8" mask="url(#moonm)"/>' : '<circle cx="236" cy="44" r="40" fill="url(#mglow)"/><circle cx="236" cy="44" r="16" fill="#FFE7A8" mask="url(#moonm)"/>') +
+      (small ? '<circle cx="322" cy="70" r="30" fill="url(#mglow)"/><circle cx="322" cy="70" r="11.5" fill="#FFE7A8" mask="url(#moonm)"/>' : '<circle cx="236" cy="44" r="40" fill="url(#mglow)"/><circle cx="236" cy="44" r="16" fill="#FFE7A8" mask="url(#moonm)"/>') + "</g>" +
+      '<g class="dy">' + (small ? '<circle cx="322" cy="68" r="44" fill="url(#psun)"/><circle cx="322" cy="68" r="10.5" fill="#FFF9E3"/>' + cloud(232, 46, .42, .8) + cloud(372, 118, .36, .7, "slow") + cloud(196, 128, .34, .6, "slow")
+        : '<circle cx="236" cy="44" r="56" fill="url(#psun)"/><circle cx="236" cy="44" r="14" fill="#FFF9E3"/>' + cloud(150, 40, .5, .8) + cloud(340, 70, .45, .7, "slow")) + "</g>" +
       '<linearGradient id="skyf" gradientUnits="userSpaceOnUse" x1="0" y1="' + (h - 46) + '" x2="0" y2="' + h + '"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#000"/></linearGradient>' +
       '<mask id="skym"><rect width="390" height="' + h + '" fill="url(#skyf)"/></mask>' +
       '<g mask="url(#skym)"><g transform="' + (small ? "translate(" + f1(390 - 390 * .76) + " " + f1(h - 190 * .76) + ") scale(.76)" : "translate(0 " + dy + ")") + '">' +
-      '<circle cx="280" cy="128" r="62" fill="url(#pglow)"/>' +
+      '<circle class="pgl" cx="280" cy="128" r="62" fill="url(#pglow)"/>' +
       '<path fill="url(#bfade)" d="M218 190V152h8v-12h8v50zM242 190v-40h8v40zM372 190v-48h10v48zM354 190v-36h12v36z"/>' +
       '<polygon fill="url(#bfade)" points="300,190 300,110 303,110 303,94 306,94 306,82 309,82 311,60 313,82 316,82 316,94 319,94 319,110 322,110 322,190"/>' +
       '<path fill="url(#bfade)" d="M338 190 L340 92 Q343 52 349 32 L353 37 Q358 62 361 92 L363 190 Z"/>' +
-      '<path d="M270 186 L276 156 M290 186 L284 156 M280 186 L280 156" stroke="#2A2E6E" stroke-width="3"/>' +
-      '<rect fill="#2A2E6E" x="277.5" y="98" width="5" height="58"/><rect fill="#2A2E6E" x="278.4" y="70" width="3.2" height="30"/><path d="M280 66 L280 44" stroke="#2A2E6E" stroke-width="1.6"/>' +
+      '<path class="stkl" d="M270 186 L276 156 M290 186 L284 156 M280 186 L280 156" stroke-width="3"/>' +
+      '<rect class="stkf" x="277.5" y="98" width="5" height="58"/><rect class="stkf" x="278.4" y="70" width="3.2" height="30"/><path class="stkl" d="M280 66 L280 44" stroke-width="1.6"/>' +
       '<circle cx="280" cy="43" r="1.8" fill="#FFD36B"/>' +
-      win.map((w) => '<rect fill="#FFD68A" opacity=".8" x="' + w[0] + '" y="' + w[1] + '" width="2.2" height="2.2"/>').join("") +
+      '<g class="win">' + win.map((w) => '<rect x="' + w[0] + '" y="' + w[1] + '" width="2.2" height="2.2"/>').join("") + "</g>" +
       '<circle cx="280" cy="152" r="11" fill="url(#hpearl)"/><circle cx="280" cy="98" r="7.5" fill="url(#hpearl)"/><circle cx="280" cy="70" r="3.6" fill="url(#hpearl)"/>' +
       '<ellipse cx="276.5" cy="148" rx="3.6" ry="2.2" fill="#fff" opacity=".7" transform="rotate(-30 276.5 148)"/></g></g></svg>';
   }
@@ -546,7 +551,12 @@
     const day = ph.k === "during" ? ph.day : ph.k === "after" ? days[days.length - 1] : days[0];
     return { ph, day };
   }
-  /* the night view behind the home screen: stars, moon, Lujiazui skyline and its reflection */
+  /* the view behind the home screen: Lujiazui skyline over the river. One drawing for both themes —
+     밤: stars, moon, lit windows / 낮: blue sky, sun, clouds. Colours come from CSS (.hero-art …). */
+  const cloud = (x, y, s, o, cls) => '<g class="cl' + (cls ? " " + cls : "") + '" transform="translate(' + x + " " + y + ") scale(" + s + ')" opacity="' + o + '">' +
+    '<path d="M-44 0 Q-46 -12 -32 -14 Q-30 -30 -12 -28 Q-2 -44 18 -36 Q34 -40 38 -24 Q52 -22 50 -8 Q54 0 44 2 L-38 2 Q-46 2 -44 0 Z"/>' +
+    '<path class="clsh" d="M-40 0 Q-20 -6 0 -4 Q24 -8 46 -2 Q50 0 44 2 L-38 2 Q-44 2 -40 0 Z"/></g>';
+  const birds = (x, y, s) => '<g class="dy bird" transform="translate(' + x + " " + y + ") scale(" + s + ')"><path d="M0 0 Q4 -4 8 0 Q12 -4 16 0"/><path d="M22 -9 Q25 -12 28 -9 Q31 -12 34 -9"/><path d="M12 -18 Q14.6 -20.6 17.2 -18 Q19.8 -20.6 22.4 -18"/></g>';
   let heroSvg = "";
   function heroArt() {
     if (heroSvg) return heroSvg;
@@ -577,33 +587,37 @@
       shim += '<rect class="' + (i % 4 ? "" : "tw") + '" x="' + f1(cx - w / 2) + '" y="' + f1(y) + '" width="' + f1(w) + '" height="1.6" rx=".8" fill="' + near1 + '" opacity="' + f1(0.18 + rnd() * 0.45) + '"/>';
     }
     heroSvg = '<svg class="hero-art" viewBox="0 0 390 760" preserveAspectRatio="xMidYMax slice" aria-hidden="true"><defs>' +
-      '<linearGradient id="hs" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#060A24"/><stop offset=".3" stop-color="#101646"/><stop offset=".5" stop-color="#26206A"/><stop offset=".62" stop-color="#5A3C9C"/></linearGradient>' +
-      '<linearGradient id="hw" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2D2270"/><stop offset=".35" stop-color="#211B5E"/><stop offset="1" stop-color="#1C1850"/></linearGradient>' +
-      '<radialGradient id="hglow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#E58BE8" stop-opacity=".5"/><stop offset="1" stop-color="#E58BE8" stop-opacity="0"/></radialGradient>' +
+      '<linearGradient id="hs" x1="0" y1="0" x2="0" y2="1"><stop class="hs0" offset="0"/><stop class="hs1" offset=".3"/><stop class="hs2" offset=".5"/><stop class="hs3" offset=".62"/></linearGradient>' +
+      '<linearGradient id="hw" x1="0" y1="0" x2="0" y2="1"><stop class="hw0" offset="0"/><stop class="hw1" offset=".35"/><stop class="hw2" offset="1"/></linearGradient>' +
+      '<radialGradient id="hglow" cx=".5" cy=".5" r=".5"><stop class="hg" offset="0" stop-opacity=".5"/><stop class="hg" offset="1" stop-opacity="0"/></radialGradient>' +
       '<radialGradient id="hm" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFE7A8" stop-opacity=".32"/><stop offset="1" stop-color="#FFE7A8" stop-opacity="0"/></radialGradient>' +
+      '<radialGradient id="hsun" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFF4C4" stop-opacity=".9"/><stop offset=".35" stop-color="#FFF1BC" stop-opacity=".45"/><stop offset="1" stop-color="#FFF1BC" stop-opacity="0"/></radialGradient>' +
       '<radialGradient id="hp" cx=".36" cy=".32" r=".75"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".38" stop-color="#FFC2EC"/><stop offset=".78" stop-color="#C37BF0"/><stop offset="1" stop-color="#7B4FD0"/></radialGradient>' +
-      '<linearGradient id="hb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1A1650"/><stop offset="1" stop-color="#120F3C"/></linearGradient>' +
-      '<linearGradient id="hr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFB8E6" stop-opacity=".5"/><stop offset="1" stop-color="#FFB8E6" stop-opacity="0"/></linearGradient>' +
+      '<linearGradient id="hb" x1="0" y1="0" x2="0" y2="1"><stop class="hb0" offset="0"/><stop class="hb1" offset="1"/></linearGradient>' +
+      '<linearGradient id="hr" x1="0" y1="0" x2="0" y2="1"><stop class="hr" offset="0" stop-opacity=".5"/><stop class="hr" offset="1" stop-opacity="0"/></linearGradient>' +
       '<mask id="hmm"><rect width="390" height="760" fill="#fff"/><circle cx="363" cy="231" r="12.5" fill="#000"/></mask></defs>' +
-      '<rect width="390" height="480" fill="url(#hs)"/>' + stars + gold +
-      '<circle cx="356" cy="238" r="44" fill="url(#hm)"/><circle cx="356" cy="238" r="14" fill="#FFE7A8" mask="url(#hmm)"/>' +
+      '<rect width="390" height="480" fill="url(#hs)"/>' +
+      '<g class="nt">' + stars + gold + '<circle cx="356" cy="238" r="44" fill="url(#hm)"/><circle cx="356" cy="238" r="14" fill="#FFE7A8" mask="url(#hmm)"/></g>' +
+      '<g class="dy"><circle cx="352" cy="232" r="64" fill="url(#hsun)"/><circle cx="352" cy="232" r="13" fill="#FFF9E3"/>' +
+      cloud(338, 44, .62, .55) + cloud(62, 252, .9, .92) + cloud(268, 300, .74, .9, "slow") + cloud(150, 334, .56, .8) + cloud(368, 352, .6, .75, "slow") + cloud(18, 368, .5, .7) + "</g>" +
+      birds(222, 214, .9) +
       '<ellipse cx="200" cy="470" rx="280" ry="110" fill="url(#hglow)"/>' +
-      '<g fill="#2E2672" opacity=".9">' + far + "</g>" +
+      '<g class="far">' + far + "</g>" +
       '<rect y="470" width="390" height="290" fill="url(#hw)"/>' +
       '<g fill="url(#hb)">' + near +
       '<path d="M284 470 L287 330 Q290 280 302 246 L306 250 Q314 290 316 330 L318 470 Z"/>' +
       '<path fill-rule="evenodd" d="M248 470 L250 296 L272 282 L274 470 Z M254 297 L269 290 L269 306 L254 311 Z"/>' +
       '<polygon points="326,470 326,370 329,370 329,350 332,350 332,334 335,334 337,300 339,334 342,334 342,350 345,350 345,370 348,370 348,470"/>' +
-      '<path d="M174 470 L190 426 M218 470 L202 426 M196 470 L196 426" stroke="#1A1650" stroke-width="7" stroke-linecap="round"/>' +
+      '<path class="hbs" d="M174 470 L190 426 M218 470 L202 426 M196 470 L196 426" stroke-width="7" stroke-linecap="round"/>' +
       '<rect x="191" y="300" width="10" height="122"/><rect x="193" y="228" width="6" height="74"/></g>' +
-      '<path d="M196 226 L196 158" stroke="#1E1A58" stroke-width="2.4"/><circle cx="196" cy="156" r="2.4" fill="#FFD36B"/>' +
-      '<g fill="#FFD68A" opacity=".7">' + wins + '<rect x="300" y="300" width="2" height="2.6"/><rect x="305" y="340" width="2" height="2.6"/><rect x="298" y="380" width="2" height="2.6"/><rect x="309" y="410" width="2" height="2.6"/><rect x="262" y="330" width="2" height="2.6"/><rect x="258" y="380" width="2" height="2.6"/><rect x="266" y="420" width="2" height="2.6"/><rect x="336" y="390" width="2" height="2.6"/><rect x="340" y="430" width="2" height="2.6"/></g>' +
-      '<circle cx="196" cy="420" r="46" fill="url(#hglow)"/><circle cx="196" cy="300" r="30" fill="url(#hglow)"/>' +
+      '<path class="ant" d="M196 226 L196 158" stroke-width="2.4"/><circle cx="196" cy="156" r="2.4" fill="#FFD36B"/>' +
+      '<g class="win">' + wins + '<rect x="300" y="300" width="2" height="2.6"/><rect x="305" y="340" width="2" height="2.6"/><rect x="298" y="380" width="2" height="2.6"/><rect x="309" y="410" width="2" height="2.6"/><rect x="262" y="330" width="2" height="2.6"/><rect x="258" y="380" width="2" height="2.6"/><rect x="266" y="420" width="2" height="2.6"/><rect x="336" y="390" width="2" height="2.6"/><rect x="340" y="430" width="2" height="2.6"/></g>' +
+      '<g class="pglow"><circle cx="196" cy="420" r="46" fill="url(#hglow)"/><circle cx="196" cy="300" r="30" fill="url(#hglow)"/></g>' +
       '<circle cx="196" cy="420" r="22" fill="url(#hp)"/><circle cx="196" cy="300" r="15" fill="url(#hp)"/><circle cx="196" cy="228" r="7.5" fill="url(#hp)"/>' +
       '<ellipse cx="189" cy="412" rx="7" ry="4.2" fill="#fff" opacity=".7" transform="rotate(-30 189 412)"/><ellipse cx="191" cy="294" rx="4.6" ry="2.8" fill="#fff" opacity=".7" transform="rotate(-30 191 294)"/>' +
       '<rect x="174" y="474" width="44" height="150" fill="url(#hr)" opacity=".55"/>' +
       '<g class="shim">' + shim + "</g>" +
-      '<path d="M0 476 H390" stroke="#B7A9FF" stroke-opacity=".25" stroke-width="1"/></svg>';
+      '<path class="hz" d="M0 476 H390" stroke-width="1"/></svg>';
     return heroSvg;
   }
   function placeCard(st, i, list, day, nextId) {
@@ -982,7 +996,7 @@
     const opts = [["auto", "자동 (오늘 날짜 기준)"], ["before", "여행 전"]].concat(state.days.map((d) => [d.id, (isNum(d.n) ? "여행 중 · Day " + d.n : "여행 중 · 귀국날") + " (" + d.date + ")"])).concat([["after", "다녀온 뒤"]]);
     const cur = ui.theme || "time";
     s += '<div class="group-h">설정</div><div class="group">' +
-      '<div class="setrow"><div class="top"><span class="ri">' + ICON.moon + '</span><span class="rt"><b>화면 테마</b><span>' + (isDark() ? "지금은 밤 테마 · 화면 전체가 남색" : "지금은 낮 테마 · 위는 밤하늘, 아래는 밝게") + "</span></span></div>" +
+      '<div class="setrow"><div class="top"><span class="ri">' + ICON.moon + '</span><span class="rt"><b>화면 테마</b><span>' + (isDark() ? "지금은 밤 테마 · 화면 전체가 남색" : "지금은 낮 테마 · 위는 파란 하늘, 아래는 밝게") + "</span></span></div>" +
       '<div class="seg4" role="group" aria-label="화면 테마">' + THEMES.map((t) => '<button type="button" data-act="theme-set" data-v="' + t[0] + '" aria-pressed="' + (cur === t[0]) + '">' + ICON[t[1]] + "<span>" + t[2] + "</span></button>").join("") + "</div></div>" +
       row("w-edit-go", "grid", "홈 위젯 편집", "넣고 빼고 순서 바꾸기") +
       '<div class="setrow"><div class="top"><span class="ri">' + ICON.eye + '</span><span class="rt"><b>홈 화면 미리보기</b><span>날짜에 따라 바뀌는 홈을 미리 볼 수 있어요</span></span></div>' +
