@@ -941,7 +941,7 @@ body[data-tab="home"] { background: linear-gradient(var(--bg), var(--bg)) top ce
 [data-theme="light"] {
   --bg: #FCF4F7; /* 낮: the page under the sky is a near-white pale pink */
   --band-home: linear-gradient(180deg, #5AA9DE 0, #5FACE0 calc(var(--safe-t) + 48px), #6CB3E4 calc(var(--safe-t) + 96px), #7EBFEA calc(var(--safe-t) + 144px), #98CCEF calc(var(--safe-t) + 192px), #B8DCF3 calc(var(--safe-t) + 240px), #D1E7F5 calc(var(--safe-t) + 288px), #E2ECF6 calc(var(--safe-t) + 336px), #F0F0F7 calc(var(--safe-t) + 384px), #F9F3F7 calc(var(--safe-t) + 432px), #FCF4F7 calc(var(--safe-t) + 480px));
-  --band-page: linear-gradient(180deg, #97D1F0 0, #9BD3F0 calc(var(--safe-t) + 38px), #A6D7F2 calc(var(--safe-t) + 76px), #B4DDF3 calc(var(--safe-t) + 113px), #C6E4F5 calc(var(--safe-t) + 151px), #D7EAF6 calc(var(--safe-t) + 189px), #E5EEF7 calc(var(--safe-t) + 227px), #F1F1F7 calc(var(--safe-t) + 264px), #F9F3F7 calc(var(--safe-t) + 302px), #FCF4F7 calc(var(--safe-t) + 340px));
+  --band-page: linear-gradient(180deg, #86C8EE 0, #8ACAEE calc(var(--safe-t) + 34px), #95CEF0 calc(var(--safe-t) + 68px), #A5D5F2 calc(var(--safe-t) + 102px), #B8DDF4 calc(var(--safe-t) + 136px), #CCE6F6 calc(var(--safe-t) + 170px), #DAEAF6 calc(var(--safe-t) + 204px), #E8EEF7 calc(var(--safe-t) + 238px), #F2F1F7 calc(var(--safe-t) + 272px), #F9F3F7 calc(var(--safe-t) + 306px), #FCF4F7 calc(var(--safe-t) + 340px));
   --band-page-h: calc(var(--safe-t) + 340px);
   --hero-ink: #FFFFFF;
   --hero-soft: rgba(255, 255, 255, 0.94);
@@ -1185,8 +1185,8 @@ html { touch-action: pan-x pan-y; }
 body { overflow-x: hidden; }
 
 /* 낮: a plane crosses the sky now and then (still with 동작 줄이기) */
-.plane-fly { transform: translate(262px, 268px) rotate(-7deg); animation: fly 46s linear infinite; }
-@keyframes fly { 0% { transform: translate(-70px, 330px) rotate(-7deg); } 55% { transform: translate(470px, 262px) rotate(-7deg); } 100% { transform: translate(470px, 262px) rotate(-7deg); } }
+.plane-fly { opacity: .78; transform: translate(262px, 232px); animation: fly 46s linear infinite; }
+@keyframes fly { 0% { transform: translate(-70px, 232px); } 55% { transform: translate(470px, 232px); } 100% { transform: translate(470px, 232px); } }
 
 /* 날씨: full width, hour by hour */
 .w.wweather { height: auto; }
@@ -1216,3 +1216,8 @@ body { overflow-x: hidden; }
 .toast { width: max-content; }
 .toast span { min-width: 0; }
 .toast button { flex: none; white-space: nowrap; font-weight: 600; }
+/* 할 일 · 준비물: the card is only as tall as its rows (up to 6, then it scrolls) */
+.w-big .wlist { height: auto; max-height: 204px; }
+/* the antenna's light is a night thing */
+[data-theme="light"] .hero-art .tip, [data-theme="light"] .hart .tip { display: none; }
+.setrow .tinput { display: block; width: 100%; margin-top: 10px; padding: 11px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--inner); font: inherit; font-size: 16px; color: var(--ink); }

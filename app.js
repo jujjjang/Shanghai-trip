@@ -412,7 +412,7 @@
       '<path fill="url(#bfade)" d="M338 190 L340 92 Q343 52 349 32 L353 37 Q358 62 361 92 L363 190 Z"/>' +
       '<path class="stkl" d="M270 186 L276 156 M290 186 L284 156 M280 186 L280 156" stroke-width="3"/>' +
       '<rect class="stkf" x="277.5" y="98" width="5" height="58"/><rect class="stkf" x="278.4" y="70" width="3.2" height="30"/><path class="stkl" d="M280 66 L280 44" stroke-width="1.6"/>' +
-      '<circle cx="280" cy="43" r="1.8" fill="#FFD36B"/>' +
+      '<circle class="tip" cx="280" cy="43" r="1.8" fill="#FFD36B"/>' +
       '<g class="win">' + win.map((w) => '<rect x="' + w[0] + '" y="' + w[1] + '" width="2.2" height="2.2"/>').join("") + "</g>" +
       '<circle cx="280" cy="152" r="11" fill="url(#hpearl)"/><circle cx="280" cy="98" r="7.5" fill="url(#hpearl)"/><circle cx="280" cy="70" r="3.6" fill="url(#hpearl)"/>' +
       '<ellipse cx="276.5" cy="148" rx="3.6" ry="2.2" fill="#fff" opacity=".7" transform="rotate(-30 276.5 148)"/></g></g></svg>';
@@ -704,7 +704,7 @@
       '<polygon points="326,470 326,370 329,370 329,350 332,350 332,334 335,334 337,300 339,334 342,334 342,350 345,350 345,370 348,370 348,470"/>' +
       '<path class="hbs" d="M174 470 L190 426 M218 470 L202 426 M196 470 L196 426" stroke-width="7" stroke-linecap="round"/>' +
       '<rect x="191" y="300" width="10" height="122"/><rect x="193" y="228" width="6" height="74"/></g>' +
-      '<path class="ant" d="M196 226 L196 158" stroke-width="2.4"/><circle cx="196" cy="156" r="2.4" fill="#FFD36B"/>' +
+      '<path class="ant" d="M196 226 L196 158" stroke-width="2.4"/><circle class="tip" cx="196" cy="156" r="2.4" fill="#FFD36B"/>' +
       '<g class="win">' + wins + '<rect x="300" y="300" width="2" height="2.6"/><rect x="305" y="340" width="2" height="2.6"/><rect x="298" y="380" width="2" height="2.6"/><rect x="309" y="410" width="2" height="2.6"/><rect x="262" y="330" width="2" height="2.6"/><rect x="258" y="380" width="2" height="2.6"/><rect x="266" y="420" width="2" height="2.6"/><rect x="336" y="390" width="2" height="2.6"/><rect x="340" y="430" width="2" height="2.6"/></g>' +
       '<g class="pglow"><circle cx="196" cy="420" r="46" fill="url(#hglow)"/><circle cx="196" cy="300" r="30" fill="url(#hglow)"/></g>' +
       '<circle cx="196" cy="420" r="22" fill="url(#hp)"/><circle cx="196" cy="300" r="15" fill="url(#hp)"/><circle cx="196" cy="228" r="7.5" fill="url(#hp)"/>' +
@@ -749,9 +749,9 @@
         (chips ? '<span class="tchips">' + chips + "</span>" : "") + "</button>";
     }).join("");
     openSheet({
-      key: "tripsum", title: (t.title || "여행") + " " + (t.nights || "") + " 한눈에",
+      key: "tripsum", title: (tripTitle() || "여행") + " 한눈에",
       body: '<div class="ts-legs">' + legs.map(leg).join("") + "</div>" +
-        (h.name ? '<div class="ts-hotel"><small>숙소' + (t.nights ? " · " + esc(String(t.nights).split(" ")[0]) : "") + "</small>" + esc(shortName(h.name)) + (h.note ? " · " + esc(h.note.replace(/\s*\(.*?\)\s*/g, " ")) : "") + "</div>" : "") + days
+        (h.name ? '<div class="ts-hotel"><small>숙소' + ((tripTitle().match(/\d+박/) || [""])[0] ? " · " + (tripTitle().match(/\d+박/) || [""])[0] : "") + "</small>" + esc(shortName(h.name)) + (h.note ? " · " + esc(h.note.replace(/\s*\(.*?\)\s*/g, " ")) : "") + "</div>" : "") + days
     });
   }
   /* 여행 전: after the D-day card, swipe through '가기 전에 알아둘 것' — big numbers, one highlighted line, a note, source chips */
@@ -841,7 +841,7 @@
       if (ph.day.wx) hint = '<a class="hwx" href="' + WX_URL + '"' + EXT + ">" + ICON[w.kind] + esc(w.c) + (w.t ? " · " + esc(w.t) : "") + "</a>";
     } else {
       chip = ph.k === "before" ? "여행 전" : "다녀온 여행";
-      title = (t.title || "상하이") + " " + (t.nights || "");
+      title = tripTitle() || "상하이";
       hint = '<span class="mono">' + esc(String(t.dates || "").replace(/\s*·\s*\d+박.*$/, "")) + "</span>";
     }
     let s = '<section class="hero">' + heroArt() +
@@ -1289,8 +1289,9 @@
     s += '<div class="group-h">설정</div><div class="group">' +
       '<div class="setrow"><div class="top"><span class="ri">' + ICON.moon + '</span><span class="rt"><b>화면 테마</b><span>' + (isDark() ? "지금은 밤 테마 · 화면 전체가 남색" : "지금은 낮 테마 · 위는 파란 하늘, 아래는 밝게") + "</span></span></div>" +
       '<div class="seg4" role="group" aria-label="화면 테마">' + THEMES.map((t) => '<button type="button" data-act="theme-set" data-v="' + t[0] + '" aria-pressed="' + (cur === t[0]) + '">' + ICON[t[1]] + "<span>" + t[2] + "</span></button>").join("") + "</div></div>" +
-      row("trip-title", "pen", "여행 제목", ((state.trip.title || "") + " " + (state.trip.nights || "")).trim() || "홈 맨 위 큰 제목") +
-      row("members", "users", "여행 인원", (state.settle.members || []).join(", ") || "같이 가는 사람 넣기") +
+      '<div class="setrow"><div class="top"><span class="ri">' + ICON.pen + '</span><span class="rt"><b>여행 제목</b><span>홈 맨 위에 크게 나와요</span></span></div>' +
+        '<input class="tinput" data-change="trip-title" value="' + esc(tripTitle()) + '" placeholder="예: 상하이 3박 4일" autocomplete="off" enterkeyhint="done" aria-label="여행 제목"></div>' +
+      '<button class="row" type="button" data-act="members"><span class="ri">' + ICON.users + '</span><span class="rt"><b>여행 인원</b><span>기록 · 정산 · 연동에 쓰여요</span></span><span class="rv">' + esc((state.settle.members || []).join(" · ")) + "</span></button>" +
       row("share", "users", "친구랑 같이 쓰기", shareSub()) +
       row("backup", "download", "데이터 백업 파일 받기", "일정 · 정산 · 기록 글 (사진 빼고)") +
       '<button class="row" type="button" data-act="reset"><span class="ri">' + ICON.undo + '</span><span class="rt"><b>처음 데이터로 되돌리기</b><span>' + (sync.code ? "같이 쓰는 중이라 친구 폰도 같이 되돌아가요" : "바꾼 일정 · 정산 · 기록 글이 다 지워져요") + "</span></span></button>" +
@@ -1577,6 +1578,7 @@
       }
     });
   }
+  const tripTitle = () => ((state.trip.title || "") + " " + (state.trip.nights || "")).trim();
   function tripTitleSheet() {
     const t = state.trip;
     openSheet({
@@ -1595,7 +1597,7 @@
     const ms = state.settle.members || [];
     openSheet({
       key: "members", title: "여행 인원",
-      body: '<p class="note">정산 · 낸 사람, 친구랑 같이 쓰기의 \'나는 누구?\'에 쓰여요.</p>' +
+      body: '<p class="note">기록 · 정산 · 친구랑 같이 쓰기에 쓰여요.</p>' +
         (ms.length ? '<div class="cklist">' + ms.map((n) => '<div class="li"><span class="ck">' + esc(n) + '</span><button class="icon-btn" type="button" data-act="mem-del" data-p="' + esc(n) + '" aria-label="' + esc(n) + ' 빼기">' + ICON.x + "</button></div>").join("") + "</div>" : '<p class="empty">아직 아무도 없어요</p>') +
         '<div class="addline"><input id="memNew" placeholder="이름 추가" autocomplete="off" enterkeyhint="done"><button class="btn primary" type="button" data-act="mem-add">추가</button></div>'
     });
@@ -2224,8 +2226,6 @@
     const r = view.querySelector('[data-act="share"] .rt span');
     if (r) r.textContent = shareSub();
   }
-  const SHARE_INFO = '<div class="shinfo"><div><b>같이 보는 것</b><span>일정 · 다녀옴/건너뛰기 · 출발 전 할 일 · 정산 · 메모 · 정보 · 링크 · 숙소/항공 · 기록(글 · 사진 · 하트) · 장소 사진</span></div>' +
-    "<div><b>각자 따로</b><span>필수 준비물 · 필수 앱 체크 · 화면 설정</span></div></div>";
   function meChips() {
     const ms = state.settle.members || [];
     if (!ms.length) return "";
@@ -2239,9 +2239,9 @@
     let body;
     if (sync.code) {
       body = '<div class="codebox"><span class="lbl">우리 여행 코드</span><b class="mono">' + esc(sync.code) + '</b><span class="sub" id="syncSt">' + esc(syncStatus()) + "</span></div>" +
-        '<div class="shbtns"><button class="btn primary" type="button" data-act="sync-invite">' + ICON.users + "초대 보내기</button>" +
+        '<div class="shbtns"><button class="btn primary" type="button" data-act="sync-invite">' + ICON.users + "초대 링크 복사</button>" +
         '<button class="btn" type="button" data-act="sync-now">' + ICON.sync + "지금 맞추기</button></div>" +
-        meChips() + SHARE_INFO +
+        meChips() +
         '<button class="btn ghost danger" type="button" data-act="sync-leave">이 폰에서 같이 쓰기 그만두기</button>';
     } else if (!c.url || !c.key) {
       body = '<p class="note">친구한테 받은 초대 링크가 있으면 붙여넣고 참여를 누르면 끝이에요.</p>' + meChips() +
@@ -2249,13 +2249,13 @@
         '<details class="fold"><summary><span class="ft">처음 시작하는 사람 · 저장소 연결</span><span class="chev" aria-hidden="true"></span></summary><div class="fold-b form">' +
         '<p class="note">무료 Supabase 프로젝트 하나가 필요해요. 만드는 법은 GitHub 저장소의 SUPABASE_SETUP.md에 있어요.</p>' +
         field("surl", "Project URL", c.url, { ph: "https://xxxx.supabase.co" }) + field("skey", "Publishable key", c.key, { ph: "sb_publishable_…" }) +
-        '<button class="btn primary" type="button" data-act="sync-cfg">연결</button></div></details>' + SHARE_INFO;
+        '<button class="btn primary" type="button" data-act="sync-cfg">연결</button></div></details>';
     } else {
       body = meChips() +
         '<button class="bigopt main" type="button" data-act="sync-create"><span class="ri">' + ICON.plus + '</span><span class="rt"><b>새 여행 코드 만들기</b><span>지금 이 폰에 있는 일정으로 시작해요</span></span></button>' +
         '<div class="ordiv"><span>친구가 이미 만들었으면</span></div>' +
         joinBox(prefill, "SH-XXXX-XXXX 또는 초대 링크") +
-        '<p class="note">참여하면 일정 · 정산 · 기록 같은 같이 보는 내용이 친구 것으로 바뀌어요. 준비물 · 앱 체크는 그대로고, 이 폰에 있던 사진은 친구 여행에 다시 올라가요.</p>' + SHARE_INFO +
+        '<p class="note">참여하면 일정 · 정산 · 기록 같은 같이 보는 내용이 친구 것으로 바뀌어요. 준비물 · 앱 체크는 그대로고, 이 폰에 있던 사진은 친구 여행에 다시 올라가요.</p>' +
         '<button class="btn ghost sm" type="button" data-act="sync-cfgclear">저장소 연결 바꾸기</button>';
     }
     openSheet({ key: "share", title: "친구랑 같이 쓰기", body });
@@ -2281,7 +2281,7 @@
     if (act === "sync-create") {
       if (needMe()) return;
       t.disabled = true;
-      try { await createTrip(); shareSheet(); render(); toast("여행 코드를 만들었어요 · 초대 보내기로 친구한테 보내세요", null, 4000); }
+      try { await createTrip(); shareSheet(); render(); toast("여행 코드를 만들었어요 · 초대 링크 복사해서 친구한테 보내주세요", null, 4000); }
       catch (e) { t.disabled = false; toast("코드를 만들지 못했어요 · 인터넷이랑 저장소 연결을 확인해 주세요", null, 4000); }
       return;
     }
@@ -2298,8 +2298,7 @@
     }
     if (act === "sync-invite") {
       const link = inviteLink(), text = "상하이 여행 앱 같이 쓰자! 앱 → 더보기 → 친구랑 같이 쓰기 → 아래 링크 통째로 붙여넣기\n" + link;
-      if (navigator.share) { try { await navigator.share({ text }); return; } catch (e) { if (e && e.name === "AbortError") return; } }
-      copyText(text, "초대 메시지를 복사했어요 · 카톡에 붙여넣어 보내세요");
+      copyText(text, "초대 링크를 복사했어요 · 카톡에 붙여넣어 보내세요");
       return;
     }
     if (act === "sync-leave") {
@@ -2544,6 +2543,12 @@
       const files = Array.from(t.files || []);
       t.value = "";
       if (files.length) addPlacePhotos(t.getAttribute("data-upload-place"), files);
+      return;
+    }
+    if (t.getAttribute("data-change") === "trip-title") {
+      const v = t.value.trim();
+      if (v && v !== tripTitle()) { state.trip.title = v; state.trip.nights = ""; save(); toast("여행 제목을 바꿨어요"); }
+      else t.value = tripTitle();
       return;
     }
     if (t.getAttribute("data-change") === "preview") {
