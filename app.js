@@ -76,6 +76,9 @@
     clock: I('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>'),
     store: I('<path d="M5 8.5h14l-1 11H6z"/><path d="M9 8.5V7a3 3 0 0 1 6 0v1.5"/>'),
     bolt: I('<path d="M13 3 5 13.5h6L10 21l8-10.5h-6z"/>'),
+    pass: I('<rect x="5" y="3.5" width="14" height="17" rx="2"/><circle cx="12" cy="10.5" r="3"/><path d="M9 16.5h6"/>'),
+    card: I('<rect x="3.5" y="6" width="17" height="12" rx="2"/><path d="M3.5 10h17M7 14.5h3"/>'),
+    plug: I('<path d="M9 3.5v4M15 3.5v4"/><path d="M6.5 7.5h11v3a5.5 5.5 0 0 1-11 0z"/><path d="M12 16v4.5"/>'),
     sync: I('<path d="M19.5 12a7.5 7.5 0 0 1-13 5.1M4.5 12a7.5 7.5 0 0 1 13-5.1"/><path d="M17.8 3.6v3.6h-3.6M6.2 20.4v-3.6h3.6"/>')
   };
 
@@ -648,16 +651,48 @@
         '<button class="btn" type="button" data-act="taxi" data-id="' + st.id + '"><span class="ic">' + ICON.taxi + "</span>택시</button>" : "") + "</div>" +
       "</div></article></div>";
   }
+  /* 여행 전: after the D-day card, swipe through '가기 전에 알아둘 것' — big numbers, one highlighted line, a note, source chips */
+  function briefCard(c) {
+    const B = window.TRIP_BRIEF || {}, legs = state.flight.legs, l0 = legs[0] || {}, l1 = legs[1] || {};
+    let tiles = c.tiles || [], wide = c.wide, note = c.note || "", links = c.links || [];
+    const cut = (s) => String(s || "").split("·").pop().replace(/마감/, "").trim();
+    if (c.id === "airport") {
+      tiles = [{ k: "가는 날 체크인 마감", v: cut(l0.checkin) || "—", u: l0.from || "" }, { k: "오는 날 체크인 마감", v: cut(l1.checkin) || "—", u: l1.from || "" }];
+      wide = { k: (l0.to || "공항") + " → 숙소", v: c.route || "" };
+      note = state.hotel.note || "";
+      links = [{ t: "숙소 가는 길", b: "↗", c: "var(--accent)", url: apple(state.hotel.zh || state.hotel.addr || state.hotel.name) }];
+    }
+    if (c.id === "life") {
+      const d1 = state.days[0], w = wxParse(d1 && d1.wx), rate = +state.settle.rate || 0;
+      note = [w.c ? "첫날 " + w.c + (w.t ? " " + w.t : "") : "", rate ? "1위안 ≈ " + rate + "원 (정산 환율)" : ""].filter(Boolean).join(" · ");
+      links = [{ t: "상하이 날씨", b: "↗", c: "var(--accent)", url: WX_URL }];
+    }
+    const tile = (t) => '<div class="btile"><small>' + esc(t.k) + "</small><b>" + esc(t.v) + (t.u ? "<em>" + esc(t.u) + "</em>" : "") + "</b></div>";
+    return '<div class="hc-slide"><article class="pc brief"><div class="pc-b">' +
+      '<div class="pc-top"><span class="pc-tag on">가기 전에 알아둘 것</span><span class="mono pc-n">' + esc(B.checked || "") + " 확인</span></div>" +
+      '<h3 class="br-h"><span class="bri">' + (ICON[c.icon] || ICON.info) + "</span>" + esc(c.title) + "</h3>" +
+      '<div class="btiles">' + tiles.map(tile).join("") + "</div>" +
+      (wide ? '<div class="bwide' + (wide.warn ? " warn" : "") + '"><small>' + esc(wide.k) + "</small><b>" + esc(wide.v) + "</b></div>" : "") +
+      (note ? '<p class="bnote">' + esc(note) + "</p>" : "") +
+      (links.length ? '<div class="bchips">' + links.map((l) => '<a class="bchip" href="' + esc(l.url) + '"' + EXT + '><span class="fv" style="background:' + esc(l.c || "var(--accent)") + '">' + esc(l.b || "↗") + "</span>" + esc(l.t) + " ↗</a>").join("") + "</div>" : "") +
+      "</div></article></div>";
+  }
   function heroCardHtml(ctx) {
     const ph = ctx.ph;
     if (ph.k === "before") {
       const d1 = state.days[0], l0 = state.flight.legs[0] || {};
       const names = d1 ? visible(d1).filter(placeOf).map(mapLabel) : [];
-      return '<div class="hc-one"><article class="pc"><div class="pc-b"><div class="pc-top"><span class="pc-tag on">출발까지</span></div>' +
+      const cards = ((window.TRIP_BRIEF || {}).cards || []);
+      const start = heroIdx.before != null ? Math.min(heroIdx.before, cards.length) : 0;
+      return '<div class="hc-wrap"><div class="hc" id="hc" data-day="before" data-start="' + start + '"><div class="hc-slide"><article class="pc"><div class="pc-b"><div class="pc-top"><span class="pc-tag on">출발까지</span></div>' +
         '<div class="wn-dday"><b>' + esc(ddayText()) + "</b>" + (l0.no ? "<span>" + esc([l0.date, l0.dep].filter(Boolean).join(" ")) + " · " + esc(l0.from || "") + " 출발 " + esc(l0.no) + "</span>" : "") + "</div>" +
         (names.length ? '<div class="wn-path"><span class="lbl">첫날</span>' + names.slice(0, 6).map(esc).join(' <i aria-hidden="true">→</i> ') + (names.length > 6 ? " …" : "") + "</div>" : "") +
         '<div class="wn-foot"><button class="btn cta" type="button" data-act="go-plan" data-day="' + (d1 ? d1.id : "") + '">' + ICON.map + "첫날 일정 보기</button>" +
-        '<button class="btn" type="button" data-act="ck-sheet" data-list="pack">' + ICON.bag + "준비물</button></div></div></article></div>";
+        '<button class="btn" type="button" data-act="ck-sheet" data-list="pack">' + ICON.bag + "준비물</button></div></div></article></div>" +
+        cards.map(briefCard).join("") + "</div>" +
+        '<div class="hc-nav"><button class="hc-arr l" type="button" data-act="hc-step" data-d="-1" aria-label="이전">' + ICON.chevL + "</button>" +
+        '<div class="hc-dots" aria-hidden="true">' + "<i></i>".repeat(cards.length + 1) + "</div>" +
+        '<button class="hc-arr r" type="button" data-act="hc-step" data-d="1" aria-label="다음">' + ICON.chevR + "</button></div></div>";
     }
     if (ph.k === "after") {
       let places = 0, photos = 0;

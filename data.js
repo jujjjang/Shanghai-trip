@@ -504,3 +504,41 @@ window.TRIP_SEED = {
   }
  ]
 };
+
+/* 출발 전 '가기 전에 알아둘 것' 카드 (홈 · 여행 전). 2026.10.21에 공식·최신 안내 기준으로 확인.
+   tiles: 큰 숫자 칸 / wide: 한 줄 강조 칸 (warn = 주의) / links: 아래 출처 칩.
+   공항·생활 카드의 시간·날씨·환율은 앱이 일정 데이터에서 채워 넣어요. */
+window.TRIP_BRIEF = {
+ "checked": "10.21",
+ "cards": [
+  {
+   "id": "bag", "icon": "bag", "title": "수하물",
+   "tiles": [{ "k": "위탁", "v": "23kg", "u": "× 1개" }, { "k": "기내", "v": "8kg", "u": "× 1개" }],
+   "wide": { "k": "보조배터리 · 위탁 불가", "v": "기내만 · 1인 2개 · 100Wh 이하", "warn": true },
+   "note": "라이트 이코노미는 위탁 0개일 수 있어요 · 액체는 100ml 용기, 1L 지퍼백",
+   "links": [{ "t": "동방항공 수하물", "b": "MU", "c": "#1B3E8A", "url": "https://www.ceair.com/global/ko_KRW/Announcement/BaggageService/CarryonBaggage/" }]
+  },
+  {
+   "id": "entry", "icon": "pass", "title": "입국",
+   "tiles": [{ "k": "무비자", "v": "30일", "u": "관광·출장" }, { "k": "정책 기한", "v": "26.12.31", "u": "까지" }],
+   "wide": { "k": "입국신고서", "v": "앱·QR로 미리 작성 가능 · 종이도 OK" },
+   "note": "고기·과일 같은 신선식품은 들고 가면 안 돼요",
+   "links": [
+    { "t": "입국신고서 안내", "b": "中", "c": "#C8102E", "url": "https://gwangju.china-consulate.gov.cn/kor/lsfwx/zytz/202511/t20251128_11762658.htm" },
+    { "t": "해외안전여행", "b": "外", "c": "#2B5079", "url": "https://www.0404.go.kr" }
+   ]
+  },
+  {
+   "id": "pay", "icon": "card", "title": "결제 · 인터넷",
+   "tiles": [{ "k": "알리페이 수수료", "v": "0원", "u": "200위안까지" }, { "k": "200위안 넘으면", "v": "3%", "u": "전체 금액" }],
+   "wide": { "k": "로밍", "v": "카톡 · 구글 · 인스타 그대로 돼요" },
+   "note": "현지 유심·eSIM은 카톡·구글이 막혀요 · 고덕지도는 미리 깔기",
+   "links": []
+  },
+  { "id": "airport", "icon": "plane", "title": "공항", "dynamic": true,
+    "route": "10호선 → 라오시먼 8호선 환승 → 루자방루" },
+  { "id": "life", "icon": "plug", "title": "생활", "dynamic": true,
+    "tiles": [{ "k": "전압", "v": "220V", "u": "그대로 OK" }, { "k": "시차", "v": "−1시간", "u": "한국보다" }],
+    "wide": { "k": "콘센트", "v": "모양이 다를 수 있어요 · 멀티어댑터 챙기기" } }
+ ]
+};
