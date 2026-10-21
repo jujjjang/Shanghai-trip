@@ -1185,8 +1185,8 @@ html { touch-action: pan-x pan-y; }
 body { overflow-x: hidden; }
 
 /* 낮: a plane crosses the sky now and then (still with 동작 줄이기) */
-.plane-fly { opacity: .6; transform: translate(300px, 183px) rotate(-17deg); animation: fly 46s linear infinite; }
-@keyframes fly { 0% { transform: translate(-80px, 300px) rotate(-17deg); } 55% { transform: translate(480px, 128px) rotate(-17deg); } 100% { transform: translate(480px, 128px) rotate(-17deg); } }
+.plane-fly { opacity: .6; transform: translate(300px, 211px) rotate(-17deg); animation: fly 46s linear infinite; }
+@keyframes fly { 0% { transform: translate(-80px, 328px) rotate(-17deg); } 55% { transform: translate(480px, 156px) rotate(-17deg); } 100% { transform: translate(480px, 156px) rotate(-17deg); } }
 
 /* 날씨: full width, hour by hour */
 .w.wweather { height: auto; }
@@ -1267,3 +1267,9 @@ body { background-color: var(--edge) !important; }
 .avcol { width: 34px; height: 34px; border-radius: 50%; border: 0; padding: 0; background: var(--avb); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--avi) 25%, transparent); display: grid; place-items: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .avcol i { width: 12px; height: 12px; border-radius: 50%; background: var(--avi); }
 .avcol.on { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--avi); }
+
+/* home hero: no arrow buttons under the card (swipe + dots), tighter footer, so a strip of river shows above the card */
+.hc-nav .hc-arr { display: none; }
+.hc-nav { padding-top: 12px; }
+.hero-card { padding-bottom: 0; }
+.hero-more { margin: 6px 0 8px; padding: 2px 12px; }

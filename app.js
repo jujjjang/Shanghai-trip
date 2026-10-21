@@ -696,7 +696,7 @@
       const near1 = Math.abs(cx - 196) < 40 ? "#FFB8E6" : Math.abs(cx - 300) < 30 || Math.abs(cx - 336) < 20 ? "#FFD68A" : "#B7A9FF";
       shim += '<rect class="' + (i % 4 ? "" : "tw") + '" x="' + f1(cx - w / 2) + '" y="' + f1(y) + '" width="' + f1(w) + '" height="1.6" rx=".8" fill="' + near1 + '" opacity="' + f1(0.18 + rnd() * 0.45) + '"/>';
     }
-    heroSvg = '<svg class="hero-art" viewBox="0 0 390 760" preserveAspectRatio="xMidYMax slice" aria-hidden="true"><defs>' +
+    heroSvg = '<svg class="hero-art" viewBox="0 0 390 788" preserveAspectRatio="xMidYMax slice" aria-hidden="true"><defs>' +
       '<linearGradient id="hs" x1="0" y1="0" x2="0" y2="1"><stop class="hs0" offset="0"/><stop class="hs1" offset=".3"/><stop class="hs2" offset=".5"/><stop class="hs3" offset=".62"/></linearGradient>' +
       '<linearGradient id="hsd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5AA9DE"/><stop offset="0.05" stop-color="#64AFE1"/><stop offset="0.1" stop-color="#6EB5E4"/><stop offset="0.15" stop-color="#77BBE8"/><stop offset="0.2" stop-color="#80C1EB"/><stop offset="0.25" stop-color="#8AC6ED"/><stop offset="0.3" stop-color="#94CBEF"/><stop offset="0.35" stop-color="#9DD0F1"/><stop offset="0.4" stop-color="#A7D5F2"/><stop offset="0.45" stop-color="#B0DAF4"/><stop offset="0.5" stop-color="#BADDF5"/><stop offset="0.55" stop-color="#C4E0F5"/><stop offset="0.6" stop-color="#CEE3F6"/><stop offset="0.65" stop-color="#D7E4F5"/><stop offset="0.7" stop-color="#E0E3F3"/><stop offset="0.75" stop-color="#E8E3F1"/><stop offset="0.8" stop-color="#EFE3EE"/><stop offset="0.85" stop-color="#F5E2EA"/><stop offset="0.9" stop-color="#F9E3E7"/><stop offset="0.95" stop-color="#FCE7E6"/><stop offset="1" stop-color="#FFEAE4"/></linearGradient>' +
       '<linearGradient id="hwd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#DCDDF0"/><stop offset=".22" stop-color="#BCD6F0"/><stop offset="1" stop-color="#94C0E6"/></linearGradient>' +
@@ -720,7 +720,7 @@
       '<ellipse cx="195" cy="476" rx="350" ry="125" fill="url(#hhaze)"/></g>' +
       '<ellipse cx="200" cy="470" rx="280" ry="110" fill="url(#hglow)"/>' +
       '<g class="far">' + far + "</g>" +
-      '<rect y="470" width="390" height="290" fill="url(#hw)"/><rect class="dy" y="470" width="390" height="290" fill="url(#hwd)"/>' +
+      '<rect y="470" width="390" height="318" fill="url(#hw)"/><rect class="dy" y="470" width="390" height="318" fill="url(#hwd)"/>' +
       '<g fill="url(#hb)">' + near +
       '<path d="M284 470 L287 330 Q290 280 302 246 L306 250 Q314 290 316 330 L318 470 Z"/>' +
       '<path fill-rule="evenodd" d="M248 470 L250 296 L272 282 L274 470 Z M254 297 L269 290 L269 306 L254 311 Z"/>' +
