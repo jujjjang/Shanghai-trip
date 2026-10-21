@@ -594,20 +594,21 @@
     }
     heroSvg = '<svg class="hero-art" viewBox="0 0 390 760" preserveAspectRatio="xMidYMax slice" aria-hidden="true"><defs>' +
       '<linearGradient id="hs" x1="0" y1="0" x2="0" y2="1"><stop class="hs0" offset="0"/><stop class="hs1" offset=".3"/><stop class="hs2" offset=".5"/><stop class="hs3" offset=".62"/></linearGradient>' +
+      '<linearGradient id="hsd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#97D1F0"/><stop offset="0.1" stop-color="#9CD3F1"/><stop offset="0.2" stop-color="#A2D6F2"/><stop offset="0.3" stop-color="#A9D9F3"/><stop offset="0.4" stop-color="#B1DDF4"/><stop offset="0.5" stop-color="#BAE0F5"/><stop offset="0.6" stop-color="#C2E4F7"/><stop offset="0.7" stop-color="#CCE9F8"/><stop offset="0.8" stop-color="#D7EEFA"/><stop offset="0.9" stop-color="#E3F3FB"/><stop offset="1" stop-color="#EEF8FD"/></linearGradient>' +
       '<linearGradient id="hw" x1="0" y1="0" x2="0" y2="1"><stop class="hw0" offset="0"/><stop class="hw1" offset=".35"/><stop class="hw2" offset="1"/></linearGradient>' +
       '<radialGradient id="hglow" cx=".5" cy=".5" r=".5"><stop class="hg" offset="0" stop-opacity=".5"/><stop class="hg" offset="1" stop-opacity="0"/></radialGradient>' +
       '<radialGradient id="hm" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFE7A8" stop-opacity=".32"/><stop offset="1" stop-color="#FFE7A8" stop-opacity="0"/></radialGradient>' +
-      '<radialGradient id="hhaze" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".85"/><stop offset=".55" stop-color="#FFFFFF" stop-opacity=".35"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>' +
+      '<radialGradient id="hhaze" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".7"/><stop offset=".3" stop-color="#FFFFFF" stop-opacity=".45"/><stop offset=".65" stop-color="#FFFFFF" stop-opacity=".14"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>' +
       '<radialGradient id="hsun" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".55"/><stop offset=".4" stop-color="#FFFFFF" stop-opacity=".18"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>' +
       '<radialGradient id="hp" cx=".36" cy=".32" r=".75"><stop class="hp0" offset="0"/><stop class="hp1" offset=".38"/><stop class="hp2" offset=".78"/><stop class="hp3" offset="1"/></radialGradient>' +
       '<linearGradient id="hb" x1="0" y1="0" x2="0" y2="1"><stop class="hb0" offset="0"/><stop class="hb1" offset="1"/></linearGradient>' +
       '<linearGradient id="hr" x1="0" y1="0" x2="0" y2="1"><stop class="hr" offset="0" stop-opacity=".5"/><stop class="hr" offset="1" stop-opacity="0"/></linearGradient>' +
       '<mask id="hmm"><rect width="390" height="760" fill="#fff"/><circle cx="363" cy="231" r="12.5" fill="#000"/></mask></defs>' +
-      '<rect width="390" height="480" fill="url(#hs)"/>' +
+      '<rect width="390" height="480" fill="url(#hs)"/><rect class="dy" width="390" height="480" fill="url(#hsd)"/>' +
       '<g class="nt">' + stars + gold + '<circle cx="356" cy="238" r="44" fill="url(#hm)"/><circle cx="356" cy="238" r="14" fill="#FFE7A8" mask="url(#hmm)"/></g>' +
       '<g class="dy"><circle class="sunglow" cx="352" cy="232" r="76" fill="url(#hsun)"/><circle cx="352" cy="232" r="12" fill="#FFFFFF" opacity=".55"/>' +
       cloud(330, 40, .5, .5, 140) + cloud(64, 262, .9, .75, 105) + cloud(206, 236, .5, .55, 125) + cloud(286, 316, .72, .65, 115) + cloud(130, 352, .58, .6, 98) + cloud(40, 304, .45, .5, 132) +
-      '<ellipse cx="195" cy="470" rx="320" ry="70" fill="url(#hhaze)"/></g>' +
+      '<ellipse cx="195" cy="476" rx="350" ry="125" fill="url(#hhaze)"/></g>' +
       '<ellipse cx="200" cy="470" rx="280" ry="110" fill="url(#hglow)"/>' +
       '<g class="far">' + far + "</g>" +
       '<rect y="470" width="390" height="290" fill="url(#hw)"/>' +
