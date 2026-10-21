@@ -666,6 +666,18 @@
       '<div class="hc-dots" aria-hidden="true">' + list.map((st, i) => '<i class="' + (isDone(st.id) || isSkip(st.id) ? "ok" : "") + (next && st.id === next.id ? " nx" : "") + '"></i>').join("") + "</div>" +
       '<button class="hc-arr r" type="button" data-act="hc-step" data-d="1" aria-label="다음 장소">' + ICON.chevR + "</button></div></div>";
   }
+  /* which day the home screen shows: 자동 / 여행 전 / each day / 다녀온 뒤 (same list as 더보기 → 홈 화면 미리보기) */
+  const previewOpts = () => [["auto", "자동 (오늘 날짜 기준)", ""], ["before", "여행 전", ""]]
+    .concat(state.days.map((d) => [d.id, isNum(d.n) ? "여행 중 · Day " + d.n : "여행 중 · 귀국날", d.date]))
+    .concat([["after", "다녀온 뒤", ""]]);
+  function previewSheet() {
+    const cur = ui.preview || "auto";
+    openSheet({
+      key: "preview", center: true, title: "홈 화면 미리보기",
+      body: '<div class="pvlist">' + previewOpts().map((o) => '<button class="pvopt" type="button" data-act="preview-set" data-v="' + esc(o[0]) + '" aria-pressed="' + (cur === o[0]) + '"><span>' + esc(o[1]) + "</span>" +
+        (o[2] ? "<small>" + esc(o[2]) + "</small>" : "") + ICON.check + "</button>").join("") + "</div>"
+    });
+  }
   function homeHtml() {
     const ctx = homeCtx(), ph = ctx.ph, t = state.trip;
     let chip, title, hint = "";
@@ -680,7 +692,7 @@
       hint = '<span class="mono">' + esc(String(t.dates || "").replace(/\s*·\s*\d+박.*$/, "")) + "</span>";
     }
     let s = '<section class="hero">' + heroArt() +
-      '<div class="hero-top"><div class="hrow"><span class="hz">上海</span><span class="hchip">' + esc(chip) + "</span>" +
+      '<div class="hero-top"><div class="hrow"><span class="hz">上海</span><button class="hchip" type="button" data-act="preview-pick" aria-label="홈 화면 미리보기 바꾸기">' + esc(chip) + ICON.chevR + "</button>" +
       '<button class="hedit' + (editing ? " done" : "") + '" type="button" data-act="w-edit">' + (editing ? "완료" : "편집") + "</button></div>" +
       '<h1 class="htitle">' + esc(title) + "</h1>" + (hint ? '<div class="hhint">' + hint + "</div>" : "") + "</div>" +
       '<div class="hero-card">' + heroCardHtml(ctx) + "</div>" +
@@ -991,7 +1003,7 @@
       state.prep.links.map((l) => '<div class="li"><a class="linkrow grow" href="' + esc(safeUrl(l.url)) + '"' + EXT + "><b>" + esc(l.title || hostOf(l.url)) + "</b><span>" + esc(hostOf(l.url)) + "</span></a>" +
         '<button class="icon-btn" type="button" data-act="link-edit" data-id="' + l.id + '" aria-label="' + esc(l.title) + ' 수정">' + ICON.pen + "</button></div>").join("") +
       row("link-add", "plus", "링크 추가", "") + "</div>";
-    const opts = [["auto", "자동 (오늘 날짜 기준)"], ["before", "여행 전"]].concat(state.days.map((d) => [d.id, (isNum(d.n) ? "여행 중 · Day " + d.n : "여행 중 · 귀국날") + " (" + d.date + ")"])).concat([["after", "다녀온 뒤"]]);
+    const opts = previewOpts().map((o) => [o[0], o[1] + (o[2] ? " (" + o[2] + ")" : "")]);
     const cur = ui.theme || "time";
     s += '<div class="group-h">설정</div><div class="group">' +
       '<div class="setrow"><div class="top"><span class="ri">' + ICON.moon + '</span><span class="rt"><b>화면 테마</b><span>' + (isDark() ? "지금은 밤 테마 · 화면 전체가 남색" : "지금은 낮 테마 · 위는 파란 하늘, 아래는 밝게") + "</span></span></div>" +
@@ -1930,6 +1942,8 @@
         return;
       }
       case "w-addsheet": widgetAddSheet(); return;
+      case "preview-pick": previewSheet(); return;
+      case "preview-set": ui.preview = t.getAttribute("data-v") || "auto"; saveUI(); closeSheet(); render(); window.scrollTo(0, 0); return;
       case "w-add": {
         const w = t.getAttribute("data-w"), list = widgetList();
         if (list.indexOf(w) < 0) list.push(w);
