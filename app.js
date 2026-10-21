@@ -552,7 +552,7 @@
     return { ph, day };
   }
   /* the view behind the home screen: Lujiazui skyline over the river. One drawing for both themes —
-     밤: stars, moon, lit windows / 낮: soft blue sky, a faint sun and a couple of faint clouds. Colours come from CSS (.hero-art …). */
+     밤: stars, moon, lit windows / 낮: blue sky blushing pink-peach at the horizon, a soft sun, drifting clouds. Colours come from CSS (.hero-art …). */
   /* a soft cloud; with dur it drifts across the whole sky (starting where it is drawn) and loops */
   function cloud(x, y, s, o, dur, w) {
     let mv = "";
@@ -594,11 +594,13 @@
     }
     heroSvg = '<svg class="hero-art" viewBox="0 0 390 760" preserveAspectRatio="xMidYMax slice" aria-hidden="true"><defs>' +
       '<linearGradient id="hs" x1="0" y1="0" x2="0" y2="1"><stop class="hs0" offset="0"/><stop class="hs1" offset=".3"/><stop class="hs2" offset=".5"/><stop class="hs3" offset=".62"/></linearGradient>' +
-      '<linearGradient id="hsd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#97D1F0"/><stop offset="0.1" stop-color="#9CD3F1"/><stop offset="0.2" stop-color="#A2D6F2"/><stop offset="0.3" stop-color="#A9D9F3"/><stop offset="0.4" stop-color="#B1DDF4"/><stop offset="0.5" stop-color="#BAE0F5"/><stop offset="0.6" stop-color="#C2E4F7"/><stop offset="0.7" stop-color="#CCE9F8"/><stop offset="0.8" stop-color="#D7EEFA"/><stop offset="0.9" stop-color="#E3F3FB"/><stop offset="1" stop-color="#EEF8FD"/></linearGradient>' +
+      '<linearGradient id="hsd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8ACBEE"/><stop offset="0.071" stop-color="#91CEEF"/><stop offset="0.143" stop-color="#97D1F0"/><stop offset="0.214" stop-color="#9DD4F2"/><stop offset="0.286" stop-color="#A4D6F3"/><stop offset="0.357" stop-color="#ADDAF4"/><stop offset="0.429" stop-color="#B7DEF5"/><stop offset="0.5" stop-color="#C0E2F7"/><stop offset="0.571" stop-color="#CBE4F7"/><stop offset="0.643" stop-color="#D6E6F6"/><stop offset="0.714" stop-color="#E2E5F4"/><stop offset="0.786" stop-color="#ECE3F0"/><stop offset="0.857" stop-color="#F5E2EA"/><stop offset="0.929" stop-color="#FBE5E6"/><stop offset="1" stop-color="#FFEAE4"/></linearGradient>' +
+      '<linearGradient id="hwd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#DCDDF0"/><stop offset=".22" stop-color="#BCD6F0"/><stop offset="1" stop-color="#94C0E6"/></linearGradient>' +
+      '<linearGradient id="clg" x1="0" y1="0" x2="0" y2="1"><stop offset=".45" stop-color="#FFFFFF"/><stop offset="1" stop-color="#FBE3EB"/></linearGradient>' +
       '<linearGradient id="hw" x1="0" y1="0" x2="0" y2="1"><stop class="hw0" offset="0"/><stop class="hw1" offset=".35"/><stop class="hw2" offset="1"/></linearGradient>' +
       '<radialGradient id="hglow" cx=".5" cy=".5" r=".5"><stop class="hg" offset="0" stop-opacity=".5"/><stop class="hg" offset="1" stop-opacity="0"/></radialGradient>' +
       '<radialGradient id="hm" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFE7A8" stop-opacity=".32"/><stop offset="1" stop-color="#FFE7A8" stop-opacity="0"/></radialGradient>' +
-      '<radialGradient id="hhaze" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".7"/><stop offset=".3" stop-color="#FFFFFF" stop-opacity=".45"/><stop offset=".65" stop-color="#FFFFFF" stop-opacity=".14"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>' +
+      '<radialGradient id="hhaze" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFF6F0" stop-opacity=".7"/><stop offset=".35" stop-color="#FFF3EE" stop-opacity=".38"/><stop offset=".7" stop-color="#FFF1EE" stop-opacity=".12"/><stop offset="1" stop-color="#FFF1EE" stop-opacity="0"/></radialGradient>' +
       '<radialGradient id="hsun" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".55"/><stop offset=".4" stop-color="#FFFFFF" stop-opacity=".18"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>' +
       '<radialGradient id="hp" cx=".36" cy=".32" r=".75"><stop class="hp0" offset="0"/><stop class="hp1" offset=".38"/><stop class="hp2" offset=".78"/><stop class="hp3" offset="1"/></radialGradient>' +
       '<linearGradient id="hb" x1="0" y1="0" x2="0" y2="1"><stop class="hb0" offset="0"/><stop class="hb1" offset="1"/></linearGradient>' +
@@ -611,7 +613,7 @@
       '<ellipse cx="195" cy="476" rx="350" ry="125" fill="url(#hhaze)"/></g>' +
       '<ellipse cx="200" cy="470" rx="280" ry="110" fill="url(#hglow)"/>' +
       '<g class="far">' + far + "</g>" +
-      '<rect y="470" width="390" height="290" fill="url(#hw)"/>' +
+      '<rect y="470" width="390" height="290" fill="url(#hw)"/><rect class="dy" y="470" width="390" height="290" fill="url(#hwd)"/>' +
       '<g fill="url(#hb)">' + near +
       '<path d="M284 470 L287 330 Q290 280 302 246 L306 250 Q314 290 316 330 L318 470 Z"/>' +
       '<path fill-rule="evenodd" d="M248 470 L250 296 L272 282 L274 470 Z M254 297 L269 290 L269 306 L254 311 Z"/>' +

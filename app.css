@@ -74,7 +74,7 @@
   --gold-soft: rgba(255, 201, 77, 0.12); --gold-ink: #FFC94D;
   --coral: #FF9A8B; --coral-soft: rgba(255, 138, 128, 0.13); --coral-ink: #FF9A8B;
   --danger: #FF8A80;
-  --d1: #8A99F2; --d2: #E39BCF; --d3: #B596EE; --d4: #A5A9C5;
+  --d1: #8A99F2; --d2: #D6A2EA; --d3: #B596EE; --d4: #A5A9C5;
   --on-c: #0B1030;
   --tab-bg: rgba(11, 16, 48, 0.94);
   --glass: rgba(22, 29, 69, 0.92);
@@ -950,8 +950,8 @@ body[data-tab="home"] { background: linear-gradient(var(--bg), var(--bg)) top ce
 }
 html[data-theme="light"] { background: #97D1F0; }
 [data-theme="light"] body { background-color: #97D1F0; }
-[data-theme="light"] .hero { background: #8EC5EA; color: var(--hero-ink); }
-[data-theme="light"] .wzone { background: linear-gradient(180deg, #8EC5EA 0px, #93C7EB 98px, #A1CDED 196px, #B4D6EF 293px, #CAE1F2 391px, #DAE7F4 489px, #E7ECF5 587px, #F2F0F6 684px, #F9F3F7 782px, #FCF4F7 880px); }
+[data-theme="light"] .hero { background: #94C0E6; color: var(--hero-ink); }
+[data-theme="light"] .wzone { background: linear-gradient(180deg, #94C0E6 0px, #99C3E7 98px, #A5CAEA 196px, #B6D4EE 293px, #CBE0F2 391px, #DAE7F4 489px, #E7ECF5 587px, #F2F0F6 684px, #F9F3F7 782px, #FCF4F7 880px); }
 [data-theme="light"] .htitle, [data-theme="light"] .hero .hz, [data-theme="light"] .phead h1 { text-shadow: var(--sky-shadow); }
 [data-theme="light"] .hhint, [data-theme="light"] .phead .sub { text-shadow: 0 1px 8px rgba(50, 120, 190, .5); }
 [data-theme="light"] .hchip, [data-theme="light"] .hero .hchip { color: #FFFFFF; background: var(--hero-glass); border-color: var(--hero-line); }
@@ -1024,10 +1024,12 @@ button.hchip svg { width: 11px; height: 11px; margin-right: -2px; opacity: .8; t
   --cta-ink: #FFFFFF;
   --shadow: 0 10px 28px rgba(50, 110, 160, 0.12);
   --shadow-sm: 0 6px 18px rgba(50, 110, 160, 0.09);
-  --d1: #4A99D1; --d2: #EBA2BE; --d3: #7393DD; --d4: #8C9FB4;
+  --d1: #4A99D1; --d2: #EBA2BE; --d3: #5DBBD6; --d4: #8C9FB4;
 }
 [data-theme="light"] .group-h, :root[data-theme="light"] .group-h { color: #3A5672; }
 [data-theme="light"] .phead + .group-h { color: #3A5672; }
 [data-theme="light"] .hedit.done, [data-theme="light"] .hero .hedit.done { color: var(--accent); }
 [data-theme="light"] .prows > li.dragging > .swipe > .prow { box-shadow: 0 12px 30px rgba(50, 110, 160, .2); }
 [data-theme="light"] .tabbar button { color: var(--soft); }
+[data-theme="light"] .hero-art .cl path { fill: url(#clg); }
+[data-theme="light"] .hero-art .shim rect:nth-child(3n) { fill: #FFE0EA; }
