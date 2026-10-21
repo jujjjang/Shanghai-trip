@@ -1226,3 +1226,4 @@ body { overflow-x: hidden; }
 .w-send { grid-column: 1 / -1; display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 46px; border-radius: 16px; border: 0; background: color-mix(in srgb, var(--accent) 12%, var(--surface)); color: var(--accent); font: 600 14px/1.2 inherit; font-family: inherit; cursor: pointer; }
 .w-send svg { width: 17px; height: 17px; flex: none; }
 .w-send.armed { background: var(--accent); color: #fff; }
+.wgrid .wsent { grid-column: 1 / -1; margin: -2px 6px 2px; text-align: center; font-size: 12px; color: var(--muted); text-shadow: none; }
