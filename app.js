@@ -390,8 +390,8 @@
     "Q" + (x - r * .18) + " " + (y + r * .18) + " " + (x - r) + " " + y + "Q" + (x - r * .18) + " " + (y - r * .18) + " " + x + " " + (y - r) + 'Z"/>';
   function skyArt(h, small) {
     const dy = h - 190;
-    const dots = [[24, 30, 1], [70, 18, .8], [118, 44, 1.1], [160, 12, .7], [196, 34, 1], [252, 14, .8], [300, 18, .9], [366, 40, .8], [190, 80, .7], [52, 84, .8], [140, 104, .6], [18, 120, .7], [96, 132, .7], [228, 108, .6]].filter((s) => s[1] < h - 56);
-    const gold = [[44, 50, 5.5], [150, 30, 4.2], [214, 72, 3.4], [338, 22, 4.6], [104, 100, 3.2], [380, 92, 3.4]].filter((s) => s[1] < h - 50);
+    const dots = [[24, 30, 1], [70, 18, .8], [118, 44, 1.1], [160, 12, .7], [196, 34, 1], [252, 14, .8], [300, 18, .9], [366, 40, .8], [190, 80, .7], [52, 84, .8], [140, 104, .6], [18, 120, .7], [96, 132, .7], [228, 108, .6]].filter((s) => s[1] < h - 56 && !(s[0] < 210 && s[1] > 22 && s[1] < 108));
+    const gold = [[150, 26, 4.2], [226, 74, 3.4], [338, 22, 4.6], [380, 92, 3.4]].filter((s) => s[1] < h - 50);
     const win = [[225, 160], [233, 166], [247, 156], [304, 122], [314, 134], [309, 152], [345, 112], [352, 142], [358, 162], [377, 150], [365, 168], [228, 170]];
     return '<svg class="hart" viewBox="0 0 390 ' + h + '" preserveAspectRatio="' + (small ? "xMaxYMax meet" : "xMaxYMax slice") + '" aria-hidden="true"><defs>' +
       '<linearGradient id="bfade" gradientUnits="userSpaceOnUse" x1="0" y1="' + (60 + dy) + '" x2="0" y2="' + (190 + dy) + '"><stop class="bt" offset="0"/><stop class="bt" offset=".7"/><stop class="bb" offset="1"/></linearGradient>' +
@@ -674,10 +674,13 @@
     const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
     let stars = "";
     for (let i = 0; i < 46; i++) {
-      const x = f1(rnd() * 390), y = f1(rnd() * 400), r = f1(0.5 + rnd() * 1.1);
-      stars += '<circle class="' + (i % 3 ? "" : "tw") + '" cx="' + x + '" cy="' + y + '" r="' + r + '" fill="#fff" opacity="' + f1(0.35 + rnd() * 0.55) + '"/>';
+      const x = f1(rnd() * 390), y = f1(rnd() * 400), r = f1(0.5 + rnd() * 1.1), o = f1(0.35 + rnd() * 0.55);
+      const clear = y > 88 && y < 340 && !(x < 250 && y > 90 && y < 230) && !(x > 296 && y < 142) && !(Math.abs(x - 363) < 22 && Math.abs(y - 231) < 22);
+      if (clear) stars += '<circle class="' + (i % 3 ? "" : "tw") + '" cx="' + x + '" cy="' + y + '" r="' + f1(Math.min(r, 1.2)) + '" fill="#fff" opacity="' + f1(Math.max(o, 0.5)) + '"/>';
     }
-    const gold = [[46, 128, 6], [128, 70, 4.4], [92, 236, 3.4], [232, 54, 4], [356, 214, 4.6], [176, 168, 3], [24, 300, 3.2], [270, 338, 3]].map((g) => spark(g[0], g[1], g[2])).join("");
+    [[22, 76, .8], [104, 56, .7], [292, 46, .8], [334, 76, .6], [374, 34, .7], [208, 80, .6], [276, 172, .7], [384, 182, .6], [268, 236, .6]]
+      .forEach((t, i) => { stars += '<circle class="' + (i % 2 ? "tw" : "") + '" cx="' + t[0] + '" cy="' + t[1] + '" r="' + t[2] + '" fill="#fff" opacity=".6"/>'; });
+    const gold = [[262, 116, 4.4], [348, 206, 4.4], [84, 262, 3.6], [34, 322, 3], [148, 334, 2.6]].map((g) => spark(g[0], g[1], g[2])).join("");
     let far = "", x = -6;
     while (x < 396) {
       const w = 12 + Math.floor(rnd() * 16), h = 26 + Math.floor(rnd() * 64);
@@ -696,7 +699,7 @@
       const near1 = Math.abs(cx - 196) < 40 ? "#FFB8E6" : Math.abs(cx - 300) < 30 || Math.abs(cx - 336) < 20 ? "#FFD68A" : "#B7A9FF";
       shim += '<rect class="' + (i % 4 ? "" : "tw") + '" x="' + f1(cx - w / 2) + '" y="' + f1(y) + '" width="' + f1(w) + '" height="1.6" rx=".8" fill="' + near1 + '" opacity="' + f1(0.18 + rnd() * 0.45) + '"/>';
     }
-    heroSvg = '<svg class="hero-art" viewBox="0 0 390 788" preserveAspectRatio="xMidYMax slice" aria-hidden="true"><defs>' +
+    heroSvg = '<svg class="hero-art" viewBox="0 0 390 781" preserveAspectRatio="xMidYMax slice" aria-hidden="true"><defs>' +
       '<linearGradient id="hs" x1="0" y1="0" x2="0" y2="1"><stop class="hs0" offset="0"/><stop class="hs1" offset=".3"/><stop class="hs2" offset=".5"/><stop class="hs3" offset=".62"/></linearGradient>' +
       '<linearGradient id="hsd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5AA9DE"/><stop offset="0.05" stop-color="#64AFE1"/><stop offset="0.1" stop-color="#6EB5E4"/><stop offset="0.15" stop-color="#77BBE8"/><stop offset="0.2" stop-color="#80C1EB"/><stop offset="0.25" stop-color="#8AC6ED"/><stop offset="0.3" stop-color="#94CBEF"/><stop offset="0.35" stop-color="#9DD0F1"/><stop offset="0.4" stop-color="#A7D5F2"/><stop offset="0.45" stop-color="#B0DAF4"/><stop offset="0.5" stop-color="#BADDF5"/><stop offset="0.55" stop-color="#C4E0F5"/><stop offset="0.6" stop-color="#CEE3F6"/><stop offset="0.65" stop-color="#D7E4F5"/><stop offset="0.7" stop-color="#E0E3F3"/><stop offset="0.75" stop-color="#E8E3F1"/><stop offset="0.8" stop-color="#EFE3EE"/><stop offset="0.85" stop-color="#F5E2EA"/><stop offset="0.9" stop-color="#F9E3E7"/><stop offset="0.95" stop-color="#FCE7E6"/><stop offset="1" stop-color="#FFEAE4"/></linearGradient>' +
       '<linearGradient id="hwd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#DCDDF0"/><stop offset=".22" stop-color="#BCD6F0"/><stop offset="1" stop-color="#94C0E6"/></linearGradient>' +
@@ -720,7 +723,7 @@
       '<ellipse cx="195" cy="476" rx="350" ry="125" fill="url(#hhaze)"/></g>' +
       '<ellipse cx="200" cy="470" rx="280" ry="110" fill="url(#hglow)"/>' +
       '<g class="far">' + far + "</g>" +
-      '<rect y="470" width="390" height="318" fill="url(#hw)"/><rect class="dy" y="470" width="390" height="318" fill="url(#hwd)"/>' +
+      '<rect y="470" width="390" height="311" fill="url(#hw)"/><rect class="dy" y="470" width="390" height="311" fill="url(#hwd)"/>' +
       '<g fill="url(#hb)">' + near +
       '<path d="M284 470 L287 330 Q290 280 302 246 L306 250 Q314 290 316 330 L318 470 Z"/>' +
       '<path fill-rule="evenodd" d="M248 470 L250 296 L272 282 L274 470 Z M254 297 L269 290 L269 306 L254 311 Z"/>' +

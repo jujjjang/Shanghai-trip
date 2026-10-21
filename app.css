@@ -1185,8 +1185,8 @@ html { touch-action: pan-x pan-y; }
 body { overflow-x: hidden; }
 
 /* 낮: a plane crosses the sky now and then (still with 동작 줄이기) */
-.plane-fly { opacity: .6; transform: translate(300px, 211px) rotate(-17deg); animation: fly 46s linear infinite; }
-@keyframes fly { 0% { transform: translate(-80px, 328px) rotate(-17deg); } 55% { transform: translate(480px, 156px) rotate(-17deg); } 100% { transform: translate(480px, 156px) rotate(-17deg); } }
+.plane-fly { opacity: .6; transform: translate(300px, 204px) rotate(-17deg); animation: fly 46s linear infinite; }
+@keyframes fly { 0% { transform: translate(-80px, 321px) rotate(-17deg); } 55% { transform: translate(480px, 149px) rotate(-17deg); } 100% { transform: translate(480px, 149px) rotate(-17deg); } }
 
 /* 날씨: full width, hour by hour */
 .w.wweather { height: auto; }
@@ -1273,3 +1273,5 @@ body { background-color: var(--edge) !important; }
 .hc-nav { padding-top: 12px; }
 .hero-card { padding-bottom: 0; }
 .hero-more { margin: 6px 0 8px; padding: 2px 12px; }
+/* the antenna's little light sat right against the title, so the hero keeps it off (the small page skies still have theirs) */
+.hero-art .tip { display: none; }
