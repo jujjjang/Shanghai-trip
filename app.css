@@ -1185,8 +1185,8 @@ html { touch-action: pan-x pan-y; }
 body { overflow-x: hidden; }
 
 /* 낮: a plane crosses the sky now and then (still with 동작 줄이기) */
-.plane-fly { opacity: .78; transform: translate(262px, 232px); animation: fly 46s linear infinite; }
-@keyframes fly { 0% { transform: translate(-70px, 232px); } 55% { transform: translate(470px, 232px); } 100% { transform: translate(470px, 232px); } }
+.plane-fly { opacity: .78; transform: translate(300px, 112px) rotate(-17deg); animation: fly 46s linear infinite; }
+@keyframes fly { 0% { transform: translate(-80px, 230px) rotate(-17deg); } 55% { transform: translate(480px, 58px) rotate(-17deg); } 100% { transform: translate(480px, 58px) rotate(-17deg); } }
 
 /* 날씨: full width, hour by hour */
 .w.wweather { height: auto; }
@@ -1221,3 +1221,8 @@ body { overflow-x: hidden; }
 /* the antenna's light is a night thing */
 [data-theme="light"] .hero-art .tip, [data-theme="light"] .hart .tip { display: none; }
 .setrow .tinput { display: block; width: 100%; margin-top: 10px; padding: 11px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--inner); font: inherit; font-size: 16px; color: var(--ink); }
+
+/* send my home widget layout to the friend */
+.w-send { grid-column: 1 / -1; display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 46px; border-radius: 16px; border: 0; background: color-mix(in srgb, var(--accent) 12%, var(--surface)); color: var(--accent); font: 600 14px/1.2 inherit; font-family: inherit; cursor: pointer; }
+.w-send svg { width: 17px; height: 17px; flex: none; }
+.w-send.armed { background: var(--accent); color: #fff; }

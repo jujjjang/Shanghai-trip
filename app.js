@@ -146,6 +146,8 @@
     d.days = d.days || []; d.days.forEach((x) => { x.stops = x.stops || []; });
     d.done = d.done || {}; d.skip = d.skip || {}; d.journal = d.journal || {}; d.placePhotos = d.placePhotos || {};
     d.posts = d.posts || []; d.postPhotos = d.postPhotos || {}; d.likes = d.likes || {}; d.shared = d.shared || {}; d.tasks = d.tasks || [];
+    /* 메모 is a single personal note now: older separate memos are folded into it */
+    if (d.memos.length > 1) d.memos = [{ id: d.memos[0].id, text: d.memos.map((m) => m.text).filter(Boolean).join("\n\n"), at: d.memos[0].at }];
     /* 기록 used to be one text box + photos per day: each becomes that day's first post, with the same id on every phone */
     Object.keys(d.journal).forEach((dayId) => {
       const j = d.journal[dayId] || {}, ph = (j.photos || []).filter(Boolean);
@@ -188,7 +190,7 @@
   const sync = Object.assign({ code: "", me: "", cursor: null, base: {}, ts: {}, cfg: null, err: "", last: 0 }, lsGet(LS_SYNC) || {});
   sync.base = sync.base || {}; sync.ts = sync.ts || {}; sync.err = "";
   function saveSync() { lsSet(LS_SYNC, sync); }
-  let syncT = 0, pushing = false, pushAgain = false, pulling = false, pullLater = false, lastToast = 0;
+  let syncT = 0, pushing = false, pushAgain = false, pulling = false, pullLater = false, lastToast = 0, layoutIn = "";
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
 
   /* ---------- 낮 / 밤 테마 ---------- */
@@ -587,7 +589,7 @@
     settle: { name: "N빵 정산", desc: "총 지출 · 보낼 돈", icon: "money", size: "half" },
     fx: { name: "환율 계산", desc: "위안 ↔ 원 바로 계산", icon: "swap", size: "half" },
     photos: { name: "오늘 기록", desc: "최근 기록 · 바로 쓰기", icon: "camera", size: "half" },
-    memo: { name: "메모", desc: "메모 모아 보기", icon: "note", size: "half" }
+    memo: { name: "메모", desc: "나만 보는 메모 한 장", icon: "note", size: "half" }
   };
   const CK_TITLE = { todo: "출발 전 할 일", pack: "필수 준비물", apps: "필수 앱" };
   /* list keys: todo / pack / apps (preparation), or "tk:<dayId>" / "tk:after" for each day's own 할 일 */
@@ -625,6 +627,18 @@
     return w;
   }
   function setWidgets(list) { ui.wsets = ui.wsets || {}; ui.wsets[wKey()] = list; saveUI(); }
+  /* "친구 화면도 이렇게": my widgets for every home view go out as one shared row; the friend's phone takes them on */
+  function sendLayout() {
+    ui.wsets = ui.wsets || {};
+    ["before", "after"].concat(state.days.map((d) => d.id)).forEach((k) => { if (!ui.wsets[k]) ui.wsets[k] = (Array.isArray(ui.widgets) ? ui.widgets : W_DEFAULT).slice(); });
+    state.layout = { sets: JSON.parse(JSON.stringify(ui.wsets)), by: sync.me || "", at: Date.now() };
+    saveUI(); save();
+  }
+  function takeLayout(v) {
+    if (!v || !v.sets || (v.by && v.by === sync.me)) return false;
+    ui.wsets = JSON.parse(JSON.stringify(v.sets)); saveUI();
+    return true;
+  }
   let editing = false;
   const heroIdx = {};
   function homeCtx() {
@@ -852,7 +866,8 @@
       '<button class="hero-more" type="button" data-act="to-widgets">위젯 ' + ICON.chevR + "</button></section>";
     const list = widgetList();
     s += '<div class="wzone" id="wzone">' + (editing ? '<p class="wnote">' + esc(wSetName()) + " 홈 위젯 편집 중 · 날짜마다 따로 저장돼요</p>" : "") + '<div class="wgrid' + (editing ? " wedit" : "") + '" id="wgrid">' + list.map((id) => widgetHtml(id, ctx)).join("") +
-      (editing ? '<button class="w-add" type="button" data-act="w-addsheet">+ 위젯 추가</button>' : "") + "</div>" +
+      (editing ? '<button class="w-add" type="button" data-act="w-addsheet">+ 위젯 추가</button>' +
+        (sync.code ? '<button class="w-send" type="button" data-act="w-send">' + ICON.users + "친구 홈 화면도 이 배치로</button>" : "") : "") + "</div>" +
       (!list.length && !editing ? '<p class="note" style="text-align:center;margin-top:24px;color:#fff">\'편집\'을 눌러 위젯을 넣어보세요</p>' : "") + "</div>";
     return s;
   }
@@ -927,8 +942,8 @@
       }
       case "memo": {
         const m = state.memos[0];
-        return wrapW(id, '<div class="hd"><span class="lbl">메모</span><span class="mono sub">' + (state.memos.length > 1 ? state.memos.length + "개" : "") + "</span></div>" + '<div class="wmemo">' + (m ? esc(m.text) : '<span class="sub">눌러서 메모 적기</span>') + "</div>",
-          "", m ? ' data-act="memo-list"' : ' data-act="memo-add"');
+        return wrapW(id, '<div class="hd"><span class="lbl">메모</span>' + ICON.note + "</div>" + '<div class="wmemo">' + (m ? esc(m.text) : '<span class="sub">눌러서 메모 적기</span>') + "</div>",
+          "", ' data-act="memo-add"');
       }
     }
     return "";
@@ -1602,22 +1617,15 @@
         '<div class="addline"><input id="memNew" placeholder="이름 추가" autocomplete="off" enterkeyhint="done"><button class="btn primary" type="button" data-act="mem-add">추가</button></div>'
     });
   }
-  function memoListSheet() {
+  function memoSheet() {
+    const m = state.memos[0] || null;
     openSheet({
-      key: "memos", title: "메모",
-      body: '<div class="group">' + state.memos.map((m) => { const ls = String(m.text || "").split("\n").filter((x) => x.trim()); return '<button class="row memo-row" type="button" data-act="memo-edit" data-id="' + m.id + '"><span class="ri">' + ICON.note + '</span><span class="rt"><b>' + esc(ls[0] || "메모") + "</b><span>" + esc(ls.slice(1).join(" · ") || (m.at ? dayLabel(m.at) : "")) + '</span></span><span class="chev2" aria-hidden="true">›</span></button>'; }).join("") +
-        row("memo-add", "plus", "메모 추가", "") + "</div>"
-    });
-  }
-  function memoSheet(id) {
-    const m = id ? state.memos.find((i) => i.id === id) : null;
-    openSheet({
-      title: m ? "메모 수정" : "메모 추가",
-      body: '<label class="field"><span class="vh">메모</span><textarea name="text" style="min-height:40vh" placeholder="자유롭게 적어두기">' + esc(m ? m.text : "") + "</textarea></label>",
+      title: "메모",
+      body: '<label class="field"><span class="vh">메모</span><textarea name="text" style="min-height:40vh" placeholder="자유롭게 적어두기 · 이 폰에만 저장돼요">' + esc(m ? m.text : "") + "</textarea></label>",
       foot: footSave(!!m),
       on(k, v, btn) {
         if (k === "save") {
-          if (!v.text) { toast("내용을 적어주세요"); return; }
+          if (!v.text) { state.memos = []; save(); closeSheet(); render(); return; }
           if (m) { m.text = v.text; m.at = Date.now(); } else state.memos.unshift({ id: newId("m"), text: v.text, at: Date.now() });
           save(); closeSheet(); render(); toast("저장했어요");
         } else if (k === "del") {
@@ -1943,7 +1951,6 @@
     todo: [() => state.prep.todo, (a) => { state.prep.todo = a; }],
     link: [() => state.prep.links, (a) => { state.prep.links = a; }],
     info: [() => state.infos, (a) => { state.infos = a; }],
-    memo: [() => state.memos, (a) => { state.memos = a; }],
     post: [() => state.posts, (a) => { state.posts = a; }],
     task: [() => state.tasks, (a) => { state.tasks = a; }]
   };
@@ -1959,6 +1966,7 @@
     m.settle = { members: state.settle.members, rate: state.settle.rate };
     state.settle.expenses.forEach((e) => { m["x:" + e.id] = e; });
     Object.keys(state.likes).forEach((k) => { if (state.likes[k]) m["like:" + k] = true; });
+    if (state.layout) m.layout = state.layout;
     /* one row per shared photo, so two people adding or removing photos never overwrite each other */
     Object.keys(state.shared).forEach((o) => (state.shared[o] || []).forEach((pid) => { m["ph:" + o + ":" + pid] = 1; }));
     Object.keys(state.done).forEach((id) => { if (state.done[id] && !per.has(id)) m["done:" + id] = true; });
@@ -1995,6 +2003,7 @@
       }
       case "j": { const j = (state.journal[id] = state.journal[id] || {}); if (v) j.text = v; else delete j.text; break; } /* from a phone still on the old app */
       case "like": if (v) state.likes[id] = true; else delete state.likes[id]; break;
+      case "layout": state.layout = v || null; if (takeLayout(v)) layoutIn = v.by || "친구"; break;
       case "ph": {
         const c = id.lastIndexOf(":"), o = id.slice(0, c), pid = id.slice(c + 1);
         if (!o || !validPid(pid)) break;
@@ -2084,7 +2093,8 @@
         state = norm(state);
         if (!lsSet(LS_STATE, state)) toast("폰 저장 공간이 부족해서 저장하지 못했어요");
         redraw();
-        if (who.size && Date.now() - lastToast > 45000) { lastToast = Date.now(); toast(Array.from(who).join(", ") + " 님이 바꾼 내용이 들어왔어요"); }
+        if (layoutIn) { toast(layoutIn + " 님이 보낸 홈 위젯 배치로 바꿨어요"); layoutIn = ""; lastToast = Date.now(); }
+        else if (who.size && Date.now() - lastToast > 45000) { lastToast = Date.now(); toast(Array.from(who).join(", ") + " 님이 바꾼 내용이 들어왔어요"); }
       }
     } catch (e) { sync.err = String((e && e.message) || e); }
     finally { pulling = false; saveSync(); }
@@ -2189,7 +2199,7 @@
     /* the shared half comes from the trip; my own packing list, apps and photos stay as they are */
     const per = personalIds();
     if (rows.some((r) => r.k.indexOf("day:") === 0 && r.v)) state.days = [];
-    state.prep.todo = []; state.prep.links = []; state.infos = []; state.memos = []; state.settle.expenses = []; state.posts = []; state.likes = {}; state.shared = {}; state.tasks = [];
+    state.prep.todo = []; state.prep.links = []; state.infos = []; state.settle.expenses = []; state.posts = []; state.likes = {}; state.shared = {}; state.tasks = []; state.layout = null;
     Object.keys(state.journal).forEach((d) => { if (state.journal[d]) delete state.journal[d].text; });
     Object.keys(state.done).forEach((id) => { if (!per.has(id)) delete state.done[id]; });
     state.skip = {};
@@ -2322,7 +2332,7 @@
   document.addEventListener("submit", (e) => e.preventDefault());
   document.addEventListener("click", (e) => {
     /* in edit mode, widgets only move or come out — nothing inside them fires */
-    if (editing && e.target.closest("#wgrid") && !e.target.closest(".w-del, .w-add")) { e.preventDefault(); return; }
+    if (editing && e.target.closest("#wgrid") && !e.target.closest(".w-del, .w-add, .w-send")) { e.preventDefault(); return; }
     /* ticking a box inside a checklist widget shouldn't also open the big list */
     if (e.target.closest(".wck")) return;
     if (swallow) { swallow = false; e.preventDefault(); return; }
@@ -2364,6 +2374,10 @@
       }
       case "w-addsheet": widgetAddSheet(); return;
       case "trip-title": tripTitleSheet(); return;
+      case "w-send": {
+        if (!t.classList.contains("armed")) { t.classList.add("armed"); t.lastChild.textContent = "한 번 더 누르면 친구 홈 위젯이 바뀌어요"; return; }
+        sendLayout(); editing = false; render(); toast("친구 홈 화면 위젯을 내 배치로 맞췄어요 · 모든 날짜 포함"); return;
+      }
       case "members": membersSheet(); return;
       case "mem-del": {
         const n = t.getAttribute("data-p");
@@ -2485,8 +2499,7 @@
       case "copy": copyText(t.getAttribute("data-v"), "복사했어요: " + t.getAttribute("data-v")); return;
       case "info-add": infoSheet(null); return;
       case "info-edit": infoSheet(id); return;
-      case "memo-add": memoSheet(null); return;
-      case "memo-list": memoListSheet(); return;
+      case "memo-add": memoSheet(); return;
       case "memo-edit": memoSheet(id); return;
       case "link-add": linkSheet(null); return;
       case "link-edit": linkSheet(id); return;

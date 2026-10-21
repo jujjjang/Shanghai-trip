@@ -183,18 +183,7 @@ window.TRIP_SEED = {
    }
   ]
  },
- "memos": [
-  {
-   "id": "3d32si1q9901he5pu69c",
-   "text": "메모메모메모",
-   "at": 1792475020385
-  },
-  {
-   "id": "m-first",
-   "text": "ㅇㅇㅇㅇ\nㄴㄴㄴ",
-   "at": 1792473558844
-  }
- ],
+ "memos": [],
  "infos": [],
  "days": [
   {
