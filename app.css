@@ -941,8 +941,8 @@ body[data-tab="home"] { background: linear-gradient(var(--bg), var(--bg)) top ce
 [data-theme="light"] {
   --bg: #FCF4F7; /* 낮: the page under the sky is a near-white pale pink */
   --band-home: linear-gradient(180deg, #5AA9DE 0, #5FACE0 calc(var(--safe-t) + 48px), #6CB3E4 calc(var(--safe-t) + 96px), #7EBFEA calc(var(--safe-t) + 144px), #98CCEF calc(var(--safe-t) + 192px), #B8DCF3 calc(var(--safe-t) + 240px), #D1E7F5 calc(var(--safe-t) + 288px), #E2ECF6 calc(var(--safe-t) + 336px), #F0F0F7 calc(var(--safe-t) + 384px), #F9F3F7 calc(var(--safe-t) + 432px), #FCF4F7 calc(var(--safe-t) + 480px));
-  --band-page: linear-gradient(180deg, #5AA9DE 0, #5BAADE calc(var(--safe-t) + 31px), #60ACE0 calc(var(--safe-t) + 61px), #66B0E1 calc(var(--safe-t) + 92px), #6EB4E4 calc(var(--safe-t) + 122px), #77BAE6 calc(var(--safe-t) + 153px), #85C1E9 calc(var(--safe-t) + 184px), #97CAED calc(var(--safe-t) + 214px), #AAD3F0 calc(var(--safe-t) + 245px), #BBDBF3 calc(var(--safe-t) + 275px), #CCE2F4 calc(var(--safe-t) + 306px), #DBE9F6 calc(var(--safe-t) + 336px), #E4ECF6 calc(var(--safe-t) + 367px), #ECEFF7 calc(var(--safe-t) + 398px), #F3F1F7 calc(var(--safe-t) + 428px), #F8F3F7 calc(var(--safe-t) + 459px), #FBF4F7 calc(var(--safe-t) + 489px), #FCF4F7 calc(var(--safe-t) + 520px));
-  --band-page-h: calc(var(--safe-t) + 520px);
+  --band-page: linear-gradient(180deg, #97D1F0 0, #9BD3F0 calc(var(--safe-t) + 38px), #A6D7F2 calc(var(--safe-t) + 76px), #B4DDF3 calc(var(--safe-t) + 113px), #C6E4F5 calc(var(--safe-t) + 151px), #D7EAF6 calc(var(--safe-t) + 189px), #E5EEF7 calc(var(--safe-t) + 227px), #F1F1F7 calc(var(--safe-t) + 264px), #F9F3F7 calc(var(--safe-t) + 302px), #FCF4F7 calc(var(--safe-t) + 340px));
+  --band-page-h: calc(var(--safe-t) + 340px);
   --hero-ink: #FFFFFF;
   --hero-soft: rgba(255, 255, 255, 0.94);
   --hero-glass: rgba(70, 140, 200, 0.22);
@@ -1028,7 +1028,7 @@ button.hchip svg { width: 11px; height: 11px; margin-right: -2px; opacity: .8; t
   --d1: #4A99D1; --d2: #EBA2BE; --d3: #5DBBD6; --d4: #8C9FB4;
 }
 [data-theme="light"] .group-h, :root[data-theme="light"] .group-h { color: #3A5672; }
-[data-theme="light"] .phead + .group-h { color: #3A5672; }
+[data-theme="light"] .phead + .group-h { color: #FFFFFF; text-shadow: 0 1px 8px rgba(50, 120, 190, .5); }
 [data-theme="light"] .hedit.done, [data-theme="light"] .hero .hedit.done { color: var(--accent); }
 [data-theme="light"] .prows > li.dragging > .swipe > .prow { box-shadow: 0 12px 30px rgba(50, 110, 160, .2); }
 [data-theme="light"] .tabbar button { color: var(--soft); }
@@ -1143,7 +1143,7 @@ button.hchip svg { width: 11px; height: 11px; margin-right: -2px; opacity: .8; t
 .post-h .who span { display: block; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .post-h .icon-btn { color: var(--soft); }
 .pph { position: relative; }
-.pstrip { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; aspect-ratio: 4 / 5; max-height: 62vh; background: var(--inner); -webkit-overflow-scrolling: touch; }
+.pstrip { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; aspect-ratio: 1 / 1; background: var(--inner); -webkit-overflow-scrolling: touch; }
 .pstrip::-webkit-scrollbar { display: none; }
 .pstrip > button { flex: 0 0 100%; scroll-snap-align: center; border: 0; padding: 0; margin: 0; background: none; cursor: zoom-in; }
 .pstrip img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -1178,3 +1178,41 @@ body.sheet-open .fab { visibility: hidden; }
 /* (the page's generic "position: relative" for its children would otherwise beat these two) */
 .view > .lchips:not(.phead):not(.hero) { position: sticky; z-index: 4; }
 .view > .fab:not(.phead):not(.hero) { position: fixed; z-index: 20; }
+
+/* no rubber-band or pinch-zoom showing the page's backdrop */
+html, body { overscroll-behavior: none; }
+html { touch-action: pan-x pan-y; }
+body { overflow-x: hidden; }
+
+/* 낮: a plane crosses the sky now and then (still with 동작 줄이기) */
+.plane-fly { transform: translate(262px, 268px) rotate(-7deg); animation: fly 46s linear infinite; }
+@keyframes fly { 0% { transform: translate(-70px, 330px) rotate(-7deg); } 55% { transform: translate(470px, 262px) rotate(-7deg); } 100% { transform: translate(470px, 262px) rotate(-7deg); } }
+
+/* 날씨: full width, hour by hour */
+.w.wweather { height: auto; }
+.wweather .wx-row { display: flex; align-items: center; gap: 10px; margin-top: 2px; }
+.wweather .wx-row .ico svg { width: 30px; height: 30px; }
+.wweather .wx-t b { font-size: 26px; }
+.wweather .wx-c { margin-left: auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wxh { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; margin: 10px -4px 0; padding: 2px 4px 2px; -webkit-overflow-scrolling: touch; }
+.wxh::-webkit-scrollbar { display: none; }
+.wxh > div { flex: none; width: 46px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 7px 0 6px; border-radius: 14px; }
+.wxh > div.now { background: var(--accent-soft); }
+.wxh span { font-size: 11.5px; color: var(--muted); }
+.wxh > div.now span { color: var(--accent); font-weight: 700; }
+.wxh svg { width: 20px; height: 20px; color: var(--ink-2); }
+.wxh b { font-family: var(--f-mono); font-size: 13.5px; font-weight: 600; }
+.wxh em { font-style: normal; font-size: 10.5px; color: var(--accent); min-height: 13px; }
+.wxh-none { margin: 10px 0 0; font-size: 12.5px; color: var(--muted); }
+
+/* 오늘 기록 widget */
+.wpost { display: flex; gap: 8px; align-items: flex-start; margin-top: 6px; min-height: 0; flex: 1; overflow: hidden; }
+.wpost img { flex: none; width: 52px; height: 52px; border-radius: 10px; object-fit: cover; background: var(--inner); }
+.wpost .t { font-size: 12.5px; line-height: 1.4; color: var(--ink-2); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.wpost-add { margin-top: auto; align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; border: 0; background: var(--accent-soft); color: var(--accent); font: inherit; font-size: 12px; font-weight: 600; padding: 5px 10px 5px 7px; border-radius: 999px; cursor: pointer; }
+.wpost-add svg { width: 14px; height: 14px; }
+.wnote { margin: 12px 20px -4px; font-size: 12.5px; color: rgba(255, 255, 255, .92); text-shadow: 0 1px 6px rgba(20, 60, 110, .35); }
+/* toast: wide enough for the message, the action never wraps letter by letter */
+.toast { width: max-content; }
+.toast span { min-width: 0; }
+.toast button { flex: none; white-space: nowrap; font-weight: 600; }

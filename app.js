@@ -83,6 +83,40 @@
     sync: I('<path d="M19.5 12a7.5 7.5 0 0 1-13 5.1M4.5 12a7.5 7.5 0 0 1 13-5.1"/><path d="M17.8 3.6v3.6h-3.6M6.2 20.4v-3.6h3.6"/>')
   };
 
+  /* ---------- hourly forecast for Shanghai (Open-Meteo, free, no key); kept on the phone for offline ---------- */
+  const LS_WX = "sht.wx.v1";
+  let wxData = lsGet(LS_WX), wxLoading = false;
+  const shanghaiNow = () => new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 13); /* "2026-10-31T14" */
+  const daysUntil = (iso) => Math.round((Date.parse(iso + "T00:00:00Z") - Date.parse(shanghaiNow().slice(0, 10) + "T00:00:00Z")) / 864e5);
+  const wmoKind = (c) => (c >= 71 && c <= 77) || c === 85 || c === 86 ? "snow" : c >= 51 ? "rain" : c >= 2 ? "cloud" : "sun";
+  function loadWx() {
+    if (wxLoading || (wxData && Date.now() - wxData.at < 3 * 3600e3)) return;
+    wxLoading = true;
+    fetch("https://api.open-meteo.com/v1/forecast?latitude=31.23&longitude=121.47&hourly=temperature_2m,weather_code,precipitation_probability&timezone=Asia%2FShanghai&forecast_days=16", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        if (!j || !j.hourly || !j.hourly.time) return;
+        wxData = { at: Date.now(), h: j.hourly };
+        lsSet(LS_WX, wxData);
+        if (ui.tab === "home" && !busy()) render();
+      })
+      .catch(() => {})
+      .finally(() => { wxLoading = false; });
+  }
+  /* that day's hours (7시–23시, or from now on the day itself) */
+  function wxHours(iso) {
+    const h = wxData && wxData.h;
+    if (!h || !iso) return [];
+    const now = shanghaiNow(), out = [];
+    h.time.forEach((t, i) => {
+      if (t.slice(0, 10) !== iso) return;
+      const hr = +t.slice(11, 13);
+      if (t.slice(0, 13) < now || hr < 7) return;
+      out.push({ h: hr, t: h.temperature_2m[i], kind: wmoKind(h.weather_code[i]), p: h.precipitation_probability ? h.precipitation_probability[i] || 0 : 0, now: t.slice(0, 13) === now });
+    });
+    return out;
+  }
+
   /* ---------- weather text ("비 🌧️ 23°/17°") → parts ---------- */
   const TEMP_RE = /(-?\d+)\s*°\s*\/\s*(-?\d+)\s*°/;
   function wxParse(w) {
@@ -111,7 +145,7 @@
     d.settle = d.settle || {}; d.settle.members = d.settle.members || []; d.settle.expenses = d.settle.expenses || [];
     d.days = d.days || []; d.days.forEach((x) => { x.stops = x.stops || []; });
     d.done = d.done || {}; d.skip = d.skip || {}; d.journal = d.journal || {}; d.placePhotos = d.placePhotos || {};
-    d.posts = d.posts || []; d.postPhotos = d.postPhotos || {}; d.likes = d.likes || {}; d.shared = d.shared || {};
+    d.posts = d.posts || []; d.postPhotos = d.postPhotos || {}; d.likes = d.likes || {}; d.shared = d.shared || {}; d.tasks = d.tasks || [];
     /* 기록 used to be one text box + photos per day: each becomes that day's first post, with the same id on every phone */
     Object.keys(d.journal).forEach((dayId) => {
       const j = d.journal[dayId] || {}, ph = (j.photos || []).filter(Boolean);
@@ -344,7 +378,7 @@
   }
   function fxHtml(pre) {
     const rate = +state.settle.rate || 0;
-    if (!rate) return '<p class="note">정산 탭 \'인원 · 환율\'에 환율을 넣으면 바로 계산돼요</p>';
+    if (!rate) return '<p class="note">정산 탭 \'환율\'에 환율을 넣으면 바로 계산돼요</p>';
     return '<div class="calc fxpair"><label class="cin"><span>¥</span><input id="' + pre + 'Y" data-keep data-fx="y" inputmode="decimal" placeholder="0" autocomplete="off" aria-label="위안"></label>' +
       '<span class="mono note" aria-hidden="true">=</span><label class="cin"><span>₩</span><input id="' + pre + 'W" data-keep data-fx="w" inputmode="decimal" placeholder="0" autocomplete="off" aria-label="원"></label></div>';
   }
@@ -543,24 +577,54 @@
 
   /* ---------- HOME: full-screen night view + widgets below ---------- */
   const WDEF = {
-    weather: { name: "날씨", desc: "최고 · 최저 기온", icon: "cloud", size: "half" },
+    weather: { name: "날씨", desc: "시간대별 예보", icon: "cloud", size: "wide" },
     hotel: { name: "숙소", desc: "체크인 · 체크아웃 시간", icon: "bed", size: "half" },
     flight: { name: "항공편", desc: "가는 편 · 오는 편 탑승권", icon: "plane", size: "wide" },
-    todo: { name: "출발 전 할 일", desc: "체크리스트", icon: "list", size: "big" },
+    todo: { name: "할 일", desc: "출발 전 · 날짜별 할 일", icon: "list", size: "big" },
     pack: { name: "필수 준비물", desc: "짐 체크리스트", icon: "bag", size: "big" },
     apps: { name: "필수 앱", desc: "깔아 둘 앱 체크", icon: "phone", size: "half" },
     route: { name: "오늘 동선", desc: "갈 곳을 작은 지도로", icon: "map", size: "half" },
     settle: { name: "N빵 정산", desc: "총 지출 · 보낼 돈", icon: "money", size: "half" },
     fx: { name: "환율 계산", desc: "위안 ↔ 원 바로 계산", icon: "swap", size: "half" },
-    photos: { name: "오늘 사진", desc: "사진 바로 올리기", icon: "camera", size: "half" },
-    memo: { name: "메모", desc: "최근 메모 한 장", icon: "note", size: "half" }
+    photos: { name: "오늘 기록", desc: "최근 기록 · 바로 쓰기", icon: "camera", size: "half" },
+    memo: { name: "메모", desc: "메모 모아 보기", icon: "note", size: "half" }
   };
   const CK_TITLE = { todo: "출발 전 할 일", pack: "필수 준비물", apps: "필수 앱" };
+  /* list keys: todo / pack / apps (preparation), or "tk:<dayId>" / "tk:after" for each day's own 할 일 */
+  function ckList(key) {
+    if (state.prep[key]) return state.prep[key];
+    if (String(key).indexOf("tk:") === 0) { const d = key.slice(3); return state.tasks.filter((x) => x.day === d); }
+    return [];
+  }
+  function ckTitle(key) {
+    if (CK_TITLE[key]) return CK_TITLE[key];
+    const d = findDay(String(key).slice(3));
+    if (!d) return "다녀와서 할 일";
+    return d.iso === todayIso() ? "오늘 할 일" : (isNum(d.n) ? "Day " + d.n : "귀국날") + " 할 일";
+  }
+  function ckAdd(key, text) {
+    if (state.prep[key]) state.prep[key].push(key === "apps" ? { id: newId("a"), t: text, u: "" } : { id: newId(key === "todo" ? "t" : "k"), t: text });
+    else state.tasks.push({ id: newId("t"), t: text, day: key.slice(3) });
+  }
+  function ckDel(key, id) {
+    if (state.prep[key]) state.prep[key] = state.prep[key].filter((x) => x.id !== id);
+    else state.tasks = state.tasks.filter((x) => x.id !== id);
+  }
+  const ckKeyOf = (id) => Object.keys(CK_TITLE).find((k) => state.prep[k].some((x) => x.id === id)) || ((state.tasks.find((x) => x.id === id) || {}).day ? "tk:" + state.tasks.find((x) => x.id === id).day : "");
+  const todoKey = (ctx) => (ctx.ph.k === "before" ? "todo" : ctx.ph.k === "after" ? "tk:after" : "tk:" + ctx.day.id);
+  /* each home view keeps its own widgets; a view that was never edited starts from the old shared set */
+  function wKey() { const ph = phase(); return ph.k === "during" ? ph.day.id : ph.k; }
+  function wSetName() { const ph = phase(); return ph.k === "before" ? "여행 전" : ph.k === "after" ? "다녀온 뒤" : isNum(ph.day.n) ? "Day " + ph.day.n : "귀국날"; }
   function widgetList() {
-    const w = Array.isArray(ui.widgets) ? ui.widgets.filter((x, i, a) => WDEF[x] && a.indexOf(x) === i) : W_DEFAULT.slice();
-    ui.widgets = w;
+    ui.wsets = ui.wsets || {};
+    const k = wKey();
+    let w = ui.wsets[k];
+    if (!Array.isArray(w)) w = Array.isArray(ui.widgets) ? ui.widgets.slice() : W_DEFAULT.slice();
+    w = w.filter((x, i, a) => WDEF[x] && a.indexOf(x) === i);
+    ui.wsets[k] = w;
     return w;
   }
+  function setWidgets(list) { ui.wsets = ui.wsets || {}; ui.wsets[wKey()] = list; saveUI(); }
   let editing = false;
   const heroIdx = {};
   function homeCtx() {
@@ -617,6 +681,7 @@
       '<linearGradient id="hw" x1="0" y1="0" x2="0" y2="1"><stop class="hw0" offset="0"/><stop class="hw1" offset=".35"/><stop class="hw2" offset="1"/></linearGradient>' +
       '<radialGradient id="hglow" cx=".5" cy=".5" r=".5"><stop class="hg" offset="0" stop-opacity=".5"/><stop class="hg" offset="1" stop-opacity="0"/></radialGradient>' +
       '<radialGradient id="hm" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFE7A8" stop-opacity=".32"/><stop offset="1" stop-color="#FFE7A8" stop-opacity="0"/></radialGradient>' +
+      '<linearGradient id="trailg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0"/><stop offset="1" stop-color="#FFFFFF" stop-opacity=".85"/></linearGradient>' +
       '<radialGradient id="hhaze" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFF6F0" stop-opacity=".7"/><stop offset=".35" stop-color="#FFF3EE" stop-opacity=".38"/><stop offset=".7" stop-color="#FFF1EE" stop-opacity=".12"/><stop offset="1" stop-color="#FFF1EE" stop-opacity="0"/></radialGradient>' +
       '<radialGradient id="hsun" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".55"/><stop offset=".4" stop-color="#FFFFFF" stop-opacity=".18"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>' +
       '<radialGradient id="hp" cx=".36" cy=".32" r=".75"><stop class="hp0" offset="0"/><stop class="hp1" offset=".38"/><stop class="hp2" offset=".78"/><stop class="hp3" offset="1"/></radialGradient>' +
@@ -626,6 +691,8 @@
       '<rect width="390" height="480" fill="url(#hs)"/><rect class="dy" width="390" height="480" fill="url(#hsd)"/>' +
       '<g class="nt">' + stars + gold + '<circle cx="356" cy="238" r="44" fill="url(#hm)"/><circle cx="356" cy="238" r="14" fill="#FFE7A8" mask="url(#hmm)"/></g>' +
       '<g class="dy"><circle class="sunglow" cx="352" cy="232" r="76" fill="url(#hsun)"/><circle cx="352" cy="232" r="12" fill="#FFFFFF" opacity=".55"/>' +
+      '<g class="plane-fly"><rect x="-150" y="-1.1" width="138" height="2.2" rx="1.1" fill="url(#trailg)"/>' +
+        '<g transform="rotate(90) scale(.95) translate(-12 -12)"><path fill="#FFFFFF" d="M21 15.5v-2l-7.5-4.5V4.2a1.5 1.5 0 0 0-3 0V9L3 13.5v2l7.5-2.3v5l-2.2 1.6V21l3.7-1 3.7 1v-1.2l-2.2-1.6v-5z"/></g></g>' +
       cloud(330, 40, .5, .5, 140) + cloud(64, 262, .9, .75, 105) + cloud(206, 236, .5, .55, 125) + cloud(286, 316, .72, .65, 115) + cloud(130, 352, .58, .6, 98) + cloud(40, 304, .45, .5, 132) +
       '<ellipse cx="195" cy="476" rx="350" ry="125" fill="url(#hhaze)"/></g>' +
       '<ellipse cx="200" cy="470" rx="280" ry="110" fill="url(#hglow)"/>' +
@@ -784,7 +851,7 @@
       '<div class="hero-card">' + heroCardHtml(ctx) + "</div>" +
       '<button class="hero-more" type="button" data-act="to-widgets">위젯 ' + ICON.chevR + "</button></section>";
     const list = widgetList();
-    s += '<div class="wzone" id="wzone"><div class="wgrid' + (editing ? " wedit" : "") + '" id="wgrid">' + list.map((id) => widgetHtml(id, ctx)).join("") +
+    s += '<div class="wzone" id="wzone">' + (editing ? '<p class="wnote">' + esc(wSetName()) + " 홈 위젯 편집 중 · 날짜마다 따로 저장돼요</p>" : "") + '<div class="wgrid' + (editing ? " wedit" : "") + '" id="wgrid">' + list.map((id) => widgetHtml(id, ctx)).join("") +
       (editing ? '<button class="w-add" type="button" data-act="w-addsheet">+ 위젯 추가</button>' : "") + "</div>" +
       (!list.length && !editing ? '<p class="note" style="text-align:center;margin-top:24px;color:#fff">\'편집\'을 눌러 위젯을 넣어보세요</p>' : "") + "</div>";
     return s;
@@ -816,12 +883,16 @@
   function widgetHtml(id, ctx) {
     switch (id) {
       case "weather": {
-        const d = ctx.day, w = wxParse(d && d.wx);
-        const lbl = ctx.ph.k === "during" ? "오늘 날씨" : ctx.ph.k === "before" ? "첫날 날씨" : "날씨";
+        const d = ctx.ph.k === "after" ? state.days[state.days.length - 1] : ctx.day, w = wxParse(d && d.wx), hrs = d ? wxHours(d.iso) : [];
+        const today = d && d.iso === shanghaiNow().slice(0, 10);
+        const lbl = today ? "오늘 날씨" : ctx.ph.k === "before" ? "첫날 날씨" : "날씨";
+        const temps = hrs.map((h) => h.t), hi = temps.length ? Math.round(Math.max.apply(null, temps)) : w.hi, lo = temps.length ? Math.round(Math.min.apply(null, temps)) : w.lo;
+        const strip = hrs.length
+          ? '<div class="wxh">' + hrs.map((h) => '<div class="' + (h.now ? "now" : "") + '"><span>' + (h.now ? "지금" : h.h + "시") + "</span>" + ICON[h.kind] + "<b>" + Math.round(h.t) + "°</b>" + (h.p >= 20 ? "<em>" + h.p + "%</em>" : "<em></em>") + "</div>").join("") + "</div>"
+          : '<p class="wxh-none">' + (d && daysUntil(d.iso) > 15 ? "시간대별 예보는 출발 2주 전부터 떠요" : "시간대별 예보를 불러오지 못했어요 · 인터넷 연결되면 떠요") + "</p>";
         return wrapW(id, '<div class="hd"><span class="lbl">' + lbl + '</span><span class="mono sub">' + esc(d ? d.date : "") + "</span></div>" +
-          '<span class="ico">' + ICON[w.kind] + "</span>" +
-          (w.hi ? '<span class="wx-t"><b class="mono">' + esc(w.hi) + '°</b><span class="mono">/ ' + esc(w.lo) + "°</span></span>" : '<span class="wx-t"><b>—</b></span>') +
-          '<span class="sub">' + esc(w.c || "아직 없음") + " · 자세히 ↗</span>", "", ' data-href="' + WX_URL + '"');
+          '<div class="wx-row"><span class="ico">' + ICON[w.kind] + '</span><span class="wx-t"><b class="mono">' + esc(hi || "—") + (hi ? "°" : "") + '</b><span class="mono">' + (lo ? "/ " + esc(lo) + "°" : "") + '</span></span><span class="sub wx-c">' + esc(w.c || "") + " · 자세히 ↗</span></div>" + strip,
+          "wweather", ' data-href="' + WX_URL + '"');
       }
       case "hotel": {
         const h = state.hotel, tm = hotelTimes(h);
@@ -831,7 +902,8 @@
           '<span class="chips push">' + (tm.in ? '<span class="minichip">IN ' + tm.in + "</span>" : "") + (tm.out ? '<span class="minichip">OUT ' + tm.out + "</span>" : "") + "</span>", "", ' data-act="hotel"');
       }
       case "flight": return wFlight(ctx);
-      case "todo": case "pack": case "apps": return wCheck(id);
+      case "todo": return wCheck(todoKey(ctx), "todo");
+      case "pack": case "apps": return wCheck(id);
       case "route": {
         const d = ctx.day;
         return wrapW(id, d ? routeMap(d, 172, 138, { mini: true, uid: "w", padT: 22, padB: 18, padL: 22, padR: 22 }) + '<span class="wtag">' + (ctx.ph.k === "during" ? "오늘 동선" : (isNum(d.n) ? "DAY " + d.n : "귀국") + " 동선") + "</span>" : "", "wmap", d ? ' data-act="go-plan" data-day="' + d.id + '"' : "");
@@ -845,25 +917,27 @@
       }
       case "fx": return wrapW(id, '<div class="hd"><span class="lbl">환율 계산</span><span class="mono sub">' + (state.settle.rate ? "1 : " + esc(state.settle.rate) : "") + "</span></div>" + '<div class="wfx">' + fxHtml("wfx") + "</div>");
       case "photos": {
-        const d = ctx.day, ph = d ? dayPics(d.id) : [];
-        const lbl = ctx.ph.k === "during" ? "오늘 사진" : d ? d.date + " 사진" : "사진";
-        return wrapW(id, '<div class="hd"><span class="lbl">' + esc(lbl) + '</span><span class="mono sub">' + ph.length + "장</span></div>" +
-          '<div class="wphotos">' + ph.slice(-2).reverse().map((pid) => '<button type="button" data-act="view" data-day="' + d.id + '" data-i="' + ph.indexOf(pid) + '" aria-label="사진 크게 보기"><img data-pid="' + esc(pid) + '" alt=""></button>').join("") +
-          (d ? "<label>" + ICON.camera + '<input class="vh" type="file" accept="image/*" multiple data-upload="' + d.id + '"></label>' : "") + "</div>");
+        const d = ctx.ph.k === "after" ? state.days[state.days.length - 1] : ctx.day, list = d ? postsOf(d.id) : [], p = list[list.length - 1];
+        const pic = p ? postPics(p.id)[0] : "";
+        const lbl = ctx.ph.k === "during" && d && d.iso === todayIso() ? "오늘 기록" : d ? d.date + " 기록" : "기록";
+        return wrapW(id, '<div class="hd"><span class="lbl">' + esc(lbl) + '</span><span class="mono sub">' + (list.length ? list.length + "개" : "") + "</span></div>" +
+          (p ? '<div class="wpost">' + (pic ? '<img data-pid="' + esc(pic) + '" alt="">' : "") + '<span class="' + (pic ? "t" : "t only") + '">' + esc(p.text || "사진 기록") + "</span></div>" : '<span class="sub">아직 기록이 없어요</span>') +
+          '<button class="wpost-add" type="button" data-act="post-new" data-day="' + (d ? d.id : "") + '">' + ICON.plus + "기록 쓰기</button>",
+          "", ' data-act="go-log" data-day="' + (d ? d.id : "") + '"');
       }
       case "memo": {
         const m = state.memos[0];
-        return wrapW(id, '<div class="hd"><span class="lbl">메모</span>' + ICON.note + "</div>" + '<div class="wmemo">' + (m ? esc(m.text) : '<span class="sub">눌러서 메모 적기</span>') + "</div>",
-          "", m ? ' data-act="memo-edit" data-id="' + m.id + '"' : ' data-act="memo-add"');
+        return wrapW(id, '<div class="hd"><span class="lbl">메모</span><span class="mono sub">' + (state.memos.length > 1 ? state.memos.length + "개" : "") + "</span></div>" + '<div class="wmemo">' + (m ? esc(m.text) : '<span class="sub">눌러서 메모 적기</span>') + "</div>",
+          "", m ? ' data-act="memo-list"' : ' data-act="memo-add"');
       }
     }
     return "";
   }
   /* checklist widgets: the whole list, scrollable; tap anywhere else to open it big */
-  function wCheck(key) {
-    const list = state.prep[key], doneN = list.filter((x) => state.done[x.id]).length;
+  function wCheck(key, wid) {
+    const list = ckList(key), doneN = list.filter((x) => state.done[x.id]).length, title = ckTitle(key);
     const sorted = list.filter((x) => !state.done[x.id]).concat(list.filter((x) => state.done[x.id]));
-    return wrapW(key, '<div class="hd"><span class="lbl">' + CK_TITLE[key] + '</span><button class="wedit-ic" type="button" data-act="ck-sheet" data-list="' + key + '" aria-label="' + CK_TITLE[key] + ' 추가 · 편집">' + ICON.pen + "</button></div>" +
+    return wrapW(wid || key, '<div class="hd"><span class="lbl">' + esc(title) + '</span><button class="wedit-ic" type="button" data-act="ck-sheet" data-list="' + key + '" aria-label="' + esc(title) + ' 추가 · 편집">' + ICON.pen + "</button></div>" +
       '<div class="wprog" data-prog="' + key + '"><i style="width:' + (list.length ? (doneN / list.length) * 100 : 0) + '%"></i></div>' +
       '<div class="wlist">' + (sorted.length ? sorted.map((x) => ckHtml(x, esc(x.t), "wck")).join("") : '<span class="sub" style="padding:6px 0">비어 있어요 · 연필을 눌러 추가</span>') + "</div>", "wcheck", ' data-act="ck-sheet" data-list="' + key + '"');
   }
@@ -1032,7 +1106,6 @@
     let s = pageHead("기록", "날마다 사진 · 한 줄 기록", true);
     s += '<div class="lchips" role="tablist" aria-label="날짜 고르기"><button type="button" class="lchip' + (sel === "all" ? " on" : "") + '" data-act="log-day" data-v="all" aria-pressed="' + (sel === "all") + '">전체</button>' +
       state.days.map((d) => '<button type="button" class="lchip' + (sel === d.id ? " on" : "") + '" data-act="log-day" data-v="' + d.id + '" aria-pressed="' + (sel === d.id) + '" style="--c:' + dayC(d) + '"><i>' + esc(d.n) + "</i>" + esc(String(d.date).split(" ")[0]) + "</button>").join("") + "</div>";
-    s += '<p class="lognote2">' + (sync.code ? "글이랑 사진 모두 친구랑 같이 봐요" : "지금은 이 폰에만 저장돼요 · 더보기 → 친구랑 같이 쓰기를 켜면 같이 봐요") + "</p>";
     (sel === "all" ? state.days : [findDay(sel)]).forEach((d) => {
       const list = postsOf(d.id);
       s += '<section class="fday" id="log-' + d.id + '" style="--c:' + dayC(d) + '"><div class="fday-h"><span class="rd">' + esc(d.n) + '</span><div><span class="m">' + esc(d.date) + "</span><b>" + esc(d.title) + "</b></div>" +
@@ -1154,7 +1227,7 @@
     let s = pageHead("정산", c.rate ? "1위안 = " + c.rate + "원" : "N빵 · 환율 계산", true);
     s += '<div class="pad"><div class="box"><span class="lbl">환율 계산</span><div style="margin-top:8px">' + fxHtml("fx") + "</div></div></div>";
     s += '<div class="sec-h"><h2>N빵 결과</h2></div><div class="pad"><div class="box">';
-    if (!ppl.length) s += '<p class="note">아래 \'인원 · 환율\'에서 같이 가는 사람을 먼저 넣어주세요</p>';
+    if (!ppl.length) s += '<p class="note">더보기 → 설정 → 여행 인원에서 같이 가는 사람을 먼저 넣어주세요</p>';
     else {
       s += '<span class="lbl">총 지출</span><div class="bigsum">' + totalFmt(c) + "</div>" +
         '<p class="note">' + c.n + "명 · 1인당 " + (c.base === "KRW" ? wonFmt(c.share) : yuanFmt(c.share)) + "</p>";
@@ -1187,9 +1260,8 @@
       });
       s += "</div></div>";
     }
-    s += '<div class="pad sec"><details class="fold" data-fold="settle-set"' + (ui.open["settle-set"] || !ppl.length ? " open" : "") +
-      '><summary><span class="ft">인원 · 환율</span><span class="chev" aria-hidden="true"></span></summary><div class="fold-b form">' +
-      '<label class="field"><span>같이 가는 사람 (쉼표로 구분)</span><input id="mNames" data-keep value="' + esc(ppl.join(", ")) + '" autocomplete="off"></label>' +
+    s += '<div class="pad sec"><details class="fold" data-fold="settle-set"' + (ui.open["settle-set"] || !S.rate ? " open" : "") +
+      '><summary><span class="ft">환율</span><span class="chev" aria-hidden="true"></span></summary><div class="fold-b form">' +
       '<label class="field"><span>환율 (1위안 = ?원)</span><input id="mRate" data-keep inputmode="decimal" value="' + esc(S.rate || "") + '" autocomplete="off"></label>' +
       '<button class="btn" type="button" data-act="settle-save">저장</button></div></details></div>';
     return s;
@@ -1209,21 +1281,16 @@
         '<button class="row" type="button" data-act="copy" data-v="' + x[2] + '"><span class="ri">' + ICON.phone + '</span><span class="rt"><b>' + x[0] + "</b><span>" + x[1] + ' · 눌러서 복사</span></span><span class="rv">' + x[2] + "</span></button>").join("") +
       state.infos.map((x) => row("info-edit", "info", esc(x.title || "정보"), x.body, ' data-id="' + x.id + '"')).join("") +
       row("info-add", "plus", "정보 추가", "") + "</div>";
-    s += '<div class="group-h">메모</div><div class="group">' +
-      state.memos.map((m) => { const ls = String(m.text || "").split("\n").filter((x) => x.trim()); return '<button class="row memo-row" type="button" data-act="memo-edit" data-id="' + m.id + '"><span class="ri">' + ICON.note + '</span><span class="rt"><b>' + esc(ls[0] || "메모") + "</b><span>" + esc(ls.slice(1).join(" · ") || (m.at ? dayLabel(m.at) : "")) + '</span></span><span class="chev2" aria-hidden="true">›</span></button>'; }).join("") +
-      row("memo-add", "plus", "메모 추가", "") + "</div>";
     s += '<div class="group-h">참고 링크</div><div class="group links">' +
       state.prep.links.map((l) => '<div class="li"><a class="linkrow grow" href="' + esc(safeUrl(l.url)) + '"' + EXT + "><b>" + esc(l.title || hostOf(l.url)) + "</b><span>" + esc(hostOf(l.url)) + "</span></a>" +
         '<button class="icon-btn" type="button" data-act="link-edit" data-id="' + l.id + '" aria-label="' + esc(l.title) + ' 수정">' + ICON.pen + "</button></div>").join("") +
       row("link-add", "plus", "링크 추가", "") + "</div>";
-    const opts = previewOpts().map((o) => [o[0], o[1] + (o[2] ? " (" + o[2] + ")" : "")]);
     const cur = ui.theme || "time";
     s += '<div class="group-h">설정</div><div class="group">' +
       '<div class="setrow"><div class="top"><span class="ri">' + ICON.moon + '</span><span class="rt"><b>화면 테마</b><span>' + (isDark() ? "지금은 밤 테마 · 화면 전체가 남색" : "지금은 낮 테마 · 위는 파란 하늘, 아래는 밝게") + "</span></span></div>" +
       '<div class="seg4" role="group" aria-label="화면 테마">' + THEMES.map((t) => '<button type="button" data-act="theme-set" data-v="' + t[0] + '" aria-pressed="' + (cur === t[0]) + '">' + ICON[t[1]] + "<span>" + t[2] + "</span></button>").join("") + "</div></div>" +
-      row("w-edit-go", "grid", "홈 위젯 편집", "넣고 빼고 순서 바꾸기") +
-      '<div class="setrow"><div class="top"><span class="ri">' + ICON.eye + '</span><span class="rt"><b>홈 화면 미리보기</b><span>날짜에 따라 바뀌는 홈을 미리 볼 수 있어요</span></span></div>' +
-      '<label class="selbox"><select data-change="preview" aria-label="홈 화면 미리보기">' + opts.map((o) => '<option value="' + o[0] + '"' + (ui.preview === o[0] ? " selected" : "") + ">" + esc(o[1]) + "</option>").join("") + "</select></label></div>" +
+      row("trip-title", "pen", "여행 제목", ((state.trip.title || "") + " " + (state.trip.nights || "")).trim() || "홈 맨 위 큰 제목") +
+      row("members", "users", "여행 인원", (state.settle.members || []).join(", ") || "같이 가는 사람 넣기") +
       row("share", "users", "친구랑 같이 쓰기", shareSub()) +
       row("backup", "download", "데이터 백업 파일 받기", "일정 · 정산 · 기록 글 (사진 빼고)") +
       '<button class="row" type="button" data-act="reset"><span class="ri">' + ICON.undo + '</span><span class="rt"><b>처음 데이터로 되돌리기</b><span>' + (sync.code ? "같이 쓰는 중이라 친구 폰도 같이 되돌아가요" : "바꾼 일정 · 정산 · 기록 글이 다 지워져요") + "</span></span></button>" +
@@ -1258,7 +1325,7 @@
       if (b.getAttribute("data-tab") === ui.tab) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
     });
     if (ui.tab === "plan") { fitPlan(); drawMap(); }
-    if (ui.tab === "home") heroMount();
+    if (ui.tab === "home") { heroMount(); loadWx(); }
     hydratePhotos(view);
     window.scrollTo(0, y);
     if (focusId) { const f = document.getElementById(focusId); if (f) f.focus({ preventScroll: true }); }
@@ -1336,12 +1403,12 @@
 
   /* checklist sheet: check, add, delete in one place */
   function ckSheet(key) {
-    const list = state.prep[key], doneN = list.filter((x) => state.done[x.id]).length;
+    const list = ckList(key), doneN = list.filter((x) => state.done[x.id]).length, title = ckTitle(key);
     openSheet({
       key: "ck-" + key,
       center: true,
-      title: CK_TITLE[key],
-      body: '<div class="addline"><input id="add-' + key + '" data-addkey="' + key + '" placeholder="' + (key === "apps" ? "앱 이름 추가" : "추가할 것") + '" autocomplete="off" enterkeyhint="done" aria-label="' + CK_TITLE[key] + ' 추가">' +
+      title,
+      body: '<div class="addline"><input id="add-' + key + '" data-addkey="' + key + '" placeholder="' + (key === "apps" ? "앱 이름 추가" : "추가할 것") + '" autocomplete="off" enterkeyhint="done" aria-label="' + esc(title) + ' 추가">' +
         '<button class="btn primary" type="button" data-act="li-add" data-list="' + key + '">추가</button></div>' +
         '<div class="ckhead"><div class="wprog" data-prog="' + key + '"><i style="width:' + (list.length ? (doneN / list.length) * 100 : 0) + '%"></i></div><span class="mono" data-count="' + key + '">' + doneN + " / " + list.length + "</span></div>" +
         (list.length ? '<div class="cklist">' + list.map((x) => '<div class="li">' + ckHtml(x, esc(x.t)) +
@@ -1510,6 +1577,36 @@
       }
     });
   }
+  function tripTitleSheet() {
+    const t = state.trip;
+    openSheet({
+      title: "여행 제목",
+      body: '<p class="note">홈 맨 위에 크게 나오는 제목이에요. 친구랑 같이 쓰면 같이 바뀌어요.</p>' +
+        field("title", "제목", t.title || "", { ph: "예: 상하이" }) + field("nights", "기간", t.nights || "", { ph: "예: 3박 4일" }),
+      foot: footSave(false),
+      on(k, v) {
+        if (k !== "save") return;
+        state.trip.title = v.title; state.trip.nights = v.nights;
+        save(); closeSheet(); render(); toast("바꿨어요");
+      }
+    });
+  }
+  function membersSheet() {
+    const ms = state.settle.members || [];
+    openSheet({
+      key: "members", title: "여행 인원",
+      body: '<p class="note">정산 · 낸 사람, 친구랑 같이 쓰기의 \'나는 누구?\'에 쓰여요.</p>' +
+        (ms.length ? '<div class="cklist">' + ms.map((n) => '<div class="li"><span class="ck">' + esc(n) + '</span><button class="icon-btn" type="button" data-act="mem-del" data-p="' + esc(n) + '" aria-label="' + esc(n) + ' 빼기">' + ICON.x + "</button></div>").join("") + "</div>" : '<p class="empty">아직 아무도 없어요</p>') +
+        '<div class="addline"><input id="memNew" placeholder="이름 추가" autocomplete="off" enterkeyhint="done"><button class="btn primary" type="button" data-act="mem-add">추가</button></div>'
+    });
+  }
+  function memoListSheet() {
+    openSheet({
+      key: "memos", title: "메모",
+      body: '<div class="group">' + state.memos.map((m) => { const ls = String(m.text || "").split("\n").filter((x) => x.trim()); return '<button class="row memo-row" type="button" data-act="memo-edit" data-id="' + m.id + '"><span class="ri">' + ICON.note + '</span><span class="rt"><b>' + esc(ls[0] || "메모") + "</b><span>" + esc(ls.slice(1).join(" · ") || (m.at ? dayLabel(m.at) : "")) + '</span></span><span class="chev2" aria-hidden="true">›</span></button>'; }).join("") +
+        row("memo-add", "plus", "메모 추가", "") + "</div>"
+    });
+  }
   function memoSheet(id) {
     const m = id ? state.memos.find((i) => i.id === id) : null;
     openSheet({
@@ -1635,7 +1732,7 @@
     if (!drag) return;
     drag.w.classList.remove("dragging");
     const grid = $("#wgrid");
-    if (grid) { ui.widgets = Array.from(grid.querySelectorAll(".w[data-w]")).map((el) => el.getAttribute("data-w")); saveUI(); }
+    if (grid) setWidgets(Array.from(grid.querySelectorAll(".w[data-w]")).map((el) => el.getAttribute("data-w")));
     drag = null;
   }
   view.addEventListener("pointerdown", (e) => {
@@ -1845,7 +1942,8 @@
     link: [() => state.prep.links, (a) => { state.prep.links = a; }],
     info: [() => state.infos, (a) => { state.infos = a; }],
     memo: [() => state.memos, (a) => { state.memos = a; }],
-    post: [() => state.posts, (a) => { state.posts = a; }]
+    post: [() => state.posts, (a) => { state.posts = a; }],
+    task: [() => state.tasks, (a) => { state.tasks = a; }]
   };
   const personalIds = () => { const s = new Set(); state.prep.pack.concat(state.prep.apps).forEach((x) => s.add(x.id)); return s; };
   function flatten() {
@@ -2089,7 +2187,7 @@
     /* the shared half comes from the trip; my own packing list, apps and photos stay as they are */
     const per = personalIds();
     if (rows.some((r) => r.k.indexOf("day:") === 0 && r.v)) state.days = [];
-    state.prep.todo = []; state.prep.links = []; state.infos = []; state.memos = []; state.settle.expenses = []; state.posts = []; state.likes = {}; state.shared = {};
+    state.prep.todo = []; state.prep.links = []; state.infos = []; state.memos = []; state.settle.expenses = []; state.posts = []; state.likes = {}; state.shared = {}; state.tasks = [];
     Object.keys(state.journal).forEach((d) => { if (state.journal[d]) delete state.journal[d].text; });
     Object.keys(state.done).forEach((id) => { if (!per.has(id)) delete state.done[id]; });
     state.skip = {};
@@ -2261,18 +2359,31 @@
       case "w-edit-go": editing = true; go("home"); { const z = $("#wzone"); if (z) window.scrollTo({ top: z.getBoundingClientRect().top + window.scrollY - 8 }); } return;
       case "w-del": {
         const w = t.getAttribute("data-w");
-        ui.widgets = widgetList().filter((x) => x !== w); saveUI(); render();
-        toast(WDEF[w].name + " 위젯을 뺐어요 · 내용은 그대로 있어요", { label: "되돌리기", fn: () => { ui.widgets.push(w); saveUI(); render(); } }, 4000);
+        setWidgets(widgetList().filter((x) => x !== w)); render();
+        toast(WDEF[w].name + " 위젯을 뺐어요 · 내용은 그대로 있어요", { label: "되돌리기", fn: () => { setWidgets(widgetList().concat(w)); render(); } }, 4000);
         return;
       }
       case "w-addsheet": widgetAddSheet(); return;
+      case "trip-title": tripTitleSheet(); return;
+      case "members": membersSheet(); return;
+      case "mem-del": {
+        const n = t.getAttribute("data-p");
+        state.settle.members = state.settle.members.filter((x) => x !== n);
+        save(); render(); membersSheet(); return;
+      }
+      case "mem-add": {
+        const inp = document.getElementById("memNew"), v = inp ? inp.value.trim() : "";
+        if (!v) { if (inp) inp.focus(); return; }
+        if (state.settle.members.indexOf(v) < 0) state.settle.members.push(v);
+        save(); render(); membersSheet(); { const again = document.getElementById("memNew"); if (again) again.focus(); } return;
+      }
       case "trip-sum": tripSumSheet(); return;
       case "preview-pick": previewSheet(); return;
       case "preview-set": ui.preview = t.getAttribute("data-v") || "auto"; saveUI(); closeSheet(); render(); window.scrollTo(0, 0); return;
       case "w-add": {
         const w = t.getAttribute("data-w"), list = widgetList();
         if (list.indexOf(w) < 0) list.push(w);
-        ui.widgets = list; saveUI(); render(); widgetAddSheet(); toast(WDEF[w].name + " 위젯을 넣었어요");
+        setWidgets(list); render(); widgetAddSheet(); toast(WDEF[w].name + " 위젯을 넣었어요");
         return;
       }
       case "ck-sheet": ckSheet(t.getAttribute("data-list")); return;
@@ -2352,9 +2463,7 @@
         return;
       }
       case "settle-save": {
-        const names = $("#mNames").value.split(/[,，]/).map((x) => x.trim()).filter(Boolean);
         const rate = parseFloat(String($("#mRate").value).replace(/[,\s]/g, ""));
-        state.settle.members = Array.from(new Set(names));
         state.settle.rate = rate > 0 ? rate : 0;
         save(); render(); toast("저장했어요");
         return;
@@ -2362,14 +2471,14 @@
       case "li-add": {
         const key = t.getAttribute("data-list"), inp = document.getElementById("add-" + key), v = inp ? inp.value.trim() : "";
         if (!v) { if (inp) inp.focus(); return; }
-        state.prep[key].push(key === "apps" ? { id: newId("a"), t: v, u: "" } : { id: newId(key === "todo" ? "t" : "k"), t: v });
+        ckAdd(key, v);
         save(); render(); ckSheet(key);
         const again = document.getElementById("add-" + key); if (again) again.focus();
         return;
       }
       case "li-del": {
         const key = t.getAttribute("data-list");
-        state.prep[key] = state.prep[key].filter((x) => x.id !== id);
+        ckDel(key, id);
         delete state.done[id];
         save(); render(); ckSheet(key); toast("지웠어요");
         return;
@@ -2378,6 +2487,7 @@
       case "info-add": infoSheet(null); return;
       case "info-edit": infoSheet(id); return;
       case "memo-add": memoSheet(null); return;
+      case "memo-list": memoListSheet(); return;
       case "memo-edit": memoSheet(id); return;
       case "link-add": linkSheet(null); return;
       case "link-edit": linkSheet(id); return;
@@ -2410,9 +2520,9 @@
       if (on) state.done[id] = true; else delete state.done[id];
       save();
       document.querySelectorAll('[data-ck="' + id + '"]').forEach((el) => { el.checked = on; const l = el.closest("label"); if (l) l.classList.toggle("on", on); });
-      const key = Object.keys(CK_TITLE).find((k) => state.prep[k].some((x) => x.id === id));
+      const key = ckKeyOf(id);
       if (key) {
-        const list = state.prep[key], n = list.filter((x) => state.done[x.id]).length;
+        const list = ckList(key), n = list.filter((x) => state.done[x.id]).length;
         document.querySelectorAll('[data-prog="' + key + '"] i').forEach((i) => { i.style.width = (list.length ? (n / list.length) * 100 : 0) + "%"; });
         document.querySelectorAll('[data-count="' + key + '"]').forEach((c) => { c.textContent = n + " / " + list.length; });
       }
@@ -2479,6 +2589,8 @@
   window.addEventListener("resize", () => { clearTimeout(rsz); rsz = setTimeout(() => { if (ui.tab === "plan") { fitPlan(); drawMap(); } }, 150); });
 
   /* ---------- start ---------- */
+  /* pinch-zoom only ever showed the page edges; the app is laid out for the phone already */
+  ["gesturestart", "gesturechange"].forEach((ev) => document.addEventListener(ev, (e) => e.preventDefault(), { passive: false }));
   const setAppH = () => { document.documentElement.style.setProperty("--app-h", window.innerHeight + "px"); };
   setAppH();
   window.addEventListener("resize", setAppH);
