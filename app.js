@@ -1114,12 +1114,12 @@
   /* each person's round icon in 기록: a line icon on a soft colour, both picked in 여행 인원 (or by tapping your own).
      Icons: Tabler Icons (MIT, © Paweł Kuna) */
   const AVI = {
-    tower: '<path d="M11 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M16.616 13.924a5 5 0 1 0 -9.23 0"/><path d="M20.307 15.469a9 9 0 1 0 -16.615 0"/><path d="M9 21l3 -9l3 9"/><path d="M10 19h4"/>',
     dumpling: '<path d="M5.532 5.532a2.53 2.53 0 0 1 2.56 -.623a2.532 2.532 0 0 1 4.604 -.717q .146 -.24 .356 -.45a2.532 2.532 0 0 1 4.318 1.637a2.53 2.53 0 0 1 2.844 .511l.358 .358c1.384 1.385 -.7 5.713 -4.655 9.669c-3.956 3.955 -8.284 6.04 -9.669 4.655l-.358 -.358l-.114 -.122a2.53 2.53 0 0 1 -.398 -2.724a2.532 2.532 0 0 1 -1.186 -4.675a2.532 2.532 0 0 1 .718 -4.603a2.53 2.53 0 0 1 .622 -2.558"/>',
     bowl: '<path d="M4 11h16a1 1 0 0 1 1 1v.5c0 1.5 -2.517 5.573 -4 6.5v1a1 1 0 0 1 -1 1h-8a1 1 0 0 1 -1 -1v-1c-1.687 -1.054 -4 -5 -4 -6.5v-.5a1 1 0 0 1 1 -1"/><path d="M19 7l-14 1"/><path d="M19 2l-14 3"/>',
     boba: '<path d="M17.95 9l-1.478 8.69c-.25 1.463 -.374 2.195 -.936 2.631c-1.2 .931 -6.039 .88 -7.172 0c-.562 -.436 -.687 -1.168 -.936 -2.632l-1.478 -8.689"/><path d="M6 9l.514 -1.286a5.908 5.908 0 0 1 10.972 0l.514 1.286"/><path d="M5 9h14"/><path d="M12 9l4 -7"/><path d="M10.01 14h.01"/><path d="M11.02 18h.01"/><path d="M13.02 16h.01"/>',
     teapot: '<path d="M10.29 3h3.42a2 2 0 0 1 1.988 1.78l1.555 14a2 2 0 0 1 -1.988 2.22h-6.53a2 2 0 0 1 -1.988 -2.22l1.555 -14a2 2 0 0 1 1.988 -1.78"/><path d="M7.47 12.5l-4.257 -5.019a.899 .899 0 0 1 .69 -1.481h13.09a3 3 0 0 1 3.007 3v3c0 1.657 -1.346 3 -3.007 3"/><path d="M7 17h10"/>',
     plane: '<path d="M14.5 6.5l3 -2.9a2.05 2.05 0 0 1 2.9 2.9l-2.9 3l2.5 7.5l-2.5 2.55l-3.5 -6.55l-3 3v3l-2 2l-1.5 -4.5l-4.5 -1.5l2 -2h3l3 -3l-6.5 -3.5l2.5 -2.5l7.5 2.5"/>',
+    camera: '<path d="M5 7h1a2 2 0 0 0 2 -2a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2"/><path d="M9 13a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/>',
     cat: '<path d="M20 3v10a8 8 0 1 1 -16 0v-10l3.432 3.432a7.963 7.963 0 0 1 4.568 -1.432c1.769 0 3.403 .574 4.728 1.546l3.272 -3.546"/><path d="M2 16h5l-4 4"/><path d="M22 16h-5l4 4"/><path d="M11 16a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M9 11v.01"/><path d="M15 11v.01"/>',
     dog: '<path d="M11 5h2"/><path d="M19 12c-.667 5.333 -2.333 8 -5 8h-4c-2.667 0 -4.333 -2.667 -5 -8"/><path d="M11 16c0 .667 .333 1 1 1s1 -.333 1 -1h-2"/><path d="M12 18v2"/><path d="M10 11v.01"/><path d="M14 11v.01"/><path d="M5 4l6 .97l-6.238 6.688a1.021 1.021 0 0 1 -1.41 .111a.953 .953 0 0 1 -.327 -.954l1.975 -6.815"/><path d="M19 4l-6 .97l6.238 6.688c.358 .408 .989 .458 1.41 .111a.953 .953 0 0 0 .327 -.954l-1.975 -6.815"/>',
     pig: '<path d="M15 11v.01"/><path d="M16 3l0 3.803a6.019 6.019 0 0 1 2.658 3.197h1.341a1 1 0 0 1 1 1v2a1 1 0 0 1 -1 1h-1.342a6.008 6.008 0 0 1 -1.658 2.473v2.027a1.5 1.5 0 0 1 -3 0v-.583a6.04 6.04 0 0 1 -1 .083h-4a6.04 6.04 0 0 1 -1 -.083v.583a1.5 1.5 0 0 1 -3 0v-2l0 -.027a6 6 0 0 1 4 -10.473h2.5l4.5 -3"/>',
@@ -1134,13 +1134,13 @@
   const AVI_ORDER = Object.keys(AVI);
   const AVC = { sky: ["#E6F1FB", "#185FA5"], pink: ["#FBEAF0", "#993556"], mint: ["#E1F5EE", "#0F6E56"], lilac: ["#EEEDFE", "#534AB7"],
     peach: ["#FAECE7", "#993C1D"], lemon: ["#FAEEDA", "#854F0B"], leaf: ["#EAF3DE", "#3B6D11"], stone: ["#F1EFE8", "#5F5E5A"] };
-  const AV_DEF = [["cat", "sky"], ["pig", "pink"], ["dog", "mint"], ["fish", "lilac"]];
+  const AV_DEF_C = ["sky", "pink", "mint", "lilac"]; /* until someone picks, everyone is a 만두 in their own colour */
   function avOf(name) {
     let v = state.avatars[name];
     if (typeof v === "string") v = { i: v };
     v = v && typeof v === "object" ? v : {};
-    const d = AV_DEF[(state.settle.members || []).indexOf(name)] || ["", "sky"];
-    return { i: AVI[v.i] ? v.i : d[0], c: AVC[v.c] ? v.c : d[1] };
+    const c = AV_DEF_C[(state.settle.members || []).indexOf(name)] || "sky";
+    return { i: AVI[v.i] ? v.i : "dumpling", c: AVC[v.c] ? v.c : c };
   }
   const avSvg = (k) => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + AVI[k] + "</svg>";
   const avStyle = (c) => "--avb:" + AVC[c][0] + ";--avi:" + AVC[c][1];
