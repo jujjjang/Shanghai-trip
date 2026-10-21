@@ -1111,29 +1111,53 @@
   const meName = () => sync.me || "";
   const hhmm = (ts) => { const t = new Date(ts); return pad(t.getHours()) + ":" + pad(t.getMinutes()); };
   const likeNames = (id) => Object.keys(state.likes).filter((k) => state.likes[k] && k.indexOf(id + "|") === 0).map((k) => k.slice(id.length + 1));
-  /* each person's round icon in 기록: a Shanghai thing or an animal, picked in 여행 인원 (or by tapping your own) */
-  const AV_TOWER = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M12 1.8v3.4M12 8.4v3.2M12 17.8v4.4M9.7 17.2l-2.7 5M14.3 17.2l2.7 5"/><circle cx="12" cy="6.8" r="1.6" fill="#F6BCD0"/><circle cx="12" cy="14.6" r="3.2" fill="#F6BCD0"/></svg>';
-  const AVS = [["tower", ""], ["panda", "🐼"], ["dumpling", "🥟"], ["boba", "🧋"], ["lantern", "🏮"], ["dragon", "🐉"],
-    ["cat", "🐱"], ["bunny", "🐰"], ["bear", "🐻"], ["dog", "🐶"], ["pig", "🐷"], ["chick", "🐥"]];
-  const AV_DEF = ["tower", "dumpling", "panda", "bunny"];
-  function avKey(name) {
-    const k = state.avatars[name];
-    if (k && AVS.some((a) => a[0] === k)) return k;
-    const i = (state.settle.members || []).indexOf(name);
-    return i >= 0 && i < AV_DEF.length ? AV_DEF[i] : "";
+  /* each person's round icon in 기록: a line icon on a soft colour, both picked in 여행 인원 (or by tapping your own).
+     Icons: Tabler Icons (MIT, © Paweł Kuna) */
+  const AVI = {
+    tower: '<path d="M11 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M16.616 13.924a5 5 0 1 0 -9.23 0"/><path d="M20.307 15.469a9 9 0 1 0 -16.615 0"/><path d="M9 21l3 -9l3 9"/><path d="M10 19h4"/>',
+    dumpling: '<path d="M5.532 5.532a2.53 2.53 0 0 1 2.56 -.623a2.532 2.532 0 0 1 4.604 -.717q .146 -.24 .356 -.45a2.532 2.532 0 0 1 4.318 1.637a2.53 2.53 0 0 1 2.844 .511l.358 .358c1.384 1.385 -.7 5.713 -4.655 9.669c-3.956 3.955 -8.284 6.04 -9.669 4.655l-.358 -.358l-.114 -.122a2.53 2.53 0 0 1 -.398 -2.724a2.532 2.532 0 0 1 -1.186 -4.675a2.532 2.532 0 0 1 .718 -4.603a2.53 2.53 0 0 1 .622 -2.558"/>',
+    bowl: '<path d="M4 11h16a1 1 0 0 1 1 1v.5c0 1.5 -2.517 5.573 -4 6.5v1a1 1 0 0 1 -1 1h-8a1 1 0 0 1 -1 -1v-1c-1.687 -1.054 -4 -5 -4 -6.5v-.5a1 1 0 0 1 1 -1"/><path d="M19 7l-14 1"/><path d="M19 2l-14 3"/>',
+    boba: '<path d="M17.95 9l-1.478 8.69c-.25 1.463 -.374 2.195 -.936 2.631c-1.2 .931 -6.039 .88 -7.172 0c-.562 -.436 -.687 -1.168 -.936 -2.632l-1.478 -8.689"/><path d="M6 9l.514 -1.286a5.908 5.908 0 0 1 10.972 0l.514 1.286"/><path d="M5 9h14"/><path d="M12 9l4 -7"/><path d="M10.01 14h.01"/><path d="M11.02 18h.01"/><path d="M13.02 16h.01"/>',
+    teapot: '<path d="M10.29 3h3.42a2 2 0 0 1 1.988 1.78l1.555 14a2 2 0 0 1 -1.988 2.22h-6.53a2 2 0 0 1 -1.988 -2.22l1.555 -14a2 2 0 0 1 1.988 -1.78"/><path d="M7.47 12.5l-4.257 -5.019a.899 .899 0 0 1 .69 -1.481h13.09a3 3 0 0 1 3.007 3v3c0 1.657 -1.346 3 -3.007 3"/><path d="M7 17h10"/>',
+    plane: '<path d="M14.5 6.5l3 -2.9a2.05 2.05 0 0 1 2.9 2.9l-2.9 3l2.5 7.5l-2.5 2.55l-3.5 -6.55l-3 3v3l-2 2l-1.5 -4.5l-4.5 -1.5l2 -2h3l3 -3l-6.5 -3.5l2.5 -2.5l7.5 2.5"/>',
+    cat: '<path d="M20 3v10a8 8 0 1 1 -16 0v-10l3.432 3.432a7.963 7.963 0 0 1 4.568 -1.432c1.769 0 3.403 .574 4.728 1.546l3.272 -3.546"/><path d="M2 16h5l-4 4"/><path d="M22 16h-5l4 4"/><path d="M11 16a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M9 11v.01"/><path d="M15 11v.01"/>',
+    dog: '<path d="M11 5h2"/><path d="M19 12c-.667 5.333 -2.333 8 -5 8h-4c-2.667 0 -4.333 -2.667 -5 -8"/><path d="M11 16c0 .667 .333 1 1 1s1 -.333 1 -1h-2"/><path d="M12 18v2"/><path d="M10 11v.01"/><path d="M14 11v.01"/><path d="M5 4l6 .97l-6.238 6.688a1.021 1.021 0 0 1 -1.41 .111a.953 .953 0 0 1 -.327 -.954l1.975 -6.815"/><path d="M19 4l-6 .97l6.238 6.688c.358 .408 .989 .458 1.41 .111a.953 .953 0 0 0 .327 -.954l-1.975 -6.815"/>',
+    pig: '<path d="M15 11v.01"/><path d="M16 3l0 3.803a6.019 6.019 0 0 1 2.658 3.197h1.341a1 1 0 0 1 1 1v2a1 1 0 0 1 -1 1h-1.342a6.008 6.008 0 0 1 -1.658 2.473v2.027a1.5 1.5 0 0 1 -3 0v-.583a6.04 6.04 0 0 1 -1 .083h-4a6.04 6.04 0 0 1 -1 -.083v.583a1.5 1.5 0 0 1 -3 0v-2l0 -.027a6 6 0 0 1 4 -10.473h2.5l4.5 -3"/>',
+    fish: '<path d="M16.69 7.44a6.973 6.973 0 0 0 -1.69 4.56c0 1.747 .64 3.345 1.699 4.571"/><path d="M2 9.504c7.715 8.647 14.75 10.265 20 2.498c-5.25 -7.761 -12.285 -6.142 -20 2.504"/><path d="M18 11v.01"/><path d="M11.5 10.5c-.667 1 -.667 2 0 3"/>',
+    butterfly: '<path d="M12 18.176a3 3 0 1 1 -4.953 -2.449l-.025 .023a4.502 4.502 0 0 1 1.483 -8.75c1.414 0 2.675 .652 3.5 1.671a4.5 4.5 0 1 1 4.983 7.079a3 3 0 1 1 -4.983 2.25l-.005 .176"/><path d="M12 19v-10"/><path d="M9 3l3 2l3 -2"/>',
+    deer: '<path d="M3 3c0 2 1 3 4 3c2 0 3 1 3 3"/><path d="M21 3c0 2 -1 3 -4 3c-2 0 -3 .333 -3 3"/><path d="M12 18c-1 0 -4 -3 -4 -6c0 -2 1.333 -3 4 -3s4 1 4 3c0 3 -3 6 -4 6"/><path d="M15.185 14.889l.095 -.18a4 4 0 1 1 -6.56 0"/><path d="M17 3c0 1.333 -.333 2.333 -1 3"/><path d="M7 3c0 1.333 .333 2.333 1 3"/><path d="M7 6c-2.667 .667 -4.333 1.667 -5 3"/><path d="M17 6c2.667 .667 4.333 1.667 5 3"/><path d="M8.5 10l-1.5 -1"/><path d="M15.5 10l1.5 -1"/><path d="M12 15h.01"/>',
+    ghost: '<path d="M5 11a7 7 0 0 1 14 0v7a1.78 1.78 0 0 1 -3.1 1.4a1.65 1.65 0 0 0 -2.6 0a1.65 1.65 0 0 1 -2.6 0a1.65 1.65 0 0 0 -2.6 0a1.78 1.78 0 0 1 -3.1 -1.4v-7"/><path d="M10 10l.01 0"/><path d="M14 10l.01 0"/><path d="M10 14a3.5 3.5 0 0 0 4 0"/>',
+    cherry: '<path d="M4 16.5a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0 -7 0"/><path d="M14 18a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/><path d="M9 13c.366 -2 1.866 -3.873 4.5 -5.6"/><path d="M17 15c-1.333 -2.333 -2.333 -5.333 -1 -9"/><path d="M5 6c3.667 -2.667 7.333 -2.667 11 0c-3.667 2.667 -7.333 2.667 -11 0"/>',
+    flower: '<path d="M9 12a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/><path d="M12 2a3 3 0 0 1 3 3c0 .562 -.259 1.442 -.776 2.64l-.724 1.36l1.76 -1.893c.499 -.6 .922 -1 1.27 -1.205a2.968 2.968 0 0 1 4.07 1.099a3.011 3.011 0 0 1 -1.09 4.098c-.374 .217 -.99 .396 -1.846 .535l-2.664 .366l2.4 .326c1 .145 1.698 .337 2.11 .576a3.011 3.011 0 0 1 1.09 4.098a2.968 2.968 0 0 1 -4.07 1.098c-.348 -.202 -.771 -.604 -1.27 -1.205l-1.76 -1.893l.724 1.36c.516 1.199 .776 2.079 .776 2.64a3 3 0 0 1 -6 0c0 -.562 .259 -1.442 .776 -2.64l.724 -1.36l-1.76 1.893c-.499 .601 -.922 1 -1.27 1.205a2.968 2.968 0 0 1 -4.07 -1.098a3.011 3.011 0 0 1 1.09 -4.098c.374 -.218 .99 -.396 1.846 -.536l2.664 -.366l-2.4 -.325c-1 -.145 -1.698 -.337 -2.11 -.576a3.011 3.011 0 0 1 -1.09 -4.099a2.968 2.968 0 0 1 4.07 -1.099c.348 .203 .771 .604 1.27 1.205l1.76 1.894c-1 -2.292 -1.5 -3.625 -1.5 -4a3 3 0 0 1 3 -3"/>',
+    icecream: '<path d="M12 21.5v-4.5"/><path d="M8 17h8v-10a4 4 0 1 0 -8 0v10"/><path d="M8 10.5l8 -3.5"/><path d="M8 14.5l8 -3.5"/>'
+  };
+  const AVI_ORDER = Object.keys(AVI);
+  const AVC = { sky: ["#E6F1FB", "#185FA5"], pink: ["#FBEAF0", "#993556"], mint: ["#E1F5EE", "#0F6E56"], lilac: ["#EEEDFE", "#534AB7"],
+    peach: ["#FAECE7", "#993C1D"], lemon: ["#FAEEDA", "#854F0B"], leaf: ["#EAF3DE", "#3B6D11"], stone: ["#F1EFE8", "#5F5E5A"] };
+  const AV_DEF = [["cat", "sky"], ["pig", "pink"], ["dog", "mint"], ["fish", "lilac"]];
+  function avOf(name) {
+    let v = state.avatars[name];
+    if (typeof v === "string") v = { i: v };
+    v = v && typeof v === "object" ? v : {};
+    const d = AV_DEF[(state.settle.members || []).indexOf(name)] || ["", "sky"];
+    return { i: AVI[v.i] ? v.i : d[0], c: AVC[v.c] ? v.c : d[1] };
   }
-  function avGlyph(k) { if (k === "tower") return AV_TOWER; const a = AVS.find((x) => x[0] === k); return a ? '<i class="em">' + a[1] + "</i>" : ""; }
+  const avSvg = (k) => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + AVI[k] + "</svg>";
+  const avStyle = (c) => "--avb:" + AVC[c][0] + ";--avi:" + AVC[c][1];
   function avHtml(name) {
-    const g = avGlyph(avKey(name));
-    return '<span class="av' + (g ? " pic" : "") + '" style="--c:' + whoColor(name) + '">' + (g || esc(String(name).slice(0, 1))) + "</span>";
+    const a = avOf(name);
+    return '<span class="av pic" style="' + avStyle(a.c) + '">' + (a.i ? avSvg(a.i) : '<b>' + esc(String(name).slice(0, 1)) + "</b>") + "</span>";
   }
   let avBack = "";
   function avSheet(name, back) {
-    avBack = back || "";
-    const cur = avKey(name);
+    if (back !== undefined) avBack = back || "";
+    const a = avOf(name);
     openSheet({
       key: "av", center: true, title: name + " 아이콘",
-      body: '<div class="avgrid">' + AVS.map((a) => '<button type="button" class="avopt' + (a[0] === cur ? " on" : "") + '" data-act="av-set" data-p="' + esc(name) + '" data-k="' + a[0] + '" aria-pressed="' + (a[0] === cur) + '" style="--c:' + whoColor(name) + '"><span class="av pic">' + avGlyph(a[0]) + "</span></button>").join("") + "</div>"
+      body: '<div class="avprev">' + avHtml(name) + "<b>" + esc(name) + "</b></div>" +
+        '<div class="avgrid">' + AVI_ORDER.map((k) => '<button type="button" class="avopt' + (k === a.i ? " on" : "") + '" data-act="av-set" data-f="i" data-p="' + esc(name) + '" data-k="' + k + '" aria-pressed="' + (k === a.i) + '" style="' + avStyle(a.c) + '"><span class="av pic">' + avSvg(k) + "</span></button>").join("") + "</div>" +
+        '<div class="avcols">' + Object.keys(AVC).map((c) => '<button type="button" class="avcol' + (c === a.c ? " on" : "") + '" data-act="av-set" data-f="c" data-p="' + esc(name) + '" data-k="' + c + '" aria-pressed="' + (c === a.c) + '" aria-label="색 ' + c + '" style="' + avStyle(c) + '"><i></i></button>').join("") + "</div>",
+      foot: '<span class="grow"></span><button class="btn primary" type="button" data-act="av-done">완료</button>'
     });
   }
   function whoColor(name) {
@@ -2055,7 +2079,7 @@
       case "like": if (v) state.likes[id] = true; else delete state.likes[id]; break;
       case "layout": state.layout = v || null; if (takeLayout(v)) layoutIn = v.by || "친구"; break;
       case "lay": if (v) state.layAck[id] = true; else delete state.layAck[id]; break;
-      case "av": if (v) state.avatars[id] = String(v); else delete state.avatars[id]; break;
+      case "av": if (v) state.avatars[id] = v; else delete state.avatars[id]; break;
       case "ph": {
         const c = id.lastIndexOf(":"), o = id.slice(0, c), pid = id.slice(c + 1);
         if (!o || !validPid(pid)) break;
@@ -2433,10 +2457,12 @@
       case "members": membersSheet(); return;
       case "av-pick": avSheet(t.getAttribute("data-p"), t.getAttribute("data-back")); return;
       case "av-set": {
-        state.avatars[t.getAttribute("data-p")] = t.getAttribute("data-k"); save(); render();
-        if (avBack === "members") membersSheet(); else closeSheet();
+        const n = t.getAttribute("data-p"), a = avOf(n);
+        a[t.getAttribute("data-f") === "c" ? "c" : "i"] = t.getAttribute("data-k");
+        state.avatars[n] = a; save(); render(); avSheet(n);
         return;
       }
+      case "av-done": if (avBack === "members") membersSheet(); else closeSheet(); return;
       case "mem-del": {
         const n = t.getAttribute("data-p");
         state.settle.members = state.settle.members.filter((x) => x !== n);
