@@ -1275,3 +1275,12 @@ body { background-color: var(--edge) !important; }
 .hero-more { margin: 6px 0 8px; padding: 2px 12px; }
 /* the antenna's little light sat right against the title, so the hero keeps it off (the small page skies still have theirs) */
 .hero-art .tip { display: none; }
+/* 낮: clearer air — less white haze on the river, buildings a shade deeper than the sky, softer glow round the pearls */
+[data-theme="light"] .hero-art ellipse[fill="url(#hglow)"] { opacity: .3; }
+[data-theme="light"] .hero-art ellipse[fill="url(#hhaze)"] { opacity: .4; }
+[data-theme="light"] .hero-art .far { fill: #B3D8F0; }
+[data-theme="light"] .hero-art .hb0 { stop-color: #94C8EB; }
+[data-theme="light"] .hero-art .hb1 { stop-color: #86BEE7; }
+[data-theme="light"] .hero-art .hbs { stroke: #90C5EA; }
+[data-theme="light"] .hero-art .ant { stroke: #94C8EB; }
+[data-theme="light"] .hero-art .pglow { opacity: .15; }
