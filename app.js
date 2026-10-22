@@ -3760,16 +3760,27 @@
   if (mqDark) { try { mqDark.addEventListener("change", applyTheme); } catch (e) { try { mqDark.addListener(applyTheme); } catch (e2) {} } }
 
   if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
+    let updReady = false;
     navigator.serviceWorker.register("sw.js").then((reg) => {
       reg.addEventListener("updatefound", () => {
         const w = reg.installing;
         if (!w) return;
         w.addEventListener("statechange", () => {
           if (w.state === "installed" && navigator.serviceWorker.controller) {
-            toast("새 버전이 있어요", { label: "새로고침", fn: () => location.reload() }, 10000);
+            updReady = true;
+            toast("새 버전이 있어요", { label: "새로고침", fn: () => location.reload() }, 15000);
           }
         });
       });
+      /* a home-screen app is rarely reloaded, so look for a new version whenever it comes back to the front (and now and then) */
+      const check = () => { try { reg.update(); } catch (e) {} };
+      document.addEventListener("visibilitychange", () => {
+        if (document.hidden) return;
+        const ed = document.getElementById("ske");
+        if (updReady && sheet.hidden && !(ed && !ed.hidden) && !editing) { location.reload(); return; } /* coming back to the app: a good moment to switch */
+        check();
+      });
+      setInterval(check, 30 * 60 * 1000);
     }).catch(() => {});
   }
 })();

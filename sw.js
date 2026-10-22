@@ -1,6 +1,6 @@
 /* Offline support: the app shell answers from cache at once and refreshes in the background,
    so the trip still opens with no signal in China. Fonts are kept the first time they load. */
-const VERSION = "sht-2026-10-24h";
+const VERSION = "sht-2026-10-24i";
 const FONTS = "sht-fonts";
 const IMGS = "sht-imgs"; /* place pictures from the internet: kept on the phone so they show at once (and in China, where Wikimedia is blocked) */
 const CORE = [
@@ -17,7 +17,8 @@ const CORE = [
 ];
 
 self.addEventListener("install", (e) => {
-  e.waitUntil(caches.open(VERSION).then((c) => c.addAll(CORE)).then(() => self.skipWaiting()));
+  /* cache: "reload" — straight from the server, not the browser's own short-term copy (or a new version would install old files) */
+  e.waitUntil(caches.open(VERSION).then((c) => c.addAll(CORE.map((u) => new Request(u, { cache: "reload" })))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener("activate", (e) => {
@@ -61,7 +62,8 @@ self.addEventListener("fetch", (e) => {
     e.respondWith(
       caches.open(VERSION).then(async (cache) => {
         const hit = await cache.match(req, { ignoreSearch: req.mode === "navigate" });
-        const fresh = fetch(req).then((res) => {
+        const ask = req.mode === "navigate" ? new Request(req.url, { cache: "no-cache", credentials: "same-origin" }) : new Request(req, { cache: "no-cache" });
+        const fresh = fetch(ask).then((res) => {
           if (res && res.ok) cache.put(req, res.clone());
           return res;
         }).catch(() => null);
