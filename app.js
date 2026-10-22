@@ -860,6 +860,11 @@
       "</div></article></div>";
   }
   /* airport names in the trip data → the 3-letter codes on a boarding pass */
+  /* airline from the flight number (MU512 → 중국동방항공) */
+  function airline(no) {
+    const m = String(no || "").toUpperCase().match(/^([A-Z0-9]{2})\d/);
+    return m ? ({ MU: "중국동방항공", FM: "상하이항공", CA: "중국국제항공", CZ: "중국남방항공", HO: "준야오항공", "9C": "춘추항공", KE: "대한항공", OZ: "아시아나항공", "7C": "제주항공", LJ: "진에어", TW: "티웨이항공", BX: "에어부산", ZE: "이스타항공", RS: "에어서울" })[m[1]] || "" : "";
+  }
   function iata(name) {
     const n = String(name || "");
     return /김포|金浦/.test(n) ? "GMP" : /홍차오|虹桥/.test(n) ? "SHA" : /푸동|浦东/.test(n) ? "PVG" : /인천|仁川/.test(n) ? "ICN" : n.slice(0, 3).toUpperCase();
@@ -916,7 +921,7 @@
       const l0f = l0.from || "", l0t = l0.to || "";
       return '<div class="hc-wrap"><div class="hc" id="hc" data-day="before" data-start="' + start + '">' +
         '<div class="hc-slide"><div class="bp-wrap"><article class="pc bpass"><div class="bp-main" data-act="flight" role="button" aria-label="항공편 자세히">' +
-        '<span class="pc-tag on">출발까지 · ' + esc(l0.label || "가는 편") + "</span>" +
+        '<span class="pc-tag on">' + esc([l0.label || "가는 편", airline(l0.no)].filter(Boolean).join(" · ")) + "</span>" +
         '<div class="bp-route"><div><b class="bp-code">' + esc(iata(l0f)) + "</b><span>" + esc(l0f + " " + (l0.dep || "")) + '</span></div><i class="bp-line" aria-hidden="true">' + ICON.planeF + '</i><div class="r"><b class="bp-code">' + esc(iata(l0t)) + "</b><span>" + esc(l0t + " " + (l0.arr || "")) + "</span></div></div>" +
         '<div class="bp-kv"><div><small>DATE</small><b>' + esc(l0.date || "") + "</b></div><div><small>FLIGHT</small><b>" + esc(l0.no || "") + "</b></div><div><small>CHECK-IN</small><b>" + esc(String(l0.checkin || "").split("·").pop().replace(/마감/, "").trim() || "—") + "</b></div></div>" +
         '<button class="btn cta" type="button" data-act="trip-sum">' + ICON.list + "여행 한눈에 보기</button></div>" +
@@ -1512,7 +1517,7 @@
     const S = state.settle, ppl = S.members, L = ledgerSum(), c = L.c;
     if (ppl.indexOf(ui.payer) < 0) ui.payer = ppl[0] || "";
     let s = pageHead("가계부", c.rate ? "1위안 = " + c.rate + "원" : "여행 지출 · 정산", true);
-    s += '<div class="pad"><div class="box"><div class="stiles"><div class="stile"><span>내 지출</span><b>' + amtFmt(L.total, c) + "</b></div>" +
+    s += '<div class="pad"><div class="box"><div class="stiles"><div class="stile"><span>내 여행 총 지출</span><b>' + amtFmt(L.total, c) + "</b></div>" +
       '<div class="stile"><span>오늘</span><b>' + amtFmt(L.today, c) + "</b></div></div>" +
       (L.all.length ? '<div class="catsum">' + CATS.filter((k) => L.cats[k[0]]).map((k) => '<span class="cs">' + ICON[k[2]] + k[1] + " <b>" + amtFmt(L.cats[k[0]], c) + "</b></span>").join("") + "</div>" : "") + "</div></div>";
     s += settleCard(L);
