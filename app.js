@@ -208,6 +208,20 @@
   let state = norm(lsGet(LS_STATE) || clone(window.TRIP_SEED));
   if (notesAdded) lsSet(LS_STATE, state); /* keep the added notes (and let them go out to a friend on the next sync) */
   const W_DEFAULT = ["weather", "hotel", "flight", "todo", "pack", "apps", "route"];
+  /* 추천 배치: what each home view starts with (and what '초기 세팅으로 되돌리기' brings back) */
+  const W_REC = {
+    before: ["todo", "pack", "apps", "hotel", "weather", "memo"],
+    d1: ["flight", "hotel", "route", "weather", "todo", "photos", "settle", "memo"],
+    d2: ["weather", "hotel", "route", "todo", "photos", "settle", "memo"],
+    d3: ["weather", "hotel", "route", "flight", "todo", "photos", "settle", "memo"],
+    d4: ["flight", "hotel", "route", "weather", "todo", "photos", "settle", "memo"],
+    after: ["flight", "hotel", "settle", "todo", "photos", "memo"]
+  };
+  function wRec(k) {
+    if (W_REC[k]) return W_REC[k].slice();
+    const i = state.days.findIndex((d) => d.id === k), n = state.days.length;
+    return (i === 0 ? W_REC.d1 : i === n - 1 ? W_REC.d4 : i === 2 ? W_REC.d3 : W_REC.d2).slice();
+  }
   const ui = Object.assign({ tab: "home", day: null, preview: "auto", open: {}, cur: "CNY", payer: "", theme: "time" }, lsGet(LS_UI) || {});
   ui.open = ui.open || {};
   function save() {
@@ -673,7 +687,7 @@
     ui.wsets = ui.wsets || {};
     const k = wKey();
     let w = ui.wsets[k];
-    if (!Array.isArray(w)) w = Array.isArray(ui.widgets) ? ui.widgets.slice() : W_DEFAULT.slice();
+    if (!Array.isArray(w)) w = wRec(k);
     w = w.filter((x, i, a) => WDEF[x] && a.indexOf(x) === i);
     ui.wsets[k] = w;
     return w;
@@ -685,7 +699,7 @@
      time it sees one (a fresh install), then says so with a "lay:<name>" row; after that their widgets are theirs. */
   function sendLayout() {
     ui.wsets = ui.wsets || {};
-    ["before", "after"].concat(state.days.map((d) => d.id)).forEach((k) => { if (!ui.wsets[k]) ui.wsets[k] = (Array.isArray(ui.widgets) ? ui.widgets : W_DEFAULT).slice(); });
+    ["before", "after"].concat(state.days.map((d) => d.id)).forEach((k) => { if (!ui.wsets[k]) ui.wsets[k] = wRec(k); });
     state.layout = { sets: JSON.parse(JSON.stringify(ui.wsets)), by: sync.me || "", at: Date.now() };
     saveUI(); save();
   }
@@ -866,7 +880,7 @@
       const start = heroIdx.before != null ? Math.min(heroIdx.before, cards.length) : 0;
       const l0f = l0.from || "", l0t = l0.to || "";
       return '<div class="hc-wrap"><div class="hc" id="hc" data-day="before" data-start="' + start + '">' +
-        '<div class="hc-slide"><div class="bp-wrap"><article class="pc bpass"><div class="bp-main">' +
+        '<div class="hc-slide"><div class="bp-wrap"><article class="pc bpass"><div class="bp-main" data-act="flight" role="button" aria-label="항공편 자세히">' +
         '<span class="pc-tag on">출발까지 · ' + esc(l0.label || "가는 편") + "</span>" +
         '<div class="bp-route"><div><b class="bp-code">' + esc(iata(l0f)) + "</b><span>" + esc(l0f + " " + (l0.dep || "")) + '</span></div><i class="bp-line" aria-hidden="true">' + ICON.planeF + '</i><div class="r"><b class="bp-code">' + esc(iata(l0t)) + "</b><span>" + esc(l0t + " " + (l0.arr || "")) + "</span></div></div>" +
         '<div class="bp-kv"><div><small>DATE</small><b>' + esc(l0.date || "") + "</b></div><div><small>FLIGHT</small><b>" + esc(l0.no || "") + "</b></div><div><small>CHECK-IN</small><b>" + esc(String(l0.checkin || "").split("·").pop().replace(/마감/, "").trim() || "—") + "</b></div></div>" +
@@ -1516,8 +1530,7 @@
       '<button class="row" type="button" data-act="members"><span class="ri">' + ICON.users + '</span><span class="rt"><b>여행 인원</b><span>기록 · 정산 · 연동에 쓰여요</span></span><span class="rv">' + esc((state.settle.members || []).join(" · ")) + "</span></button>" +
       row("share", "users", "친구랑 같이 쓰기", shareSub()) +
       row("backup", "download", "데이터 백업 파일 받기", "일정 · 정산 · 기록 글 (사진 빼고)") +
-      /* while sharing with a friend a reset would wipe their trip too, so it isn't offered then */
-      (sync.code ? "" : '<button class="row" type="button" data-act="reset"><span class="ri">' + ICON.undo + '</span><span class="rt"><b>처음 데이터로 되돌리기</b><span>바꾼 일정 · 정산 · 기록 글이 다 지워져요</span></span></button>') +
+      '<button class="row" type="button" data-act="reset"><span class="ri">' + ICON.undo + '</span><span class="rt"><b>초기 세팅으로 되돌리기</b><span>홈 위젯 · 준비물처럼 내 폰 것만 골라서</span></span><span class="rv">' + ICON.chevR + "</span></button>" +
       "</div>";
     return s;
   }
@@ -1955,6 +1968,35 @@
         '<div class="addline"><input id="memNew" placeholder="이름 추가" autocomplete="off" enterkeyhint="done"><button class="btn primary" type="button" data-act="mem-add">추가</button></div>'
     });
   }
+  /* 초기 세팅으로 되돌리기: only this phone's own things, each one chosen; shared trip content is never touched here */
+  function resetSheet() {
+    const opts = [["widgets", "홈 위젯 배치", "날짜별 추천 배치로", true], ["prep", "필수 준비물 · 필수 앱", "처음 목록으로 · 체크도 다 풀기", true],
+      ["ticks", "할 일 체크 다 풀기", "목록은 그대로", false], ["mine", "나만 할 일 지우기", "", false], ["myexp", "나만 쓴 돈 지우기", "가계부에서 자물쇠 붙은 것", false], ["memo", "메모 비우기", "", false]];
+    openSheet({
+      key: "reset", title: "초기 세팅으로 되돌리기",
+      body: '<p class="note">체크한 것만 되돌려요. 일정 · 할 일 목록 · 같이 쓴 돈 · 기록처럼 친구랑 같이 보는 건 건드리지 않아요.</p>' +
+        '<div class="rlist">' + opts.map((o) => '<label class="rrow"><input type="checkbox" name="' + o[0] + '"' + (o[3] ? " checked" : "") + '><span><b>' + o[1] + "</b>" + (o[2] ? "<small>" + o[2] + "</small>" : "") + "</span></label>").join("") + "</div>",
+      foot: '<span class="grow"></span><button class="btn" type="button" data-act="sh-close">취소</button><button class="btn danger" type="button" data-act="sh" data-k="go">되돌리기</button>',
+      on(k, v, btn) {
+        if (k !== "go") return;
+        const picked = opts.filter((o) => v[o[0]]);
+        if (!picked.length) { toast("되돌릴 걸 골라주세요"); return; }
+        if (!btn.classList.contains("armed")) { btn.classList.add("armed"); btn.textContent = "한 번 더 누르면 되돌려요"; return; }
+        const seed = window.TRIP_SEED;
+        if (v.widgets) { ui.wsets = {}; editing = false; saveUI(); }
+        if (v.prep) {
+          state.prep.pack.concat(state.prep.apps).forEach((x) => { delete state.done[x.id]; });
+          state.prep.pack = clone(seed.prep.pack || []); state.prep.apps = clone(seed.prep.apps || []);
+          state.prep.pack.concat(state.prep.apps).forEach((x) => { delete state.done[x.id]; });
+        }
+        if (v.ticks) state.prep.todo.concat(state.tasks, state.mine).forEach((x) => { delete state.done[x.id]; });
+        if (v.mine) { state.mine.forEach((x) => { delete state.done[x.id]; }); state.mine = []; }
+        if (v.myexp) state.myExp = [];
+        if (v.memo) state.memos = [];
+        save(); closeSheet(); render(); toast(picked.map((o) => o[1]).join(", ") + " 되돌렸어요", null, 3500);
+      }
+    });
+  }
   function memoSheet() {
     const m = state.memos[0] || null;
     openSheet({
@@ -2069,6 +2111,10 @@
 
   /* ---------- home widget editing: remove, add, long-press drag ---------- */
   let press = null, drag = null;
+  function soloRefresh(grid) {
+    const halves = Array.from(grid.querySelectorAll(".w[data-w]")).filter((el) => el.classList.contains("w-half"));
+    halves.forEach((el, i) => el.classList.toggle("w-solo", halves.length % 2 === 1 && i === halves.length - 1));
+  }
   function startDrag() {
     if (!press) return;
     drag = { w: press.w, id: press.id };
@@ -2083,6 +2129,7 @@
     const grid = $("#wgrid");
     if (grid) setWidgets(Array.from(grid.querySelectorAll(".w[data-w]")).map((el) => el.getAttribute("data-w")));
     drag = null;
+    render(); /* sizes (and the route map's width) follow the new order */
   }
   view.addEventListener("pointerdown", (e) => {
     if (!editing || (e.button && e.button > 0)) return;
@@ -2104,6 +2151,7 @@
     const sameRow = Math.abs(r.top - dr.top) < 12;
     const after = sameRow ? e.clientX > r.left + r.width / 2 : e.clientY > r.top + r.height / 2;
     over.parentNode.insertBefore(drag.w, after ? over.nextSibling : over);
+    soloRefresh(over.parentNode);
   });
   document.addEventListener("pointerup", endDrag);
   document.addEventListener("pointercancel", endDrag);
@@ -2897,16 +2945,7 @@
         setTimeout(() => URL.revokeObjectURL(a.href), 4000);
         return;
       }
-      case "reset": {
-        if (!t.classList.contains("armed")) {
-          t.classList.add("armed"); t.style.background = "var(--coral-soft)";
-          t.querySelector("b").textContent = "한 번 더 누르면 되돌려요";
-          setTimeout(() => render(), 4000);
-          return;
-        }
-        state = norm(clone(window.TRIP_SEED)); save(); render(); toast("처음 데이터로 되돌렸어요");
-        return;
-      }
+      case "reset": resetSheet(); return;
     }
   });
 

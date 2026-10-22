@@ -1391,3 +1391,12 @@ body { background-color: var(--edge) !important; }
 /* a half widget without a partner fills the row */
 .w-half.w-solo { grid-column: 1 / -1; }
 .w-solo .wmemo { -webkit-line-clamp: 5; }
+
+/* 초기 세팅으로 되돌리기 */
+.rlist { display: flex; flex-direction: column; border: 1px solid var(--line-2); border-radius: 16px; overflow: hidden; }
+.rrow { display: flex; align-items: center; gap: 12px; padding: 12px 14px; cursor: pointer; }
+.rrow + .rrow { border-top: 1px solid var(--line-2); }
+.rrow input { width: 20px; height: 20px; margin: 0; flex: none; accent-color: var(--accent); }
+.rrow b { display: block; font-size: 14.5px; font-weight: 600; }
+.rrow small { display: block; font-size: 12px; color: var(--muted); margin-top: 1px; }
+.bp-main[data-act] { cursor: pointer; }
