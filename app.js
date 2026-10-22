@@ -1378,6 +1378,23 @@
   /* ---------- MONEY ---------- */
   let armedExp = null, armedTimer = null;
   function dayLabel(ts) { const t = new Date(ts); return (t.getMonth() + 1) + "." + t.getDate() + " " + "일월화수목금토"[t.getDay()]; }
+  /* which day an expense belongs to: today, or any trip day (for writing things down later) */
+  let expDay = "";
+  function expDayOpts() {
+    const tIso = todayIso(), out = [], trip = state.days.filter((d) => d.iso);
+    if (!trip.some((d) => d.iso === tIso)) out.push(["", "오늘 · " + dayLabel(Date.now())]);
+    trip.forEach((d) => out.push([d.iso === tIso ? "" : d.iso, (d.iso === tIso ? "오늘 · " : "") + (isNum(d.n) ? "Day " + d.n : "귀국") + " · " + d.date]));
+    return out;
+  }
+  function expDayRow() {
+    return '<label class="chips exp-dayrow"><span class="lbl">날짜</span><select data-change="exp-day" aria-label="날짜">' +
+      expDayOpts().map((o) => '<option value="' + o[0] + '"' + (o[0] === expDay ? " selected" : "") + ">" + esc(o[1]) + "</option>").join("") + "</select></label>";
+  }
+  function expAt() {
+    const m = String(expDay || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) return Date.now();
+    const n = new Date(); n.setFullYear(+m[1], +m[2] - 1, +m[3]); return n.getTime();
+  }
   function moneyHtml() {
     const S = state.settle, ppl = S.members, c = settleCalc();
     if (ppl.indexOf(ui.payer) < 0) ui.payer = ppl[0] || "";
@@ -1401,6 +1418,7 @@
         '<button class="btn" type="button" data-act="cur" data-cur="KRW" aria-pressed="' + (ui.cur === "KRW") + '">₩</button></div></div>' +
         '<input id="eWhat" data-keep placeholder="어디에 썼는지 (예: 점심 딤섬)" aria-label="내용" autocomplete="off">' +
         '<div class="chips"><span class="lbl">낸 사람</span>' + ppl.map((p) => '<button class="btn sm chipbtn" type="button" data-act="payer" data-p="' + esc(p) + '" aria-pressed="' + (p === ui.payer) + '">' + esc(p) + "</button>").join("") + "</div>" +
+        expDayRow() +
         '<button class="btn primary" type="button" data-act="exp-add">추가</button></div></div>';
     }
     if (S.expenses.length) {
@@ -2754,7 +2772,7 @@
         const amtEl = $("#eAmt"), whatEl = $("#eWhat");
         const amt = parseFloat(String(amtEl.value).replace(/[,\s]/g, ""));
         if (!(amt > 0)) { toast("금액을 넣어주세요"); amtEl.focus(); return; }
-        state.settle.expenses.push({ id: newId("x"), amt, cur: ui.cur === "KRW" ? "KRW" : "CNY", what: whatEl.value.trim(), payer: ui.payer, at: Date.now() });
+        state.settle.expenses.push({ id: newId("x"), amt, cur: ui.cur === "KRW" ? "KRW" : "CNY", what: whatEl.value.trim(), payer: ui.payer, at: expAt() });
         amtEl.value = ""; whatEl.value = "";
         save(); render(); toast("추가했어요");
         return;
@@ -2879,6 +2897,7 @@
       else t.value = tripTitle();
       return;
     }
+    if (t.getAttribute("data-change") === "exp-day") { expDay = t.value; return; }
     if (t.getAttribute("data-change") === "preview") {
       ui.preview = t.value; saveUI();
       toast("홈 화면이 바뀌었어요", { label: "홈 보기", fn: () => go("home") }, 4000);
