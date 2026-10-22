@@ -1319,3 +1319,5 @@ body { background-color: var(--edge) !important; }
 .mine-sw { color: var(--faint, #C5CEDA); }
 .mine-sw svg { width: 17px; height: 17px; }
 .mine-sw.on { color: var(--accent); }
+
+.dt .r .v.pre { white-space: pre-line; }

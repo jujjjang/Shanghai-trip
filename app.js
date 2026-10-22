@@ -91,15 +91,15 @@
   const daysUntil = (iso) => Math.round((Date.parse(iso + "T00:00:00Z") - Date.parse(shanghaiNow().slice(0, 10) + "T00:00:00Z")) / 864e5);
   const wmoKind = (c) => (c >= 71 && c <= 77) || c === 85 || c === 86 ? "snow" : c >= 51 ? "rain" : c >= 2 ? "cloud" : "sun";
   function loadWx() {
-    if (wxLoading || (wxData && Date.now() - wxData.at < 3 * 3600e3)) return;
+    if (wxLoading || (wxData && wxData.d && Date.now() - wxData.at < 3 * 3600e3)) return;
     wxLoading = true;
-    fetch("https://api.open-meteo.com/v1/forecast?latitude=31.23&longitude=121.47&hourly=temperature_2m,weather_code,precipitation_probability&timezone=Asia%2FShanghai&forecast_days=16", { cache: "no-store" })
+    fetch("https://api.open-meteo.com/v1/forecast?latitude=31.23&longitude=121.47&hourly=temperature_2m,weather_code,precipitation_probability&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FShanghai&forecast_days=16", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((j) => {
         if (!j || !j.hourly || !j.hourly.time) return;
-        wxData = { at: Date.now(), h: j.hourly };
+        wxData = { at: Date.now(), h: j.hourly, d: j.daily || null };
         lsSet(LS_WX, wxData);
-        if (ui.tab === "home" && !busy()) render();
+        if (!busy() && ui.tab !== "money") render();
       })
       .catch(() => {})
       .finally(() => { wxLoading = false; });
@@ -120,6 +120,19 @@
 
   /* ---------- weather text ("비 🌧️ 23°/17°") → parts ---------- */
   const TEMP_RE = /(-?\d+)\s*°\s*\/\s*(-?\d+)\s*°/;
+  /* a trip day's weather: the live forecast once the day is within 16 days, otherwise the words typed into the day */
+  function wmoText(c) {
+    return c === 0 ? "맑음" : c === 1 ? "대체로 맑음" : c === 2 ? "구름 조금" : c === 3 ? "흐림" : c === 45 || c === 48 ? "안개" : c >= 51 && c <= 57 ? "이슬비" :
+      (c >= 71 && c <= 77) || c === 85 || c === 86 ? "눈" : c >= 80 && c <= 82 ? "소나기" : c >= 95 ? "뇌우" : c >= 61 ? "비" : "흐림";
+  }
+  function dayWx(d) {
+    const dd = wxData && wxData.d, i = dd && d && d.iso ? dd.time.indexOf(d.iso) : -1;
+    if (i < 0 || dd.weather_code[i] == null) return wxParse(d && d.wx);
+    const code = dd.weather_code[i], kind = wmoKind(code), pp = dd.precipitation_probability_max ? dd.precipitation_probability_max[i] || 0 : 0;
+    const hi = Math.round(dd.temperature_2m_max[i]), lo = Math.round(dd.temperature_2m_min[i]);
+    const c = wmoText(code) + (kind === "rain" && pp ? " " + pp + "%" : kind !== "rain" && pp >= 40 ? " · 비 " + pp + "%" : "");
+    return { c, kind, hi: String(hi), lo: String(lo), t: hi + "° / " + lo + "°", live: true };
+  }
   function wxParse(w) {
     w = String(w || "");
     const tm = w.match(TEMP_RE);
@@ -174,9 +187,23 @@
     };
     d.days.forEach((x) => x.stops.forEach((s) => { fill(s); (s.spots || []).forEach(fill); }));
     if (!d.hotel.ll && window.TRIP_SEED.hotel.ll && d.hotel.zh === window.TRIP_SEED.hotel.zh) d.hotel.ll = window.TRIP_SEED.hotel.ll;
+    /* notes written after the trip was set up (공항·디즈니 가는 길), added once and only where the place still has its original words */
+    d.applied = d.applied || [];
+    if (d.applied.indexOf("routes-1022") < 0) {
+      const one = (id) => { let r = null; d.days.forEach((x) => x.stops.forEach((st) => { if (st.id === id) r = st; })); return r; };
+      const a = one("s19"), b = one("s12"), c = one("s14");
+      if (a && a.memo === "체크아웃은 12:00까지지만 공항 체크인이 11:30 마감이라 아침 일찍 나가기" && seed.s19) a.memo = seed.s19.memo;
+      if (b && !b.how && seed.s12) b.how = seed.s12.how;
+      if (c && !c.how && seed.s14) c.how = seed.s14.how;
+      if (c && !c.memo && seed.s14) c.memo = seed.s14.memo;
+      d.applied.push("routes-1022");
+      notesAdded = true;
+    }
     return d;
   }
+  let notesAdded = false;
   let state = norm(lsGet(LS_STATE) || clone(window.TRIP_SEED));
+  if (notesAdded) lsSet(LS_STATE, state); /* keep the added notes (and let them go out to a friend on the next sync) */
   const W_DEFAULT = ["weather", "hotel", "flight", "todo", "pack", "apps", "route"];
   const ui = Object.assign({ tab: "home", day: null, preview: "auto", open: {}, cur: "CNY", payer: "", theme: "time" }, lsGet(LS_UI) || {});
   ui.open = ui.open || {};
@@ -790,7 +817,7 @@
     const legs = state.flight.legs, h = state.hotel, t = state.trip;
     const leg = (l) => '<div class="ts-leg"><small>' + esc((l.label || "") + " · " + (l.date || "")) + '</small><b class="mono">' + esc(iata(l.from) + " " + (l.dep || "")) + "</b><em>→ " + esc(iata(l.to) + " " + (l.arr || "")) + "</em></div>";
     const days = state.days.map((d) => {
-      const w = wxParse(d.wx), list = visible(d).filter((x) => !/공항|체크인|체크아웃/.test(x.ko || "") || d.stops.length <= 2);
+      const w = dayWx(d), list = visible(d).filter((x) => !/공항|체크인|체크아웃/.test(x.ko || "") || d.stops.length <= 2);
       const sorted = list.filter((x) => x.pri === "must").concat(list.filter((x) => x.pri !== "must"));
       const chips = sorted.slice(0, 5).map((x) => '<span class="' + (x.pri === "must" ? "m" : "") + '">' + (x.pri === "must" ? "★ " : "") + esc(x.label || shortName(x.ko)) + "</span>").join("") + (sorted.length > 5 ? "<span>+" + (sorted.length - 5) + "</span>" : "");
       return '<button class="ts-day" type="button" data-act="go-plan" data-day="' + d.id + '" style="--c:' + dayC(d) + '"><span class="ts-n">' + esc(d.n) + '</span><span class="ts-dt mono">' + esc(d.date) + (w.hi ? '<i>' + ICON[w.kind] + esc(w.hi) + "°</i>" : "") + '</span><b class="ts-tt">' + esc(d.title) + '</b><span class="ts-go" aria-hidden="true">›</span>' +
@@ -814,7 +841,7 @@
       links = [{ t: "숙소 가는 길", b: "↗", c: "var(--accent)", url: apple(state.hotel.zh || state.hotel.addr || state.hotel.name) }];
     }
     if (c.id === "life") {
-      const d1 = state.days[0], w = wxParse(d1 && d1.wx), rate = +state.settle.rate || 0;
+      const d1 = state.days[0], w = dayWx(d1), rate = +state.settle.rate || 0;
       note = [w.c ? "첫날 " + w.c + (w.t ? " " + w.t : "") : "", rate ? "1위안 ≈ " + rate + "원 (정산 환율)" : ""].filter(Boolean).join(" · ");
       links = [{ t: "상하이 날씨", b: "↗", c: "var(--accent)", url: WX_URL }];
     }
@@ -885,8 +912,8 @@
     if (ph.k === "during") {
       chip = (isNum(ph.day.n) ? "DAY " + ph.day.n + " · " : "귀국 · ") + ph.day.date;
       title = ph.day.title;
-      const w = wxParse(ph.day.wx);
-      if (ph.day.wx) hint = '<a class="hwx" href="' + WX_URL + '"' + EXT + ">" + ICON[w.kind] + esc(w.c) + (w.t ? " · " + esc(w.t) : "") + "</a>";
+      const w = dayWx(ph.day);
+      if (w.c) hint = '<a class="hwx" href="' + WX_URL + '"' + EXT + ">" + ICON[w.kind] + esc(w.c) + (w.t ? " · " + esc(w.t) : "") + "</a>";
     } else {
       chip = ph.k === "before" ? "여행 전" : "다녀온 여행";
       title = tripTitle() || "상하이";
@@ -957,7 +984,7 @@
   function widgetHtml(id, ctx) {
     switch (id) {
       case "weather": {
-        const d = ctx.ph.k === "after" ? state.days[state.days.length - 1] : ctx.day, w = wxParse(d && d.wx), hrs = d ? wxHours(d.iso) : [];
+        const d = ctx.ph.k === "after" ? state.days[state.days.length - 1] : ctx.day, w = dayWx(d), hrs = d ? wxHours(d.iso) : [];
         const today = d && d.iso === shanghaiNow().slice(0, 10);
         const lbl = today ? "오늘 날씨" : ctx.ph.k === "before" ? "첫날 날씨" : "날씨";
         const temps = hrs.map((h) => h.t), hi = temps.length ? Math.round(Math.max.apply(null, temps)) : w.hi, lo = temps.length ? Math.round(Math.min.apply(null, temps)) : w.lo;
@@ -1036,7 +1063,7 @@
   function planHtml() {
     const day = planDay();
     if (!day) return pageHead("일정", "") + '<p class="empty pad">일정이 없어요</p>';
-    const c = dayC(day), vis = visible(day), w = wxParse(day.wx), ph = phase(), di = state.days.indexOf(day), pr = dayProgress(day);
+    const c = dayC(day), vis = visible(day), w = dayWx(day), ph = phase(), di = state.days.indexOf(day), pr = dayProgress(day);
     const nextId = ph.k === "during" && ph.day.id === day.id ? (nextOf(day) || {}).id : null;
     const far = mapPts(day).filter((p) => p.far);
     let s = '<div class="plan"><div class="mapwrap"><div class="map" id="map" role="img" aria-label="' + esc(day.title) + ' 동선 그림 지도"></div>' +
@@ -1044,7 +1071,7 @@
       '<div class="mid"><span>' + (isNum(day.n) ? "DAY " + esc(day.n) : "귀국") + " · " + esc(day.date) + "</span><b>" + esc(day.title) + "</b></div>" +
       '<button class="rb" type="button" data-act="day-step" data-d="1" aria-label="다음 날"' + (di >= state.days.length - 1 ? " disabled" : "") + ">" + ICON.chevR + "</button></div>" +
       '<div class="mapbot"><div class="far">' + far.map((p) => '<button class="mapchip" type="button" data-act="detail" data-id="' + p.it.id + '"><b class="mono">' + p.n + "</b>" + esc(mapLabel(p.it)) + " · 지도 밖</button>").join("") + "</div>" +
-      (day.wx ? '<a class="mapchip mapwx" href="' + WX_URL + '"' + EXT + ">" + ICON[w.kind] + esc(w.c) + (w.t ? " " + esc(w.t) : "") + "</a>" : "") + "</div></div>";
+      (w.c ? '<a class="mapchip mapwx" href="' + WX_URL + '"' + EXT + ">" + ICON[w.kind] + esc(w.c) + (w.t ? " " + esc(w.t) : "") + "</a>" : "") + "</div></div>";
     s += '<section class="plist" style="--c:' + c + '"><div class="handle" aria-hidden="true"></div>' +
       '<div class="plist-h"><h2>' + (isNum(day.n) ? "Day " + esc(day.n) : "귀국날") + ' 일정</h2><span class="cnt">' + (pr.n ? pr.done + "/" + pr.n + " 다녀옴" + (pr.sk ? " · " + pr.sk + " 건너뜀" : "") : "") + "</span>" +
       '<button class="icon-btn" type="button" data-act="edit-day" data-day="' + day.id + '" aria-label="이 날 제목·날씨 수정">' + ICON.pen + "</button></div>";
@@ -1128,6 +1155,7 @@
     if (it.hours) rows.push('<div class="r">' + ICON.clock + '<span class="k">영업</span><span class="v mono">' + esc(it.hours) + "</span></div>");
     if (it.addr) rows.push('<button class="r" type="button" data-act="copy" data-v="' + esc(it.addr) + '">' + ICON.pin + '<span class="k">주소</span><span class="v zh">' + esc(it.addr) + '</span><span class="cp">복사</span></button>');
     if (it.memo) rows.push('<div class="r">' + ICON.note + '<span class="k">할 일</span><span class="v">' + esc(it.memo) + "</span></div>");
+    if (it.how) rows.push('<div class="r">' + ICON.nav + '<span class="k">가는 길</span><span class="v pre">' + esc(it.how) + "</span></div>");
     if (rows.length) body += '<div class="dt-info">' + rows.join("") + "</div>";
     if (!isSpot) {
       const sp = it.spots || [];
@@ -1423,7 +1451,8 @@
       '<button class="row" type="button" data-act="members"><span class="ri">' + ICON.users + '</span><span class="rt"><b>여행 인원</b><span>기록 · 정산 · 연동에 쓰여요</span></span><span class="rv">' + esc((state.settle.members || []).join(" · ")) + "</span></button>" +
       row("share", "users", "친구랑 같이 쓰기", shareSub()) +
       row("backup", "download", "데이터 백업 파일 받기", "일정 · 정산 · 기록 글 (사진 빼고)") +
-      '<button class="row" type="button" data-act="reset"><span class="ri">' + ICON.undo + '</span><span class="rt"><b>처음 데이터로 되돌리기</b><span>' + (sync.code ? "같이 쓰는 중이라 친구 폰도 같이 되돌아가요" : "바꾼 일정 · 정산 · 기록 글이 다 지워져요") + "</span></span></button>" +
+      /* while sharing with a friend a reset would wipe their trip too, so it isn't offered then */
+      (sync.code ? "" : '<button class="row" type="button" data-act="reset"><span class="ri">' + ICON.undo + '</span><span class="rt"><b>처음 데이터로 되돌리기</b><span>바꾼 일정 · 정산 · 기록 글이 다 지워져요</span></span></button>') +
       "</div>";
     return s;
   }
@@ -1457,7 +1486,8 @@
       if (b.getAttribute("data-tab") === ui.tab) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
     });
     if (ui.tab === "plan") { fitPlan(); drawMap(); }
-    if (ui.tab === "home") { heroMount(); loadWx(); }
+    if (ui.tab === "home") heroMount();
+    loadWx();
     hydratePhotos(view);
     window.scrollTo(0, y);
     if (focusId) { const f = document.getElementById(focusId); if (f) f.focus({ preventScroll: true }); }
@@ -1755,13 +1785,14 @@
       field("desc", "한 줄 설명", it.desc, { ph: "예: 신천지 근처 딤섬집" }) +
       field("tags", "태그 (쉼표로 구분)", (it.tags || []).join(", "), { ph: "예: 예약 필수, 현금만" }) +
       field("hours", "영업시간", it.hours, { ph: "예: 10:00–22:00, 월요일 휴무" }) +
-      field("memo", "가서 할 일 · 메모", it.memo, { area: 1, ph: "예: 홍미창펀 꼭 먹기" });
+      field("memo", "가서 할 일 · 메모", it.memo, { area: 1, ph: "예: 홍미창펀 꼭 먹기" }) +
+      field("how", "가는 길 · 안 써도 돼요", it.how, { area: 1, ph: "예: 10호선 신톈디역 6번 출구" });
     if (!isSpot) body += daySel(keep.day || dayId);
     const apply = (v) => {
       it.ko = v.ko || it.ko || "";
       if ((v.zh || "") !== (it.zh || "")) { delete it.ll; delete it.llMiss; delete it.far; } /* a new Chinese name means a new place on the map */
       it.zh = v.zh || "";
-      ["desc", "hours", "memo", "pri"].forEach((k) => { if (v[k]) it[k] = v[k]; else delete it[k]; });
+      ["desc", "hours", "memo", "pri", "how"].forEach((k) => { if (v[k]) it[k] = v[k]; else delete it[k]; });
       const tags = String(v.tags || "").split(/[,，]/).map((x) => x.trim()).filter(Boolean);
       if (tags.length) it.tags = tags; else delete it.tags;
       if (isNew) {
