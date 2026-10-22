@@ -929,6 +929,9 @@
       '<div class="hero-card">' + heroCardHtml(ctx) + "</div>" +
       '<button class="hero-more" type="button" data-act="to-widgets">위젯 ' + ICON.chevR + "</button></section>";
     const list = widgetList();
+    /* half-width widgets pair up in order; an odd one left over stretches across the row, so there's never a hole */
+    const halves = list.filter((id) => WDEF[id] && WDEF[id].size === "half");
+    wSolo = halves.length % 2 ? halves[halves.length - 1] : "";
     s += '<div class="wzone" id="wzone">' + (editing ? '<p class="wnote">' + esc(wSetName()) + " 홈 위젯 편집 중 · 날짜마다 따로 저장돼요</p>" : "") + '<div class="wgrid' + (editing ? " wedit" : "") + '" id="wgrid">' + list.map((id) => widgetHtml(id, ctx)).join("") +
       (editing ? '<button class="w-add" type="button" data-act="w-addsheet">+ 위젯 추가</button>' + sendBtn() : "") + "</div>" +
       (!list.length && !editing ? '<p class="note" style="text-align:center;margin-top:24px;color:#fff">\'편집\'을 눌러 위젯을 넣어보세요</p>' : "") + "</div>";
@@ -979,9 +982,10 @@
     return '<button class="w-send" type="button" data-act="w-send">' + ICON.users + "<span>" + (state.layout ? "친구 첫 화면 배치 다시 저장" : "친구 첫 화면도 이 배치로") + "</span></button>" +
       '<p class="wnote wsent">친구가 앱을 처음 연결할 때 한 번만 적용돼요</p>';
   }
+  let wSolo = "";
   function wrapW(id, inner, cls, attrs) {
     const def = WDEF[id];
-    return '<div class="w w-' + def.size + (cls ? " " + cls : "") + '" data-w="' + id + '"' + (attrs || "") + ">" +
+    return '<div class="w w-' + def.size + (id === wSolo ? " w-solo" : "") + (cls ? " " + cls : "") + '" data-w="' + id + '"' + (attrs || "") + ">" +
       (editing ? '<button class="w-del" type="button" data-act="w-del" data-w="' + id + '" aria-label="' + def.name + ' 위젯 빼기">' + ICON.minus + "</button>" : "") + inner + "</div>";
   }
   function widgetHtml(id, ctx) {
@@ -1010,7 +1014,7 @@
       case "pack": case "apps": return wCheck(id);
       case "route": {
         const d = ctx.day;
-        return wrapW(id, d ? routeMap(d, 172, 138, { mini: true, uid: "w", padT: 22, padB: 18, padL: 22, padR: 22 }) + '<span class="wtag">' + (ctx.ph.k === "during" ? "오늘 동선" : (isNum(d.n) ? "DAY " + d.n : "귀국") + " 동선") + "</span>" : "", "wmap", d ? ' data-act="go-plan" data-day="' + d.id + '"' : "");
+        return wrapW(id, d ? routeMap(d, id === wSolo ? 358 : 172, 138, { mini: true, uid: "w", padT: 22, padB: 18, padL: 22, padR: 22 }) + '<span class="wtag">' + (ctx.ph.k === "during" ? "오늘 동선" : (isNum(d.n) ? "DAY " + d.n : "귀국") + " 동선") + "</span>" : "", "wmap", d ? ' data-act="go-plan" data-day="' + d.id + '"' : "");
       }
       case "settle": {
         const L = ledgerSum(), c = L.c, x = c.xs[0];

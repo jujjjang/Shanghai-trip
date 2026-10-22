@@ -1387,3 +1387,7 @@ body { background-color: var(--edge) !important; }
 .expform .field select { min-height: 46px; }
 .exp-open .w2 b { line-height: 1.3; }
 .exp-open .w2 > span { display: block; margin-top: 2px; line-height: 1.3; }
+
+/* a half widget without a partner fills the row */
+.w-half.w-solo { grid-column: 1 / -1; }
+.w-solo .wmemo { -webkit-line-clamp: 5; }
