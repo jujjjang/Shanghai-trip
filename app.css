@@ -1284,3 +1284,13 @@ body { background-color: var(--edge) !important; }
 [data-theme="light"] .hero-art .hbs { stroke: #90C5EA; }
 [data-theme="light"] .hero-art .ant { stroke: #94C8EB; }
 [data-theme="light"] .hero-art .pglow { opacity: .15; }
+
+/* links fire only on the words: place names hug their text, weather opens from "자세히" */
+.pc-t .wn-name { align-self: flex-start; max-width: 100%; }
+.dt-name { flex: 0 1 auto; margin-right: auto; }
+.wweather .wx-c { margin-left: auto; }
+.wx-more { flex: none; margin-left: 6px; font-size: 12.5px; color: var(--accent); text-decoration: none; padding: 4px 0 4px 4px; }
+/* page dots under the home card: a wide, drag-friendly strip */
+.hc-nav .hc-dots { padding: 12px 18px; margin: -12px 0; touch-action: none; cursor: pointer; -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; }
+.hc-nav .hc-dots i { width: 7px; height: 7px; }
+.hc-nav .hc-dots i.on { width: 20px; }

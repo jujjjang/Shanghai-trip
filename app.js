@@ -882,6 +882,7 @@
       (!list.length && !editing ? '<p class="note" style="text-align:center;margin-top:24px;color:#fff">\'편집\'을 눌러 위젯을 넣어보세요</p>' : "") + "</div>";
     return s;
   }
+  let dotScrub = false; /* dragging along the home card's dots: hold off re-renders until the finger lifts */
   function heroMount() {
     const hc = document.getElementById("hc");
     if (!hc) return;
@@ -895,6 +896,24 @@
     };
     hc.scrollLeft = start * hc.clientWidth;
     mark(start);
+    const bar = document.querySelector(".hc-dots");
+    if (bar && n > 1) {
+      let scrub = false, last = -1;
+      const at = (x) => { /* the nearest dot */
+        let best = 0, dist = 1e9;
+        dots.forEach((d, k) => { const r = d.getBoundingClientRect(), c = Math.abs(x - (r.left + r.width / 2)); if (c < dist) { dist = c; best = k; } });
+        return Math.min(n - 1, best);
+      };
+      const go = (x, smooth) => {
+        const i = at(x);
+        if (i === last) return;
+        last = i; heroIdx[dayId] = i; mark(i);
+        hc.scrollTo({ left: i * hc.clientWidth, behavior: smooth ? "smooth" : "auto" });
+      };
+      bar.addEventListener("pointerdown", (e) => { e.preventDefault(); scrub = dotScrub = true; last = -1; try { bar.setPointerCapture(e.pointerId); } catch (err) {} go(e.clientX, true); });
+      bar.addEventListener("pointermove", (e) => { if (scrub) go(e.clientX, false); });
+      ["pointerup", "pointercancel", "lostpointercapture"].forEach((ev) => bar.addEventListener(ev, () => { scrub = dotScrub = false; }));
+    }
     let tm;
     hc.addEventListener("scroll", () => {
       clearTimeout(tm);
@@ -924,8 +943,8 @@
           ? '<div class="wxh">' + hrs.map((h) => '<div class="' + (h.now ? "now" : "") + '"><span>' + (h.now ? "지금" : h.h + "시") + "</span>" + ICON[h.kind] + "<b>" + Math.round(h.t) + "°</b>" + (h.p >= 20 ? "<em>" + h.p + "%</em>" : "<em></em>") + "</div>").join("") + "</div>"
           : '<p class="wxh-none">' + (d && daysUntil(d.iso) > 15 ? "시간대별 예보는 출발 2주 전부터 떠요" : "시간대별 예보를 불러오지 못했어요 · 인터넷 연결되면 떠요") + "</p>";
         return wrapW(id, '<div class="hd"><span class="lbl">' + lbl + '</span><span class="mono sub">' + esc(d ? d.date : "") + "</span></div>" +
-          '<div class="wx-row"><span class="ico">' + ICON[w.kind] + '</span><span class="wx-t"><b class="mono">' + esc(hi || "—") + (hi ? "°" : "") + '</b><span class="mono">' + (lo ? "/ " + esc(lo) + "°" : "") + '</span></span><span class="sub wx-c">' + esc(w.c || "") + " · 자세히 ↗</span></div>" + strip,
-          "wweather", ' data-href="' + WX_URL + '"');
+          '<div class="wx-row"><span class="ico">' + ICON[w.kind] + '</span><span class="wx-t"><b class="mono">' + esc(hi || "—") + (hi ? "°" : "") + '</b><span class="mono">' + (lo ? "/ " + esc(lo) + "°" : "") + '</span></span><span class="sub wx-c">' + esc(w.c || "") + '</span><a class="wx-more" href="' + WX_URL + '"' + EXT + ">자세히 ↗</a></div>" + strip,
+          "wweather");
       }
       case "hotel": {
         const h = state.hotel, tm = hotelTimes(h);
@@ -2119,7 +2138,7 @@
   function busy() {
     const ae = document.activeElement;
     if (ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName) && (view.contains(ae) || sheet.contains(ae))) return true;
-    if (rg || drag || press) return true;
+    if (rg || drag || press || dotScrub) return true;
     if (!sheet.hidden && !/^(ck-|dt-|share)/.test(sheetKey()) && sheet.querySelector(".sh-body input, .sh-body textarea, .sh-body select")) return true;
     return false;
   }
@@ -2516,7 +2535,6 @@
         const f = findItem(id); if (f) openTaxi(f.item.zh || f.item.q, f.item.addr, f.item.ko);
         return;
       }
-      case "taxi-copy": if (taxiZh) copyText(taxiZh, "중국어 복사했어요"); return;
       case "taxi-close": taxiEl.hidden = true; return;
       case "edit": itemSheet(id); return;
       case "add-stop": itemSheet(null, { day: t.getAttribute("data-day") }); return;
