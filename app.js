@@ -1320,7 +1320,7 @@
   function logHtml() {
     const sel = ui.logDay && logDay(ui.logDay) ? ui.logDay : "all";
     let s = pageHead("기록", "날마다 사진 · 한 줄 기록", true);
-    if (state.posts.length) s = s.replace(/<\/header>$/, '<button class="hedit phact" type="button" data-act="img-pick">' + ICON.camera + "이미지 만들기</button></header>");
+    if (state.posts.length) s = s.replace(/<\/header>$/, '<button class="hedit phact" type="button" data-act="log-img">' + ICON.download + (sel === "all" ? "이미지로 저장" : "이날 이미지로") + "</button></header>");
     s += '<div class="lchips" role="tablist" aria-label="날짜 고르기"><button type="button" class="lchip' + (sel === "all" ? " on" : "") + '" data-act="log-day" data-v="all" aria-pressed="' + (sel === "all") + '">전체</button>' +
       '<button type="button" class="lchip txt' + (sel === PRE ? " on" : "") + '" data-act="log-day" data-v="' + PRE + '" aria-pressed="' + (sel === PRE) + '">여행 전</button>' +
       state.days.map((d) => '<button type="button" class="lchip' + (sel === d.id ? " on" : "") + '" data-act="log-day" data-v="' + d.id + '" aria-pressed="' + (sel === d.id) + '" style="--c:' + dayC(d) + '"><i>' + esc(d.n) + "</i>" + esc(String(d.date).split(" ")[0]) + "</button>").join("") + "</div>";
@@ -1575,91 +1575,100 @@
       return logImage(sel, dark, true);
     }
   }
-  /* ---------- 꾸미기: 기본 도형 + 글자 ----------
-     shapes are plain flat drawings, like a paint program; words are your own, in 고딕 or 굴림 느낌.
-     Everything is drawn centred on (0, 0) in image pixels (every picture here is 1080 wide). */
-  const STK_SHAPES = [["circle", "동그라미"], ["heart", "하트"], ["star", "별"], ["cloud", "구름"], ["note", "음표"], ["notes", "음표 둘"]];
-  const STK_COLORS = ["#FFFFFF", "#2B2540", "#FF8FB1", "#F2545B", "#FF9F5A", "#FFD447", "#6FD3A8", "#6BB8F0", "#3D6FE0", "#B49CF5", "#8A5A44"];
-  const TXT_FONTS = { goth: ["고딕", "'IBM Plex Sans KR', 'Apple SD Gothic Neo', sans-serif", 600], gul: ["굴림", "'Gowun Dodum', 'Apple SD Gothic Neo', sans-serif", 400] };
-  let stkCol = "#FF8FB1";
-  const txtLines = (it) => String(it.text || "").split("\n");
-  const txtFont = (it) => { const f = TXT_FONTS[it.font] || TXT_FONTS.goth; return f[2] + " 64px " + f[1]; };
-  function stkSize(it) {
-    if (it.id !== "txt") return [200, 200];
-    const c = document.createElement("canvas").getContext("2d");
-    c.font = txtFont(it);
-    return [Math.ceil(Math.max(40, ...txtLines(it).map((l) => c.measureText(l).width))) + 24, txtLines(it).length * 84 + 16];
-  }
-  function stkArt(c, it) {
-    if (it.id === "txt") {
-      const ls = txtLines(it), n = ls.length;
-      c.font = txtFont(it); c.fillStyle = it.col || "#2B2540"; c.textAlign = "center"; c.textBaseline = "middle";
-      ls.forEach((l, i) => c.fillText(l, 0, (i - (n - 1) / 2) * 84));
-      c.textAlign = "left"; c.textBaseline = "alphabetic";
-      return;
+  /* ---------- 스티커: 기록 이미지 위에 직접 붙이기 ----------
+     each sticker draws itself centred on (0, 0) in image pixels (the image is 1080 wide) */
+  const STK_WORDS = [["맛집 인정", "lemon"], ["인생샷", "pink"], ["또 올래", "mint"], ["최고", "sky"], ["배불러", "peach"], ["행복", "lilac"]];
+  const STK_TAPES = ["#F7C9D9", "#A9E3CF", "#FAD48E", "#BBD9F5", "#D5D1F7"];
+  const STK_IDS = ["ic:camera:sky", "ic:boba:pink", "ic:dumpling:lemon", "ic:cherry:peach", "ic:flower:lilac", "ic:plane:mint", "ic:icecream:pink", "ic:teapot:leaf", "ic:cat:stone", "heart", "seal", "spark"]
+    .concat(STK_WORDS.map((w, i) => "w:" + i), STK_TAPES.map((t, i) => "tape:" + i));
+  const STK_FONT = "'IBM Plex Sans KR', 'Apple SD Gothic Neo', sans-serif";
+  function stkSize(id) {
+    if (id.indexOf("tape:") === 0) return [270, 100];
+    if (id.indexOf("w:") === 0) {
+      const c = document.createElement("canvas").getContext("2d");
+      c.font = "700 40px " + STK_FONT;
+      return [Math.ceil(c.measureText(STK_WORDS[+id.slice(2)][0]).width) + 56 + 56, 124];
     }
-    c.fillStyle = it.col || "#FF8FB1";
-    const disc = (x, y, r) => { c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill(); };
-    const head = (x, y, rx, ry) => { c.beginPath(); c.ellipse(x, y, rx, ry, -0.45, 0, Math.PI * 2); c.fill(); };
-    switch (it.id.slice(3)) {
-      case "circle": disc(0, 0, 90); break;
-      case "heart": c.fill(new Path2D("M0 88 C-32 64 -96 26 -96 -24 C-96 -60 -68 -84 -40 -84 C-20 -84 -6 -72 0 -56 C6 -72 20 -84 40 -84 C68 -84 96 -60 96 -24 C96 26 32 64 0 88 Z")); break;
-      case "star":
-        c.beginPath();
-        for (let i = 0; i < 10; i++) { const r = i % 2 ? 40 : 98, a = -Math.PI / 2 + (i * Math.PI) / 5, x = Math.cos(a) * r, y = Math.sin(a) * r + 10; if (i) c.lineTo(x, y); else c.moveTo(x, y); }
-        c.closePath(); c.fill(); break;
-      case "cloud":
-        [[-54, 16, 38], [-12, -16, 50], [42, 4, 42], [0, 30, 40]].forEach((q) => disc(q[0], q[1], q[2]));
-        rrect(c, -92, 14, 184, 56, 28); c.fill(); break;
-      case "note":
-        head(-26, 58, 36, 26); c.fillRect(2, -88, 14, 146);
-        c.fill(new Path2D("M16 -88 C40 -70 72 -48 58 -4 C54 10 46 18 40 22 C52 -10 42 -40 16 -52 Z")); break;
-      case "notes":
-        head(-50, 62, 30, 22); head(50, 46, 30, 22);
-        c.fillRect(-26, -66, 12, 128); c.fillRect(74, -84, 12, 130);
-        c.beginPath(); c.moveTo(-26, -66); c.lineTo(86, -84); c.lineTo(86, -56); c.lineTo(-26, -38); c.closePath(); c.fill(); break;
+    return id === "spark" ? [140, 140] : [176, 176];
+  }
+  function stkCut(c, path) { /* the white die-cut edge with a soft shadow */
+    c.save(); c.shadowColor = "rgba(40, 30, 110, .28)"; c.shadowBlur = 16; c.shadowOffsetY = 5; c.fillStyle = "#FFFFFF"; path(); c.fill(); c.restore();
+  }
+  function stkDraw(c, id) {
+    const p = id.split(":");
+    if (p[0] === "ic") {
+      const col = AVC[p[2]] || AVC.sky;
+      stkCut(c, () => { c.beginPath(); c.arc(0, 0, 68, 0, Math.PI * 2); });
+      c.fillStyle = col[0]; c.beginPath(); c.arc(0, 0, 59, 0, Math.PI * 2); c.fill();
+      c.save(); c.translate(-36, -36); c.scale(3, 3); c.lineWidth = 1.8; c.lineCap = "round"; c.lineJoin = "round"; c.strokeStyle = col[1];
+      svgPaths(AVI[p[1]]).forEach((pa) => c.stroke(pa)); c.restore();
+    } else if (id === "heart") {
+      const pa = svgPaths(ICON.heart)[0];
+      c.save(); c.translate(-66, -70); c.scale(5.5, 5.5);
+      c.save(); c.shadowColor = "rgba(40, 30, 110, .28)"; c.shadowBlur = 16; c.shadowOffsetY = 5; c.strokeStyle = "#FFFFFF"; c.lineWidth = 3.2; c.lineJoin = "round"; c.stroke(pa); c.fillStyle = "#FFFFFF"; c.fill(pa); c.restore();
+      c.fillStyle = "#F06A9A"; c.fill(pa);
+      c.globalAlpha = 0.5; c.fillStyle = "#FFFFFF"; c.beginPath(); c.ellipse(8.4, 10.2, 1.6, 1, -0.6, 0, Math.PI * 2); c.fill(); c.restore();
+    } else if (id === "seal") {
+      const z = 116;
+      stkCut(c, () => rrect(c, -z / 2 - 9, -z / 2 - 9, z + 18, z + 18, 24));
+      c.fillStyle = "#D9483B"; rrect(c, -z / 2, -z / 2, z, z, 16); c.fill();
+      c.strokeStyle = "rgba(255, 255, 255, .85)"; c.lineWidth = 3; rrect(c, -z / 2 + 9, -z / 2 + 9, z - 18, z - 18, 9); c.stroke();
+      c.fillStyle = "#FFFFFF"; c.font = "900 40px 'Noto Serif SC', 'Songti SC', STSong, serif"; c.textAlign = "center";
+      c.fillText("上", 0, -5); c.fillText("海", 0, 37); c.textAlign = "left";
+    } else if (id === "spark") {
+      const star = () => { const r = 50; c.beginPath(); c.moveTo(0, -r); c.quadraticCurveTo(r * 0.18, -r * 0.18, r, 0); c.quadraticCurveTo(r * 0.18, r * 0.18, 0, r); c.quadraticCurveTo(-r * 0.18, r * 0.18, -r, 0); c.quadraticCurveTo(-r * 0.18, -r * 0.18, 0, -r); c.closePath(); };
+      c.save(); c.shadowColor = "rgba(40, 30, 110, .28)"; c.shadowBlur = 14; c.shadowOffsetY = 4; c.strokeStyle = "#FFFFFF"; c.lineWidth = 16; c.lineJoin = "round"; star(); c.stroke(); c.restore();
+      c.fillStyle = "#FFC94D"; star(); c.fill();
+    } else if (p[0] === "w") {
+      const w = STK_WORDS[+p[1]], col = AVC[w[1]];
+      c.font = "700 40px " + STK_FONT;
+      const tw = c.measureText(w[0]).width, bw = tw + 56, bh = 72;
+      stkCut(c, () => rrect(c, -bw / 2 - 9, -bh / 2 - 9, bw + 18, bh + 18, (bh + 18) / 2));
+      c.fillStyle = col[0]; rrect(c, -bw / 2, -bh / 2, bw, bh, bh / 2); c.fill();
+      c.fillStyle = col[1]; c.textAlign = "center"; c.fillText(w[0], 0, 14); c.textAlign = "left";
+    } else if (p[0] === "tape") {
+      const w = 240, h = 62, n = 6, zz = h / n;
+      c.globalAlpha = 0.85; c.fillStyle = STK_TAPES[+p[1]]; c.beginPath();
+      c.moveTo(-w / 2, -h / 2); c.lineTo(w / 2, -h / 2);
+      for (let i = 1; i <= n; i++) c.lineTo(w / 2 - (i % 2 ? 7 : 0), -h / 2 + zz * i);
+      c.lineTo(-w / 2, h / 2);
+      for (let i = n - 1; i >= 0; i--) c.lineTo(-w / 2 + (i % 2 ? 7 : 0), -h / 2 + zz * i);
+      c.closePath(); c.fill();
+      c.globalAlpha = 0.24; c.fillStyle = "#FFFFFF";
+      for (let sx = -w / 2 + 12; sx < w / 2 - 10; sx += 30) c.fillRect(sx, -h / 2, 12, h);
+      c.globalAlpha = 1;
     }
   }
   const stkPics = {};
-  function stkPic(it) {
-    const key = [it.id, it.col, it.font, it.text].join("|");
-    if (stkPics[key]) return stkPics[key];
-    const sz = stkSize(it), k = 1.5, cv = document.createElement("canvas");
-    cv.width = Math.max(1, Math.round(sz[0] * k)); cv.height = Math.max(1, Math.round(sz[1] * k));
-    const c = cv.getContext("2d"); c.scale(k, k); c.translate(sz[0] / 2, sz[1] / 2); stkArt(c, it);
-    return (stkPics[key] = cv.toDataURL("image/png"));
+  function stkPic(id) {
+    if (stkPics[id]) return stkPics[id];
+    const sz = stkSize(id), k = 2, cv = document.createElement("canvas");
+    cv.width = sz[0] * k; cv.height = sz[1] * k;
+    const c = cv.getContext("2d"); c.scale(k, k); c.translate(sz[0] / 2, sz[1] / 2); stkDraw(c, id);
+    return (stkPics[id] = cv.toDataURL("image/png"));
   }
-  async function txtFonts(text) {
-    if (!document.fonts) return;
-    await Promise.race([Promise.all(Object.keys(TXT_FONTS).map((k) => document.fonts.load(TXT_FONTS[k][2] + " 64px " + TXT_FONTS[k][1].split(",")[0], text || "가").catch(() => null))), new Promise((r) => setTimeout(r, 4000))]);
+  let stkFontsOk = false;
+  async function stkFonts() {
+    if (stkFontsOk || !document.fonts) return;
+    await Promise.race([Promise.all([document.fonts.load("700 40px 'IBM Plex Sans KR'", STK_WORDS.map((w) => w[0]).join("")).catch(() => null), document.fonts.load("900 40px 'Noto Serif SC'", "上海").catch(() => null)]), new Promise((r) => setTimeout(r, 4000))]);
+    stkFontsOk = true;
   }
-  /* ---------- the editor: the picture you scroll through, stickers and words on top, the tray below ---------- */
+  /* the editor: the picture you scroll through, stickers on top (drag to move, the round handle to size and turn), a tray to add more */
   let ske = null, skeDrag = null;
   const skeLists = {};
-  const skeKey = () => (logImgOpt.sel === "fc" ? "fc:" + logImgOpt.tpl : logImgOpt.sel);
-  const isDarkBg = (hex) => { const n = parseInt(String(hex).slice(1), 16); return 0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255) < 140; };
-  function skeTray() {
-    return '<div class="ske-cols" role="group" aria-label="색">' + STK_COLORS.map((col) => '<button type="button" class="ske-col' + (col === stkCol ? " on" : "") + '" data-act="stk-col" data-v="' + col + '" aria-label="색 ' + col + '" style="--sw:' + col + '"></button>').join("") + "</div>" +
-      '<div class="ske-shapes"><button type="button" class="ske-txt" data-act="txt-new">' + ICON.pen + "글자</button>" +
-      STK_SHAPES.map((s) => '<button type="button" data-act="stk-add" data-id="sh:' + s[0] + '" aria-label="' + s[1] + ' 붙이기"><img src="' + stkPic({ id: "sh:" + s[0], col: stkCol === "#FFFFFF" ? "#E4E1EC" : stkCol }) + '" alt=""></button>').join("") + "</div>";
-  }
   async function skeOpen(blob) {
-    await txtFonts(state.trip.title + "0123456789");
-    const key = skeKey(), fresh = !skeLists[key];
+    await stkFonts();
+    const key = logImgOpt.sel;
     if (ske && ske.url) URL.revokeObjectURL(ske.url);
     ske = { blob, url: URL.createObjectURL(blob), list: skeLists[key] || (skeLists[key] = []), sel: "", f: 1, h: 1080 };
-    if (fresh && logImgOpt.sel === "fc") fcDefaults(ske.list);
     let el = document.getElementById("ske");
     if (!el) { el = document.createElement("div"); el.id = "ske"; el.className = "ske"; document.body.appendChild(el); skeWire(el); }
     el.hidden = false;
-    const fc = logImgOpt.sel === "fc";
-    el.innerHTML = '<div class="ske-top"><button class="btn ghost sm" type="button" data-act="ske-close">닫기</button><span class="grow"></span>' +
-      (fc ? "" : '<div class="seg limg-th ske-th" role="group" aria-label="이미지 테마">' + [["light", "낮"], ["dark", "밤"]].map((o) => '<button type="button" class="seg-b" data-act="ske-theme" data-v="' + o[0] + '" aria-pressed="' + ((o[0] === "dark") === logImgOpt.dark) + '">' + (o[0] === "dark" ? ICON.moon : ICON.cloud) + o[1] + "</button>").join("") + "</div>") +
+    el.innerHTML = '<div class="ske-top"><button class="btn ghost sm" type="button" data-act="ske-close">닫기</button>' +
+      '<div class="seg limg-th ske-th" role="group" aria-label="이미지 테마">' + [["light", "낮"], ["dark", "밤"]].map((o) => '<button type="button" class="seg-b" data-act="ske-theme" data-v="' + o[0] + '" aria-pressed="' + ((o[0] === "dark") === logImgOpt.dark) + '">' + (o[0] === "dark" ? ICON.moon : ICON.cloud) + o[1] + "</button>").join("") + "</div>" +
       '<button class="btn primary sm" type="button" data-act="ske-done">다 됐어요</button></div>' +
-      (fc ? '<div class="ske-opts"><div class="ske-tpls" role="group" aria-label="사진 배치">' + FC_TPLS.map((t) => '<button type="button" class="ske-tpl" data-act="ske-tpl" data-v="' + t[0] + '" aria-pressed="' + (t[0] === logImgOpt.tpl) + '">' + fcTplIcon(t[0]) + "<span>" + t[1] + "</span></button>").join("") + "</div>" +
-        '<div class="ske-bgs" role="group" aria-label="배경">' + FC_BGS.map((b) => '<button type="button" class="ske-bg' + (b === logImgOpt.bg ? " on" : "") + '" data-act="ske-bg" data-v="' + b + '" aria-label="배경 ' + b + '" style="--sw:' + b + '"></button>').join("") + "</div></div>" : "") +
-      '<div class="ske-scroll"><div class="ske-pg"><img class="ske-base" alt="꾸밀 이미지" src="' + ske.url + '"><div class="ske-layer"></div></div></div>' +
-      '<div class="ske-tray" role="toolbar" aria-label="도형 · 글자">' + skeTray() + "</div>";
+      '<div class="ske-scroll"><p class="ske-tip">스티커를 누르면 붙어요 · 끌어서 옮기고 파란 손잡이로 크기·각도</p><div class="ske-pg"><img class="ske-base" alt="기록 이미지" src="' + ske.url + '"><div class="ske-layer"></div></div></div>' +
+      '<div class="ske-tray" role="toolbar" aria-label="스티커">' + STK_IDS.map((id) => '<button type="button" data-act="stk-add" data-id="' + id + '" aria-label="스티커 붙이기"><img src="' + stkPic(id) + '" alt=""></button>').join("") + "</div>";
     document.body.classList.add("noscroll");
     const img = el.querySelector(".ske-base");
     const fit = () => { if (!img.naturalWidth) return; ske.f = img.clientWidth / 1080; ske.h = (img.naturalHeight * 1080) / img.naturalWidth; skeDraw(); };
@@ -1670,14 +1679,14 @@
     if (!layer || !ske) return;
     const f = ske.f;
     layer.innerHTML = ske.list.map((t) => {
-      const sz = stkSize(t), on = t.k === ske.sel;
-      return '<div class="stk' + (on ? " on" : "") + '" data-k="' + t.k + '" style="left:' + (t.x * f).toFixed(1) + "px;top:" + (t.y * f).toFixed(1) + "px;width:" + (sz[0] * t.s * f).toFixed(1) + "px;height:" + (sz[1] * t.s * f).toFixed(1) + "px;transform:translate(-50%,-50%) rotate(" + t.r.toFixed(3) + 'rad)"><img src="' + stkPic(t) + '" alt="" draggable="false">' +
-        (on ? '<button type="button" class="stk-x" data-act="stk-del" aria-label="떼기">' + ICON.x + "</button>" + (t.id === "txt" ? '<button type="button" class="stk-e" data-act="txt-edit" aria-label="글자 고치기">' + ICON.pen + "</button>" : "") + '<span class="stk-h" aria-label="크기 · 각도">' + ICON.sync + "</span>" : "") + "</div>";
+      const sz = stkSize(t.id), on = t.k === ske.sel;
+      return '<div class="stk' + (on ? " on" : "") + '" data-k="' + t.k + '" style="left:' + (t.x * f).toFixed(1) + "px;top:" + (t.y * f).toFixed(1) + "px;width:" + (sz[0] * t.s * f).toFixed(1) + "px;height:" + (sz[1] * t.s * f).toFixed(1) + "px;transform:translate(-50%,-50%) rotate(" + t.r.toFixed(3) + 'rad)"><img src="' + stkPic(t.id) + '" alt="" draggable="false">' +
+        (on ? '<button type="button" class="stk-x" data-act="stk-del" aria-label="스티커 떼기">' + ICON.x + '</button><span class="stk-h" aria-label="크기 · 각도">' + ICON.sync + "</span>" : "") + "</div>";
     }).join("");
   }
   function skeWire(el) {
     el.addEventListener("pointerdown", (e) => {
-      if (!ske || !e.target.closest(".ske-pg") || e.target.closest(".stk-x, .stk-e")) return;
+      if (!ske || !e.target.closest(".ske-pg") || e.target.closest(".stk-x")) return;
       const st = e.target.closest(".stk");
       if (!st) { if (ske.sel) { ske.sel = ""; skeDraw(); } return; }
       e.preventDefault();
@@ -1694,7 +1703,7 @@
       e.preventDefault();
       const d = skeDrag, t = d.t;
       if (d.rs) {
-        t.s = Math.min(5, Math.max(0.15, (d.s0 * Math.hypot(e.clientX - d.cx, e.clientY - d.cy)) / d.d0));
+        t.s = Math.min(4, Math.max(0.3, (d.s0 * Math.hypot(e.clientX - d.cx, e.clientY - d.cy)) / d.d0));
         t.r = d.r0 + Math.atan2(e.clientY - d.cy, e.clientX - d.cx) - d.a0;
       } else {
         t.x = Math.min(1080, Math.max(0, d.sx + (e.clientX - d.x0) / ske.f));
@@ -1710,123 +1719,21 @@
     if (el) { el.hidden = true; el.innerHTML = ""; }
     if (sheet.hidden) document.body.classList.remove("noscroll");
   }
-  function skeAdd(it) {
-    if (!ske) return;
-    const sc = $("#ske .ske-scroll"), pg = $("#ske .ske-pg"), yv = (sc.scrollTop + sc.clientHeight * 0.42 - pg.offsetTop) / ske.f;
-    it.k = "k" + Date.now().toString(36) + Math.floor(Math.random() * 1e4);
-    it.x = it.x == null ? 540 + (Math.random() - 0.5) * 520 : it.x;
-    it.y = it.y == null ? Math.min(ske.h - 90, Math.max(90, yv + (Math.random() - 0.5) * 260)) : it.y;
-    it.s = it.s || (it.id === "txt" ? 0.8 : 0.5); it.r = it.r || 0;
-    ske.list.push(it); ske.sel = it.k; skeDraw();
-  }
-  /* writing / changing words: a small sheet over the editor */
-  function txtSheet(it) {
-    const cur = it || { text: "", font: "goth", col: logImgOpt.sel === "fc" && isDarkBg(logImgOpt.bg) ? "#FFFFFF" : "#2B2540" };
-    openSheet({
-      key: "txt", center: true, title: it ? "글자 고치기" : "글자 넣기",
-      body: '<label class="field"><span class="vh">글자</span><textarea name="text" rows="2" placeholder="예: 상하이 3박 4일" style="min-height:76px">' + esc(cur.text) + "</textarea></label>" +
-        '<div class="field"><span>글씨체</span><div class="chips">' + Object.keys(TXT_FONTS).map((k) => '<label class="rchip"><input type="radio" name="font" value="' + k + '"' + (k === (cur.font || "goth") ? " checked" : "") + '><span style="font-family:' + esc(TXT_FONTS[k][1]) + ";font-weight:" + TXT_FONTS[k][2] + '">' + TXT_FONTS[k][0] + "</span></label>").join("") + "</div></div>" +
-        '<div class="field"><span>색</span><div class="ske-cols in">' + STK_COLORS.map((col) => '<label class="ske-col' + (col === cur.col ? " on" : "") + '" style="--sw:' + col + '"><input class="vh" type="radio" name="col" value="' + col + '"' + (col === cur.col ? " checked" : "") + "></label>").join("") + "</div></div>",
-      foot: (it ? '<button class="btn danger" type="button" data-act="sh" data-k="del">지우기</button>' : "") + '<span class="grow"></span><button class="btn" type="button" data-act="sh-close">취소</button><button class="btn primary" type="button" data-act="sh" data-k="ok">' + (it ? "바꾸기" : "넣기") + "</button>",
-      on(k, v) {
-        if (k === "del" && it) { ske.list.splice(ske.list.indexOf(it), 1); ske.sel = ""; closeSheet(); skeDraw(); return; }
-        if (k !== "ok") return;
-        const text = String(v.text || "").replace(/\s+$/, "");
-        if (!text.trim()) { toast("글자를 써주세요"); return; }
-        const o = { id: "txt", text, font: TXT_FONTS[v.font] ? v.font : "goth", col: v.col || cur.col };
-        txtFonts(text).then(() => { if (it) Object.assign(it, o); else skeAdd(o); closeSheet(); skeDraw(); });
-      }
-    });
-    const sw = sheet.querySelector(".ske-cols.in");
-    if (sw) sw.addEventListener("change", () => sw.querySelectorAll(".ske-col").forEach((l) => l.classList.toggle("on", l.querySelector("input").checked)));
-    const ta = sheet.querySelector("textarea"); if (ta) { ta.focus(); ta.select(); }
-  }
   async function skeExport() {
     const im = await loadImg(ske.url), cv = document.createElement("canvas");
     cv.width = im.naturalWidth; cv.height = im.naturalHeight;
     const c = cv.getContext("2d"), fk = im.naturalWidth / 1080;
     c.drawImage(im, 0, 0);
-    ske.list.forEach((t) => { c.save(); c.translate(t.x * fk, t.y * fk); c.rotate(t.r); c.scale(t.s * fk, t.s * fk); stkArt(c, t); c.restore(); });
+    ske.list.forEach((t) => { c.save(); c.translate(t.x * fk, t.y * fk); c.rotate(t.r); c.scale(t.s * fk, t.s * fk); stkDraw(c, t.id); c.restore(); });
     return await new Promise((res) => cv.toBlob(res, "image/jpeg", 0.92));
   }
-  let logImgUrl = "", logImgFile = null, logImgOpt = { sel: "all", dark: false, tpl: "stack", bg: "#FFFFFF" };
-  function logImgMake(sel, o, btn) {
-    logImgOpt = Object.assign({}, logImgOpt, o || {}, { sel });
+  let logImgUrl = "", logImgFile = null, logImgOpt = { sel: "all", dark: false };
+  function logImgMake(sel, dark, btn) {
+    logImgOpt = { sel, dark };
     const keep = btn ? btn.innerHTML : "";
-    if (btn) { btn.disabled = true; btn.innerHTML = (btn.querySelector("svg") ? btn.querySelector("svg").outerHTML : "") + "만드는 중…"; }
+    if (btn) { btn.disabled = true; btn.innerHTML = ICON.download + "만드는 중…"; }
     const back = () => { if (btn && btn.isConnected) { btn.disabled = false; btn.innerHTML = keep; } };
-    return (sel === "fc" ? fourCut(fcPick, logImgOpt.tpl, logImgOpt.bg) : logImage(sel, logImgOpt.dark)).then((b) => { back(); if (b) skeOpen(b); else toast("아직 기록이 없어요"); }).catch(() => { back(); toast("이미지를 못 만들었어요"); });
-  }
-  /* ---------- 네컷: 사진 4장 → 고른 배치 · 배경 위에 ---------- */
-  let fcPick = [];
-  const allPostPics = () => {
-    const out = [];
-    [preDay()].concat(state.days).forEach((d) => postsOf(d.id).forEach((p) => postPics(p.id).forEach((pid) => { if (out.indexOf(pid) < 0) out.push(pid); })));
-    return out;
-  };
-  const fcName = () => (state.trip.title || "여행") + " 네컷";
-  function imgPickSheet() {
-    const sel = ui.logDay && logDay(ui.logDay) ? ui.logDay : "all", d = sel !== "all" ? logDay(sel) : null;
-    openSheet({
-      key: "img-pick", center: true, title: "이미지 만들기",
-      body: '<button class="bigopt main" type="button" data-act="fc-open"><span class="ri">' + ICON.camera + '</span><span class="rt"><b>' + esc(fcName()) + "</b><span>사진 4장 골라서 배치 · 배경 · 글자 · 도형으로 꾸미기</span></span></button>" +
-        '<button class="bigopt" type="button" data-act="log-img"><span class="ri">' + ICON.log + "</span><span class=\"rt\"><b>" + (d ? esc(d.pre ? "여행 전" : (isNum(d.n) ? "Day " + d.n : "귀국날")) + " 기록 한 장" : "기록 전체 한 장") + "</b><span>글이랑 사진을 긴 이미지 하나로</span></span></button>"
-    });
-  }
-  function fcSheet() {
-    const all = allPostPics();
-    if (!all.length) { toast("사진 있는 기록이 아직 없어요"); return; }
-    fcPick = fcPick.filter((x) => all.indexOf(x) >= 0);
-    const need = Math.min(4, all.length);
-    openSheet({
-      key: "fc", title: fcName(),
-      body: '<p class="note fc-note">들어갈 순서대로 ' + need + "장 골라요</p>" +
-        '<div class="fcgrid">' + all.map((pid) => { const i = fcPick.indexOf(pid); return '<button type="button" class="fcpic' + (i >= 0 ? " on" : "") + '" data-act="fc-pick" data-pid="' + esc(pid) + '" aria-pressed="' + (i >= 0) + '"><img data-pid="' + esc(pid) + '" alt="">' + (i >= 0 ? "<b>" + (i + 1) + "</b>" : "") + "</button>"; }).join("") + "</div>",
-      foot: '<span class="grow"></span><button class="btn" type="button" data-act="sh-close">취소</button><button class="btn primary" type="button" data-act="fc-make"' + (fcPick.length < need ? " disabled" : "") + ">" + ICON.camera + "만들기 " + fcPick.length + "/" + need + "</button>"
-    });
-  }
-  /* four layouts (from 윤주's sketch): [width, height, spots[x, y, w, h, turn, white edge], where the words go first] */
-  const FC_TPLS = [["stack", "세로 네 장"], ["collage", "콜라주"], ["grid", "2×2"], ["duo", "큰 두 장"]];
-  const FC_BGS = ["#FFFFFF", "#FBF6EE", "#DCEBF8", "#FBE4EC", "#ECE7FB", "#E3F4EA", "#FFF4D2", "#4A3A33", "#13173F", "#1A1A1A"];
-  function fcLayout(t) {
-    switch (t) {
-      case "collage": return { W: 1080, H: 1660, spots: [[150, 170, 570, 620, 0, 0], [500, 520, 310, 350, -0.07, 1], [200, 950, 340, 220, 0, 0], [280, 1235, 560, 310, 0, 0]], words: [850, 1060, -0.08] };
-      case "grid": return { W: 1080, H: 1350, spots: [[110, 250, 400, 300, 0, 0], [570, 230, 400, 300, 0, 0], [140, 700, 380, 280, 0, 0], [560, 710, 400, 280, 0, 0]], words: [540, 1130, 0] };
-      case "duo": return { W: 1080, H: 1380, spots: [[120, 260, 380, 680, 0, 0], [590, 215, 290, 700, 0, 0], [700, 130, 200, 240, 0.08, 1], [140, 820, 330, 190, -0.05, 1]], words: [540, 1170, 0] };
-      default: return { W: 1080, H: 1620, spots: [[150, 150, 560, 300, 0, 0], [150, 500, 560, 300, 0, 0], [150, 850, 560, 300, 0, 0], [150, 1200, 560, 300, 0, 0]], words: [895, 820, Math.PI / 2] };
-    }
-  }
-  function fcTplIcon(t) {
-    const L = fcLayout(t), k = 30 / L.H;
-    return '<svg viewBox="0 0 ' + (L.W * k).toFixed(1) + ' 30" width="' + (L.W * k).toFixed(1) + '" height="30" aria-hidden="true"><rect x=".5" y=".5" width="' + (L.W * k - 1).toFixed(1) + '" height="29" rx="2" fill="none" stroke="currentColor" opacity=".5"/>' +
-      L.spots.map((s) => '<rect x="' + (s[0] * k).toFixed(1) + '" y="' + (s[1] * k).toFixed(1) + '" width="' + (s[2] * k).toFixed(1) + '" height="' + (s[3] * k).toFixed(1) + '" fill="currentColor" transform="rotate(' + ((s[4] * 180) / Math.PI).toFixed(1) + " " + ((s[0] + s[2] / 2) * k).toFixed(1) + " " + ((s[1] + s[3] / 2) * k).toFixed(1) + ')"/>').join("") + "</svg>";
-  }
-  /* the first time a layout opens: the trip name (and dates, smaller) where the layout leaves room */
-  function fcDefaults(list) {
-    const L = fcLayout(logImgOpt.tpl), w = L.words, col = isDarkBg(logImgOpt.bg) ? "#FFFFFF" : "#2B2540", dates = String(state.trip.dates || "").split("·")[0].trim();
-    const mk = (o) => Object.assign({ k: "k" + Math.random().toString(36).slice(2, 9), id: "txt", font: "goth", col }, o);
-    const dx = Math.abs(w[2]) > 1 ? 64 : 0, dy = Math.abs(w[2]) > 1 ? 0 : 74;
-    list.push(mk({ text: (state.trip.title || "여행") + (state.trip.nights ? " " + state.trip.nights : ""), x: w[0], y: w[1], s: 0.82, r: w[2] }));
-    if (dates) list.push(mk({ text: dates, x: w[0] - dx, y: w[1] + dy, s: 0.42, r: w[2] }));
-  }
-  async function fourCut(pids, tpl, bg) {
-    const list = pids.slice(0, 4);
-    if (!list.length) return null;
-    while (list.length < 4) list.push(list[list.length % pids.length]);
-    const L = fcLayout(tpl), imgs = await Promise.all(list.map((pid) => photoUrl(pid).then((u) => (u ? loadImg(u) : null)).catch(() => null)));
-    const cv = document.createElement("canvas"); cv.width = L.W; cv.height = L.H;
-    const c = cv.getContext("2d"), dark = isDarkBg(bg);
-    c.fillStyle = bg || "#FFFFFF"; c.fillRect(0, 0, L.W, L.H);
-    L.spots.forEach((s, i) => {
-      const im = imgs[i], [x, y, w, h, rot, edge] = s;
-      c.save(); c.translate(x + w / 2, y + h / 2); c.rotate(rot);
-      if (edge) { c.save(); c.shadowColor = dark ? "rgba(0, 0, 0, .45)" : "rgba(40, 30, 80, .18)"; c.shadowBlur = 22; c.shadowOffsetY = 6; c.fillStyle = "#FFFFFF"; c.fillRect(-w / 2 - 12, -h / 2 - 12, w + 24, h + 24); c.restore(); }
-      c.beginPath(); c.rect(-w / 2, -h / 2, w, h); c.clip();
-      c.fillStyle = dark ? "#2A2E52" : "#ECEAF2"; c.fillRect(-w / 2, -h / 2, w, h);
-      if (im) { const k = Math.max(w / im.width, h / im.height), sw = w / k, sh = h / k; c.drawImage(im, (im.width - sw) / 2, (im.height - sh) / 2, sw, sh, -w / 2, -h / 2, w, h); }
-      c.restore();
-    });
-    return await new Promise((res) => cv.toBlob(res, "image/jpeg", 0.93));
+    return logImage(sel, dark).then((b) => { back(); if (b) skeOpen(b); else toast("아직 기록이 없어요"); }).catch(() => { back(); toast("이미지를 못 만들었어요"); });
   }
   function logImgSheet(blob) {
     if (logImgUrl) URL.revokeObjectURL(logImgUrl);
@@ -2177,8 +2084,6 @@
   function closeSheet() {
     sheet.hidden = true; sheet.innerHTML = ""; sheetCtx = null;
     document.body.classList.remove("noscroll", "sheet-open");
-    const ed = document.getElementById("ske");
-    if (ed && !ed.hidden) document.body.classList.add("noscroll"); /* the sticker editor is still up */
   }
   function formVals() {
     const f = $("#shForm"), o = {};
@@ -3343,47 +3248,23 @@
       case "tab": closeSheet(); editing = false; go(t.getAttribute("data-tab")); return;
       case "go-plan": closeSheet(); go("plan", { day: t.getAttribute("data-day") }); return;
       case "go-log": ui.logDay = t.getAttribute("data-day") || "all"; go("log"); return;
-      case "img-pick": imgPickSheet(); return;
-      case "log-img": if (!t.disabled) logImgMake(ui.logDay && logDay(ui.logDay) ? ui.logDay : "all", { dark: isDark() }, t).then(() => { if (sheetCtx && sheetCtx.key === "img-pick") closeSheet(); }); return;
-      case "fc-open": fcSheet(); return;
-      case "fc-pick": {
-        const pid = t.getAttribute("data-pid"), i = fcPick.indexOf(pid);
-        if (i >= 0) fcPick.splice(i, 1);
-        else if (fcPick.length >= 4) { toast("4장까지 골라요 · 빼고 다시 골라주세요"); return; }
-        else fcPick.push(pid);
-        fcSheet();
-        return;
-      }
-      case "fc-make": if (!t.disabled) logImgMake("fc", {}, t).then(() => { if (sheetCtx && sheetCtx.key === "fc") closeSheet(); }); return;
+      case "log-img": if (!t.disabled) logImgMake(ui.logDay && logDay(ui.logDay) ? ui.logDay : "all", isDark(), t); return;
       case "ske-theme": {
         const dk = t.getAttribute("data-v") === "dark", g = t.closest(".ske-th");
         if (dk === logImgOpt.dark || g.classList.contains("busy")) return;
         g.classList.add("busy");
-        logImgMake(logImgOpt.sel, { dark: dk }, t);
+        logImgMake(logImgOpt.sel, dk, t);
         return;
       }
       case "ske-close": skeClose(); return;
-      case "ske-tpl": case "ske-bg": {
-        const v = t.getAttribute("data-v"), o = act === "ske-tpl" ? { tpl: v } : { bg: v }, g = t.closest(".ske-opts");
-        if ((act === "ske-tpl" ? logImgOpt.tpl : logImgOpt.bg) === v || g.classList.contains("busy")) return;
-        g.classList.add("busy");
-        if (act === "ske-bg") { /* words that were in the auto colour follow the new background */
-          const was = isDarkBg(logImgOpt.bg) ? "#FFFFFF" : "#2B2540", now = isDarkBg(v) ? "#FFFFFF" : "#2B2540";
-          Object.keys(skeLists).forEach((k2) => { if (k2.indexOf("fc:") === 0) skeLists[k2].forEach((q) => { if (q.id === "txt" && q.col === was) q.col = now; }); });
-        }
-        logImgMake("fc", o, act === "ske-tpl" ? t : null).then(() => g.classList.remove("busy"));
+      case "stk-add": {
+        if (!ske) return;
+        const sc = $("#ske .ske-scroll"), pg = $("#ske .ske-pg"), id = t.getAttribute("data-id");
+        const yv = (sc.scrollTop + sc.clientHeight * 0.42 - pg.offsetTop) / ske.f, k = "k" + Date.now().toString(36) + Math.floor(Math.random() * 1e4);
+        ske.list.push({ k, id, x: 540 + (Math.random() - 0.5) * 300, y: Math.min(ske.h - 90, Math.max(90, yv)), s: 1, r: (Math.random() - 0.5) * (id.indexOf("tape:") === 0 ? 0.3 : 0.5) });
+        ske.sel = k; skeDraw();
         return;
       }
-      case "stk-col": {
-        stkCol = t.getAttribute("data-v");
-        const it = ske && ske.list.find((q) => q.k === ske.sel);
-        if (it) { it.col = stkCol; skeDraw(); }
-        const tray = $("#ske .ske-tray"); if (tray) tray.innerHTML = skeTray();
-        return;
-      }
-      case "txt-new": txtSheet(null); return;
-      case "txt-edit": { const it = ske && ske.list.find((q) => q.k === ske.sel); if (it) txtSheet(it); return; }
-      case "stk-add": skeAdd({ id: t.getAttribute("data-id"), col: stkCol }); return;
       case "stk-del": if (ske) { ske.list.splice(0, ske.list.length, ...ske.list.filter((q) => q.k !== ske.sel)); ske.sel = ""; skeDraw(); } return;
       case "ske-done": {
         if (!ske || t.disabled) return;
