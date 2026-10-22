@@ -3,6 +3,6 @@
    여기 채워 두면 초대 링크가 짧아지고 친구는 코드만 넣어도 돼요.
    publishable key는 원래 앱 안에 넣어 쓰는 공개용 키라서 여기 적어도 괜찮아요 (secret key는 절대 X). */
 window.TRIP_SYNC = {
-  url: "",
-  key: ""
+  url: "https://gqlbngdnozsxefnyecce.supabase.co",
+  key: "sb_publishable_Th-Yxt93EtAABzT9Khf1NA_7gPGyIMg"
 };

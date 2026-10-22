@@ -1991,6 +1991,8 @@
     return { url: String(o.url || c.url || "").trim().replace(/\/+$/, ""), key: String(o.key || c.key || "").trim() };
   }
   const syncReady = () => { const c = syncCfg(); return !!(c.url && c.key); };
+  /* the app ships with its own storage address (config.js), so nobody has to connect by hand */
+  const fixedCfg = () => { const c = window.TRIP_SYNC || {}; return !!(c.url && c.key); };
   function normCode(s) {
     const t = String(s || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
     return t.length >= 10 ? t.slice(0, 2) + "-" + t.slice(2, 6) + "-" + t.slice(6, 10) : "";
@@ -2364,7 +2366,7 @@
         '<div class="ordiv"><span>친구가 이미 만들었으면</span></div>' +
         joinBox(prefill, "SH-XXXX-XXXX 또는 초대 링크") +
         '<p class="note">참여하면 일정 · 정산 · 기록 같은 같이 보는 내용이 친구 것으로 바뀌어요. 준비물 · 앱 체크는 그대로고, 이 폰에 있던 사진은 친구 여행에 다시 올라가요.</p>' +
-        '<button class="btn ghost sm" type="button" data-act="sync-cfgclear">저장소 연결 바꾸기</button>';
+        (fixedCfg() ? "" : '<button class="btn ghost sm" type="button" data-act="sync-cfgclear">저장소 연결 바꾸기</button>');
     }
     openSheet({ key: "share", title: "친구랑 같이 쓰기", body });
   }
