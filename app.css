@@ -1428,3 +1428,8 @@ body { background-color: var(--edge) !important; }
 .phact:disabled { opacity: .75; }
 .limg { max-height: 62vh; overflow: auto; border-radius: 14px; border: 1px solid var(--line); background: var(--inner); }
 .limg img { display: block; width: 100%; height: auto; }
+.limg-th { display: flex; gap: 4px; padding: 4px; margin-bottom: 12px; border-radius: 12px; background: var(--inner); }
+.limg-th .seg-b { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-height: 36px; border: 0; border-radius: 9px; background: none; color: var(--muted); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+.limg-th .seg-b svg { width: 15px; height: 15px; }
+.limg-th .seg-b[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-sm); }
+.limg-th.busy { opacity: .6; pointer-events: none; }

@@ -1343,19 +1343,53 @@
     c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r);
     c.closePath();
   }
-  async function logImage(sel) {
+  /* the home screen's sky drawing as a picture, in 낮 or 밤 colours: its colours live in app.css, so the matching rules go inside the svg */
+  function heroArtImage(dark) {
+    let css = "";
+    const want = (x) => x !== ".hero-art" && (x.indexOf(".hero-art") === 0 || /^\.(cl|plane-fly|sunglow)\b/.test(x));
+    Array.from(document.styleSheets).forEach((sh) => {
+      let rules = null;
+      try { rules = sh.cssRules; } catch (e) { return; }
+      Array.from(rules || []).forEach((r) => {
+        if (!r.selectorText || !r.style) return;
+        const keep = r.selectorText.split(",").map((x) => {
+          x = x.trim();
+          const m = x.match(/^\[data-theme="(light|dark)"\]\s+(.*)$/);
+          if (m) return (m[1] === "dark") === dark ? m[2] : "";
+          return /data-theme|^html/.test(x) ? "" : x;
+        }).filter((x) => x && want(x));
+        if (keep.length) css += keep.join(",") + "{" + r.style.cssText + "}";
+      });
+    });
+    css += "*{animation:none!important}";
+    const svg = heroArt().replace('<svg class="hero-art"', '<svg xmlns="http://www.w3.org/2000/svg" width="1560" height="3124" class="hero-art"').replace("<defs>", "<style>" + css + "</style><defs>");
+    return loadImg("data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg));
+  }
+  function themeVars(dark) {
+    const el = document.createElement("div");
+    el.setAttribute("data-theme", dark ? "dark" : "light"); el.style.display = "none"; document.body.appendChild(el);
+    const cs = getComputedStyle(el), v = (k) => cs.getPropertyValue(k).trim();
+    const o = { bg: v("--bg"), ink: v("--ink"), ink2: v("--ink-2"), muted: v("--muted"), soft: v("--soft"), faint: v("--faint"), accent: v("--accent"), d: ["--d1", "--d2", "--d3", "--d4"].map(v) };
+    el.remove();
+    return o;
+  }
+  async function logImage(sel, dark, noArt) {
     const days = (sel === "all" ? [preDay()].concat(state.days) : [logDay(sel)]).filter((d) => d && postsOf(d.id).length);
     if (!days.length) return null;
     const F = { t: "Hahmlet, 'Nanum Myeongjo', AppleMyungjo, serif", b: "'IBM Plex Sans KR', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif", m: "'IBM Plex Mono', ui-monospace, Menlo, monospace" };
-    try { if (document.fonts) await Promise.all(["700 90px Hahmlet", "400 30px 'IBM Plex Sans KR'", "600 30px 'IBM Plex Sans KR'", "500 24px 'IBM Plex Mono'", "600 30px 'IBM Plex Mono'"].map((f) => document.fonts.load(f, "상하이 기록 0123"))); } catch (e) {}
+    try { if (document.fonts) await Promise.all(["700 120px Hahmlet", "600 50px Hahmlet", "400 38px 'IBM Plex Sans KR'", "600 32px 'IBM Plex Sans KR'", "500 26px 'IBM Plex Mono'", "600 30px 'IBM Plex Mono'"].map((f) => document.fonts.load(f, "상하이 기록 DAY 0123"))); } catch (e) {}
     const imgs = {}, pids = [];
-    days.forEach((d) => postsOf(d.id).forEach((p) => postPics(p.id).forEach((x) => pids.push(x))));
+    days.forEach((d) => postsOf(d.id).forEach((p) => postPics(p.id).forEach((x) => { if (pids.indexOf(x) < 0) pids.push(x); })));
+    const art = noArt ? null : await heroArtImage(dark).catch(() => null);
     await Promise.all(pids.map((pid) => photoUrl(pid).then((u) => (u ? loadImg(u) : null)).then((im) => { if (im) imgs[pid] = im; }).catch(() => {})));
-    const W = 1080, P = 48, CW = W - P * 2, IP = 36, IW = CW - IP * 2;
+    const T = themeVars(dark), W = 1080, M = 60, CW = W - M * 2;
+    const heartC = dark ? "#F4A6C8" : "#D4537E";
     const title = [state.trip.title, state.trip.nights].filter(Boolean).join(" ") || "여행 기록";
     const dates = String(state.trip.dates || "").split("·")[0].trim(), ppl = (state.settle.members || []).slice();
     const one = sel !== "all" ? days[0] : null, nPosts = days.reduce((a, d) => a + postsOf(d.id).length, 0), nPics = pids.filter((x) => imgs[x]).length;
     const heart = svgPaths(ICON.heart), plane = svgPaths(ICON.plane);
+    const dayCol = (d) => (d.pre ? T.accent : T.d[Math.max(0, ["d1", "d2", "d3", "d4"].indexOf(d.color || "d1"))]);
+    const dayTag = (d) => (d.pre ? "BEFORE" : "DAY " + (state.days.indexOf(d) + 1));
     function wrap(c, text, max) {
       const out = [];
       String(text || "").split("\n").forEach((para) => {
@@ -1370,20 +1404,23 @@
       });
       return out;
     }
+    function spaced(c, text, x, y, sp) { for (const ch of String(text)) { c.fillText(ch, x, y); x += c.measureText(ch).width + sp; } return x; }
     function grid(list, w) {
-      const g = 8, n = list.length, c = [];
-      if (n === 1) { const im = imgs[list[0]], h = Math.round(w * Math.min(1.25, Math.max(0.62, im.height / im.width))); c.push([list[0], 0, 0, w, h]); return { h, c }; }
-      if (n === 2) { const q = (w - g) / 2, h = Math.round(q * 1.25); c.push([list[0], 0, 0, q, h], [list[1], q + g, 0, q, h]); return { h, c }; }
-      if (n === 3) { const bw = Math.round((w - g) * 0.62), sw = w - g - bw, h = Math.round(w * 0.72), sh = (h - g) / 2; c.push([list[0], 0, 0, bw, h], [list[1], bw + g, 0, sw, sh], [list[2], bw + g, sh + g, sw, sh]); return { h, c }; }
-      const q = (w - g) / 2;
-      for (let i = 0; i < 4; i++) c.push([list[i], (i % 2) * (q + g), Math.floor(i / 2) * (q + g), q, q, i === 3 && n > 4 ? n - 4 : 0]);
-      return { h: q * 2 + g, c };
+      const g = 10, n = list.length, c = [], A = (pid) => imgs[pid].height / imgs[pid].width;
+      if (n === 1) { const h = Math.round(w * Math.min(1.25, Math.max(0.66, A(list[0])))); c.push([list[0], 0, 0, w, h]); return { h, c }; }
+      if (n === 2) { const q = (w - g) / 2, h = Math.round(q * 1.3); c.push([list[0], 0, 0, q, h], [list[1], q + g, 0, q, h]); return { h, c }; }
+      const top = Math.round(w * 0.75), rest = list.slice(1, 4), k = rest.length, q = (w - g * (k - 1)) / k, rh = Math.round(k === 2 ? q * 0.8 : q);
+      c.push([list[0], 0, 0, w, top]);
+      rest.forEach((pid, i) => c.push([pid, i * (q + g), top + g, q, rh, i === k - 1 && n > 4 ? n - 4 : 0]));
+      return { h: top + g + rh, c };
     }
-    function cover(c, im, x, y, w, h, r) {
+    function photo(c, im, x, y, w, h, r) {
+      if (!dark) { c.save(); c.shadowColor = "rgba(60, 40, 160, .14)"; c.shadowBlur = 40; c.shadowOffsetY = 14; c.fillStyle = T.bg; rrect(c, x, y, w, h, r); c.fill(); c.restore(); }
       c.save(); rrect(c, x, y, w, h, r); c.clip();
       const k = Math.max(w / im.width, h / im.height), sw = w / k, sh = h / k;
       c.drawImage(im, (im.width - sw) / 2, (im.height - sh) / 2, sw, sh, x, y, w, h);
       c.restore();
+      if (dark) { c.save(); c.strokeStyle = "rgba(255, 255, 255, .1)"; c.lineWidth = 2; rrect(c, x + 1, y + 1, w - 2, h - 2, r); c.stroke(); c.restore(); }
     }
     function icon(c, paths, x, y, size, color, fill) {
       c.save(); c.translate(x, y); c.scale(size / 24, size / 24);
@@ -1391,88 +1428,123 @@
       paths.forEach((pa) => (fill ? c.fill(pa) : c.stroke(pa)));
       c.restore();
     }
-    function av(c, name, x, y, size) {
+    function av(c, name, x, y, size, ring) {
       const a = avOf(name);
       c.fillStyle = AVC[a.c][0]; c.beginPath(); c.arc(x + size / 2, y + size / 2, size / 2, 0, Math.PI * 2); c.fill();
+      if (ring) { c.strokeStyle = ring; c.lineWidth = 3; c.stroke(); }
       icon(c, svgPaths(AVI[a.i]), x + size * 0.2, y + size * 0.2, size * 0.6, AVC[a.c][1]);
     }
-    function card(c, on, p, y0) {
+    function spark(c, x, y, r, col) {
+      c.fillStyle = col; c.beginPath(); c.moveTo(x, y - r);
+      c.quadraticCurveTo(x + r * 0.18, y - r * 0.18, x + r, y); c.quadraticCurveTo(x + r * 0.18, y + r * 0.18, x, y + r);
+      c.quadraticCurveTo(x - r * 0.18, y + r * 0.18, x - r, y); c.quadraticCurveTo(x - r * 0.18, y - r * 0.18, x, y - r); c.fill();
+    }
+    function puff(c, x, y, k, col) {
+      c.fillStyle = col; c.beginPath();
+      [[0, 0, 26], [30, -16, 34], [64, 0, 28], [32, 8, 26]].forEach((q) => { c.moveTo(x + (q[0] + q[2]) * k, y + q[1] * k); c.arc(x + q[0] * k, y + q[1] * k, q[2] * k, 0, Math.PI * 2); });
+      c.fill();
+    }
+    function post(c, on, p, y0) {
       const list = postPics(p.id).filter((x) => imgs[x]), nm = p.by || meName() || "나", place = p.place ? findItem(p.place) : null;
       const meta = [p.at ? hhmm(p.at) : "", place ? place.item.label || shortName(place.item.ko) : ""].filter(Boolean).join(" · ");
-      c.font = "400 30px " + F.b;
-      const lines = p.text ? wrap(c, p.text, IW) : [], likes = likeNames(p.id), gr = list.length ? grid(list, IW) : null;
-      const h = IP + 60 + (gr ? 24 + gr.h : 0) + (lines.length ? 24 + lines.length * 48 - 8 : 0) + (likes.length ? 22 + 32 : 0) + IP;
-      if (!on) return y0 + h;
-      c.save(); c.shadowColor = "rgba(60, 40, 160, .08)"; c.shadowBlur = 28; c.shadowOffsetY = 8; c.fillStyle = "#FFFFFF"; rrect(c, P, y0, CW, h, 32); c.fill(); c.restore();
-      const x = P + IP;
-      let y = y0 + IP;
-      av(c, nm, x, y, 60);
-      c.fillStyle = "#1E1B3A"; c.font = "600 30px " + F.b; c.fillText(nm, x + 76, y + 27);
-      if (meta) { c.fillStyle = "#8A87A8"; c.font = "500 23px " + F.m; c.fillText(meta, x + 76, y + 57, IW - 76); }
-      y += 60;
-      if (gr) {
-        y += 24;
-        gr.c.forEach((g) => {
-          cover(c, imgs[g[0]], x + g[1], y + g[2], g[3], g[4], 18);
-          if (g[5]) { c.fillStyle = "rgba(20, 18, 40, .45)"; rrect(c, x + g[1], y + g[2], g[3], g[4], 18); c.fill(); c.fillStyle = "#FFFFFF"; c.font = "600 54px " + F.m; c.textAlign = "center"; c.fillText("+" + g[5], x + g[1] + g[3] / 2, y + g[2] + g[4] / 2 + 18); c.textAlign = "left"; }
-        });
-        y += gr.h;
+      const quote = !list.length, likes = likeNames(p.id), gr = list.length ? grid(list, CW) : null;
+      c.font = quote ? "600 50px " + F.t : "400 38px " + F.b;
+      const lh = quote ? 76 : 60, lines = p.text ? wrap(c, p.text, quote ? CW - 20 : CW) : [];
+      let y = y0;
+      if (on) {
+        av(c, nm, M, y, 58);
+        c.fillStyle = T.ink; c.font = "600 32px " + F.b; c.fillText(nm, M + 76, y + 27);
+        if (meta) { c.fillStyle = T.muted; c.font = "500 25px " + F.m; c.fillText(meta, M + 76, y + 57, CW - 76); }
       }
-      if (lines.length) { y += 24; c.fillStyle = "#1E1B3A"; c.font = "400 30px " + F.b; lines.forEach((l, i) => c.fillText(l, x, y + 32 + i * 48)); y += lines.length * 48 - 8; }
-      if (likes.length) { y += 22; icon(c, heart, x - 2, y + 1, 30, "#D4537E", true); c.fillStyle = "#993556"; c.font = "500 24px " + F.b; c.fillText(likes.join(", "), x + 38, y + 25); }
-      return y0 + h;
+      y += 58 + 30;
+      if (gr) {
+        if (on) gr.c.forEach((g) => {
+          photo(c, imgs[g[0]], M + g[1], y + g[2], g[3], g[4], 30);
+          if (g[5]) { c.fillStyle = "rgba(14, 12, 40, .5)"; rrect(c, M + g[1], y + g[2], g[3], g[4], 30); c.fill(); c.fillStyle = "#FFFFFF"; c.font = "600 58px " + F.m; c.textAlign = "center"; c.fillText("+" + g[5], M + g[1] + g[3] / 2, y + g[2] + g[4] / 2 + 20); c.textAlign = "left"; }
+        });
+        y += gr.h + 34;
+      }
+      if (lines.length) {
+        if (quote) {
+          if (on) { c.fillStyle = T.accent; c.globalAlpha = 0.45; c.font = "700 150px " + F.t; c.fillText("“", M - 6, y + 104); c.globalAlpha = 1; }
+          y += 70;
+        }
+        if (on) { c.fillStyle = T.ink; c.font = quote ? "600 50px " + F.t : "400 38px " + F.b; lines.forEach((l, i) => c.fillText(l, M, y + (quote ? 52 : 40) + i * lh)); }
+        y += lines.length * lh + (quote ? 6 : 0);
+      }
+      if (likes.length) {
+        y += 18;
+        if (on) { icon(c, heart, M - 2, y, 34, heartC, true); c.fillStyle = heartC; c.font = "500 28px " + F.b; c.fillText(likes.join(", "), M + 44, y + 28); }
+        y += 40;
+      }
+      return y;
     }
     function paint(c, on, total) {
-      const HH = 560;
+      const AH = Math.round(600 * W / 390);
       c.textBaseline = "alphabetic"; c.textAlign = "left";
       if (on) {
-        c.fillStyle = "#FCF4F7"; c.fillRect(0, 0, W, total);
-        const g = c.createLinearGradient(0, 0, 0, HH);
-        g.addColorStop(0, "#5AA9DE"); g.addColorStop(0.35, "#7EBFEA"); g.addColorStop(0.7, "#C4E2F5"); g.addColorStop(1, "#FCF4F7");
-        c.fillStyle = g; c.fillRect(0, 0, W, HH);
-        const cloud = (x, y, k) => { c.beginPath(); [[0, 0, 34], [40, -20, 44], [86, 0, 36], [44, 10, 34]].forEach((q) => { c.moveTo(x + q[0] * k + q[2] * k, y + q[1] * k); c.arc(x + q[0] * k, y + q[1] * k, q[2] * k, 0, Math.PI * 2); }); c.fill(); };
-        c.fillStyle = "rgba(255, 255, 255, .7)"; cloud(760, 96, 1); cloud(946, 178, 0.66);
-        const base = HH - 56;
-        c.fillStyle = "rgba(70, 140, 200, .2)";
-        [[628, 64, 40], [674, 118, 34], [714, 88, 46], [766, 150, 30], [802, 102, 40], [934, 128, 36], [976, 78, 52]].forEach((b) => c.fillRect(b[0], base - b[1], b[2], b[1]));
-        c.fillRect(877, base - 300, 8, 300); c.fillRect(879.5, base - 344, 3, 46);
-        [[881, base - 112, 34], [881, base - 214, 24], [881, base - 270, 11]].forEach((q) => { c.beginPath(); c.arc(q[0], q[1], q[2], 0, Math.PI * 2); c.fill(); });
-      }
-      let y = 122;
-      if (on && dates) { c.fillStyle = "rgba(255, 255, 255, .96)"; c.font = "600 28px " + F.m; c.fillText(dates, P, y); }
-      y += 108;
-      c.font = "700 92px " + F.t;
-      wrap(c, title, CW).forEach((l) => {
-        if (on) { c.save(); c.shadowColor = "rgba(50, 120, 190, .45)"; c.shadowBlur = 24; c.fillStyle = "#FFFFFF"; c.fillText(l, P, y); c.restore(); }
-        y += 104;
-      });
-      if (one) { if (on) { c.fillStyle = "#FFFFFF"; c.font = "600 34px " + F.b; c.fillText([one.pre ? "여행 전" : isNum(one.n) ? "Day " + one.n : "귀국날", one.date, one.title].filter(Boolean).join(" · "), P, y - 40, CW); } y += 16; }
-      if (ppl.length) {
-        let x = P;
-        ppl.forEach((nm) => {
-          if (on) { av(c, nm, x, y - 12, 60); c.fillStyle = "#2B5079"; c.font = "600 28px " + F.b; c.fillText(nm, x + 72, y + 28); }
-          c.font = "600 28px " + F.b; x += 72 + c.measureText(nm).width + 34;
-        });
-        y += 84;
-      }
-      if (on) { c.fillStyle = "#2B5079"; c.font = "500 24px " + F.m; c.fillText("기록 " + nPosts + "개" + (nPics ? " · 사진 " + nPics + "장" : ""), P, y); }
-      y = Math.max(y + 40, HH);
-      days.forEach((d, di) => {
-        y += di ? 64 : 8;
-        if (one) { y -= 8; postsOf(d.id).forEach((p, pi) => { if (pi) y += 28; y = card(c, on, p, y); }); return; } /* one day: its name is already up top */
-        if (on) {
-          c.fillStyle = d.pre ? "#5AA9DE" : EXP_DC[d.color] || "#5B6BDA"; c.beginPath(); c.arc(P + 32, y + 32, 32, 0, Math.PI * 2); c.fill();
-          if (d.pre) icon(c, plane, P + 14, y + 14, 36, "#FFFFFF");
-          else { c.fillStyle = "#FFFFFF"; c.font = (isNum(d.n) ? "600 30px " : "600 21px ") + F.m; c.textAlign = "center"; c.fillText(String(d.n), P + 32, y + (isNum(d.n) ? 43 : 40)); c.textAlign = "left"; }
-          c.fillStyle = "#6A6788"; c.font = "500 24px " + F.m; c.fillText(String(d.date || ""), P + 88, y + 25);
-          c.fillStyle = "#1E1B3A"; c.font = "600 34px " + F.b; c.fillText(String(d.title || ""), P + 88, y + 64, CW - 88);
+        c.fillStyle = T.bg; c.fillRect(0, 0, W, total);
+        if (dark) { /* a few far stars down the whole page */
+          let sd = 11; const r = () => { sd = (sd * 9301 + 49297) % 233280; return sd / 233280; };
+          for (let i = 0; i < Math.round(total / 26); i++) { c.globalAlpha = 0.12 + r() * 0.3; c.fillStyle = "#FFFFFF"; c.beginPath(); c.arc(r() * W, AH + r() * (total - AH), 0.8 + r() * 1.8, 0, Math.PI * 2); c.fill(); }
+          c.globalAlpha = 1;
         }
-        y += 64 + 26;
-        postsOf(d.id).forEach((p, pi) => { if (pi) y += 28; y = card(c, on, p, y); });
+        if (art) c.drawImage(art, 0, 0, 1560, 600 * 4, 0, 0, W, AH);
+        else { const g0 = c.createLinearGradient(0, 0, 0, AH); g0.addColorStop(0, dark ? "#060A24" : "#5AA9DE"); g0.addColorStop(1, dark ? "#2D2270" : "#BADDF5"); c.fillStyle = g0; c.fillRect(0, 0, W, AH); }
+        const fd = c.createLinearGradient(0, AH - 460, 0, AH);
+        fd.addColorStop(0, T.bg + "00"); fd.addColorStop(0.7, T.bg + "CC"); fd.addColorStop(1, T.bg);
+        c.fillStyle = fd; c.fillRect(0, AH - 460, W, 460);
+      }
+      const shadow = dark ? "rgba(10, 8, 40, .55)" : "rgba(50, 120, 190, .5)";
+      const white = (fn) => { c.save(); c.shadowColor = shadow; c.shadowBlur = 22; c.fillStyle = "#FFFFFF"; fn(); c.restore(); };
+      let y = 150;
+      if (dates) {
+        c.font = "600 28px " + F.m;
+        const tw = c.measureText(dates).width + 44;
+        if (on) { c.fillStyle = dark ? "rgba(255, 255, 255, .12)" : "rgba(70, 140, 200, .24)"; rrect(c, M, y - 40, tw, 56, 28); c.fill(); c.strokeStyle = "rgba(255, 255, 255, .55)"; c.lineWidth = 2; c.stroke(); c.fillStyle = "#FFFFFF"; c.fillText(dates, M + 22, y - 2); }
+      }
+      y += 140;
+      c.font = "700 124px " + F.t;
+      wrap(c, title, CW).forEach((l) => { if (on) white(() => { c.font = "700 124px " + F.t; c.fillText(l, M, y); }); y += 138; });
+      if (one) { if (on) white(() => { c.font = "600 40px " + F.b; c.fillText([dayTag(one), one.date, one.title].filter(Boolean).join(" · "), M, y - 52, CW); }); y += 20; }
+      if (ppl.length) {
+        let x = M;
+        ppl.forEach((nm) => {
+          c.font = "600 32px " + F.b;
+          if (on) { av(c, nm, x, y - 40, 64, "rgba(255, 255, 255, .85)"); white(() => { c.font = "600 32px " + F.b; c.fillText(nm, x + 78, y + 2); }); }
+          x += 78 + c.measureText(nm).width + 40;
+        });
+        y += 72;
+      }
+      if (on) white(() => { c.font = "500 27px " + F.m; c.fillText("기록 " + nPosts + "개" + (nPics ? " · 사진 " + nPics + "장" : ""), M, y); });
+      y = AH - 40;
+      days.forEach((d, di) => {
+        const col = dayCol(d);
+        if (!one) {
+          y += di ? 150 : 20;
+          if (on) {
+            c.fillStyle = col; c.fillRect(M, y, 72, 5);
+            c.font = "600 30px " + F.m; const ex = spaced(c, dayTag(d), M, y + 60, 6);
+            c.fillStyle = T.muted; c.font = "500 28px " + F.m; c.fillText(String(d.date || ""), ex + 18, y + 60);
+            if (dark) { spark(c, W - M - 30, y + 40, 16, "#FFD36B"); spark(c, W - M - 78, y + 84, 8, "#FFD36B"); }
+            else { puff(c, W - M - 150, y + 60, 1, "rgba(150, 200, 236, .45)"); }
+          }
+          c.font = "700 66px " + F.t;
+          const tl = wrap(c, String(d.title || ""), CW - 120);
+          if (on) { c.fillStyle = T.ink; tl.forEach((l, i) => c.fillText(l, M, y + 146 + i * 82)); }
+          y += 146 + (tl.length - 1) * 82 + 66;
+        }
+        postsOf(d.id).forEach((p, pi) => {
+          if (pi) { y += 50; if (on) { c.fillStyle = T.faint; [-22, 0, 22].forEach((dx) => { c.beginPath(); c.arc(W / 2 + dx, y, 4, 0, Math.PI * 2); c.fill(); }); } y += 50; }
+          y = post(c, on, p, y);
+        });
       });
-      y += 64;
-      if (on) { c.fillStyle = "#8A87A8"; c.font = "500 22px " + F.m; c.textAlign = "center"; c.fillText([dates, ppl.join(" · ")].filter(Boolean).join("   ·   "), W / 2, y, CW); c.textAlign = "left"; }
-      return y + 72;
+      y += 170;
+      if (on) {
+        if (dark) { spark(c, W / 2, y - 60, 18, "#FFD36B"); spark(c, W / 2 + 46, y - 34, 8, "#FFD36B"); } else puff(c, W / 2 - 34, y - 52, 1, "rgba(150, 200, 236, .5)");
+        c.fillStyle = T.muted; c.font = "500 25px " + F.m; c.textAlign = "center"; c.fillText([dates, ppl.join(" · ")].filter(Boolean).join("   ·   "), W / 2, y + 20, CW); c.textAlign = "left";
+      }
+      return y + 110;
     }
     const total = Math.ceil(paint(document.createElement("canvas").getContext("2d"), false));
     const k = Math.min(1, Math.sqrt(15.5e6 / (W * total))); /* phones cap a canvas at ~16M pixels */
@@ -1481,9 +1553,20 @@
     const c = cv.getContext("2d");
     c.scale(k, k);
     paint(c, true, total);
-    return await new Promise((res) => cv.toBlob((b) => res(b), "image/jpeg", 0.9));
+    try { return await new Promise((res, rej) => { try { cv.toBlob((b) => (b ? res(b) : rej(new Error("blob"))), "image/jpeg", 0.92); } catch (e) { rej(e); } }); }
+    catch (e) { /* a browser that won't let the drawn sky out: same picture with a plain sky */
+      if (!art) throw e;
+      return logImage(sel, dark, true);
+    }
   }
-  let logImgUrl = "", logImgFile = null;
+  let logImgUrl = "", logImgFile = null, logImgOpt = { sel: "all", dark: false };
+  function logImgMake(sel, dark, btn) {
+    logImgOpt = { sel, dark };
+    const keep = btn ? btn.innerHTML : "";
+    if (btn) { btn.disabled = true; btn.innerHTML = ICON.download + "만드는 중…"; }
+    const back = () => { if (btn && btn.isConnected) { btn.disabled = false; btn.innerHTML = keep; } };
+    return logImage(sel, dark).then((b) => { back(); if (b) logImgSheet(b); else toast("아직 기록이 없어요"); }).catch(() => { back(); toast("이미지를 못 만들었어요"); });
+  }
   function logImgSheet(blob) {
     if (logImgUrl) URL.revokeObjectURL(logImgUrl);
     logImgUrl = URL.createObjectURL(blob);
@@ -1493,7 +1576,8 @@
     try { canShare = !!(navigator.canShare && navigator.canShare({ files: [logImgFile] })); } catch (e) {}
     openSheet({
       key: "log-img", title: "기록 이미지",
-      body: '<div class="limg"><img src="' + logImgUrl + '" alt="기록을 모은 이미지"></div><p class="note">' + (canShare ? "저장 · 공유에서 '이미지 저장'을 고르면 사진 앱에 들어가요. " : "") + "이미지를 길게 눌러도 저장돼요</p>",
+      body: '<div class="seg limg-th" role="group" aria-label="이미지 테마">' + [["light", "낮"], ["dark", "밤"]].map((o) => '<button type="button" class="seg-b" data-act="log-img-theme" data-v="' + o[0] + '" aria-pressed="' + ((o[0] === "dark") === logImgOpt.dark) + '">' + (o[0] === "dark" ? ICON.moon : ICON.cloud) + o[1] + "</button>").join("") + "</div>" +
+        '<div class="limg"><img src="' + logImgUrl + '" alt="기록을 모은 이미지"></div><p class="note">' + (canShare ? "저장 · 공유에서 '이미지 저장'을 고르면 사진 앱에 들어가요. " : "") + "이미지를 길게 눌러도 저장돼요</p>",
       foot: '<span class="grow"></span><button class="btn" type="button" data-act="sh-close">닫기</button>' +
         (canShare ? '<button class="btn primary" type="button" data-act="log-img-share">' + ICON.download + "저장 · 공유</button>"
           : '<a class="btn primary" href="' + logImgUrl + '" download="' + esc(name) + '">' + ICON.download + "저장</a>")
@@ -2997,11 +3081,12 @@
       case "tab": closeSheet(); editing = false; go(t.getAttribute("data-tab")); return;
       case "go-plan": closeSheet(); go("plan", { day: t.getAttribute("data-day") }); return;
       case "go-log": ui.logDay = t.getAttribute("data-day") || "all"; go("log"); return;
-      case "log-img": {
-        if (t.disabled) return;
-        const keep = t.innerHTML; t.disabled = true; t.innerHTML = ICON.download + "만드는 중…";
-        const back = () => { t.disabled = false; t.innerHTML = keep; };
-        logImage(ui.logDay && logDay(ui.logDay) ? ui.logDay : "all").then((b) => { back(); if (b) logImgSheet(b); else toast("아직 기록이 없어요"); }).catch(() => { back(); toast("이미지를 못 만들었어요"); });
+      case "log-img": if (!t.disabled) logImgMake(ui.logDay && logDay(ui.logDay) ? ui.logDay : "all", isDark(), t); return;
+      case "log-img-theme": {
+        const dk = t.getAttribute("data-v") === "dark";
+        if (dk === logImgOpt.dark || t.closest(".limg-th").classList.contains("busy")) return;
+        t.closest(".limg-th").classList.add("busy");
+        logImgMake(logImgOpt.sel, dk, t);
         return;
       }
       case "log-img-share": if (logImgFile && navigator.share) navigator.share({ files: [logImgFile] }).catch(() => {}); return;
