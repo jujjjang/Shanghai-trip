@@ -1378,36 +1378,25 @@
   /* ---------- MONEY ---------- */
   let armedExp = null, armedTimer = null;
   function dayLabel(ts) { const t = new Date(ts); return (t.getMonth() + 1) + "." + t.getDate() + " " + "일월화수목금토"[t.getDay()]; }
-  /* tap a line in 내역 to fix it: amount, ¥/₩, what, who paid, which day */
+  /* tap a line in 내역 to fix its amount */
   function expSheet(id) {
     const e = state.settle.expenses.find((x) => x.id === id);
     if (!e) return;
-    const t = new Date(e.at || Date.now()), pad = (n) => String(n).padStart(2, "0");
-    const ymd = t.getFullYear() + "-" + pad(t.getMonth() + 1) + "-" + pad(t.getDate());
-    const ppl = state.settle.members.indexOf(e.payer) < 0 && e.payer ? state.settle.members.concat(e.payer) : state.settle.members;
-    const radio = (name, val, label, on) => '<label class="rchip"><input type="radio" name="' + name + '" value="' + esc(val) + '"' + (on ? " checked" : "") + "><span>" + label + "</span></label>";
     openSheet({
-      key: "exp", title: "지출 고치기",
-      body: '<div class="amtrow"><label class="field" style="flex:1"><span>금액</span><input name="amt" inputmode="decimal" value="' + esc(e.amt) + '" autocomplete="off"></label>' +
-          '<div class="field"><span>통화</span><div class="chips">' + radio("cur", "CNY", "¥", e.cur !== "KRW") + radio("cur", "KRW", "₩", e.cur === "KRW") + "</div></div></div>" +
-        field("what", "어디에 썼는지", e.what, { ph: "예: 점심 딤섬" }) +
-        '<div class="field"><span>낸 사람</span><div class="chips">' + ppl.map((p) => radio("payer", p, esc(p), p === e.payer)).join("") + "</div></div>" +
-        field("day", "날짜", ymd, { type: "date" }),
-      foot: footSave(true),
-      on(k, v, btn) {
-        if (k === "del") {
-          if (!armDelete(btn)) return;
-          state.settle.expenses = state.settle.expenses.filter((x) => x !== e);
-          save(); closeSheet(); render(); toast("지웠어요"); return;
-        }
+      key: "exp", center: true, title: (e.what || "지출") + " 금액",
+      body: '<div class="amtrow"><label class="field" style="flex:1"><span class="vh">금액</span><input name="amt" inputmode="decimal" value="' + esc(e.amt) + '" autocomplete="off"></label>' +
+        '<span class="exp-cur">' + (e.cur === "KRW" ? "₩" : "¥") + "</span></div>" +
+        '<p class="note">' + esc(e.payer || "") + " 냄 · " + dayLabel(e.at || 0) + "</p>",
+      foot: '<span class="grow"></span><button class="btn" type="button" data-act="sh-close">취소</button><button class="btn primary" type="button" data-act="sh" data-k="save">저장</button>',
+      on(k, v) {
         if (k !== "save") return;
         const amt = parseFloat(String(v.amt || "").replace(/[,\s]/g, ""));
         if (!(amt > 0)) { toast("금액을 넣어주세요"); return; }
-        e.amt = amt; e.cur = v.cur === "KRW" ? "KRW" : "CNY"; e.what = v.what || ""; if (v.payer) e.payer = v.payer;
-        if (v.day && v.day !== ymd) { const m = v.day.match(/^(\d{4})-(\d{2})-(\d{2})$/); if (m) { const n = new Date(e.at || Date.now()); n.setFullYear(+m[1], +m[2] - 1, +m[3]); e.at = n.getTime(); } }
-        save(); closeSheet(); render(); toast("고쳤어요");
+        e.amt = amt; save(); closeSheet(); render(); toast("고쳤어요");
       }
     });
+    const inp = sheet.querySelector('input[name="amt"]');
+    if (inp) { inp.focus(); inp.select(); }
   }
   function moneyHtml() {
     const S = state.settle, ppl = S.members, c = settleCalc();
