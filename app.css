@@ -1465,3 +1465,7 @@ body { background-color: var(--edge) !important; }
 .img-pick-g { display: grid; gap: 10px; }
 button.bigopt { width: 100%; text-align: left; font: inherit; cursor: pointer; }
 button.bigopt + button.bigopt { margin-top: 10px; }
+.ske-frames { display: flex; gap: 6px; padding: 8px 12px; background: var(--surface); border-bottom: 1px solid var(--line); overflow-x: auto; }
+.ske-fr { flex: none; min-height: 34px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--line); background: var(--inner); color: var(--ink-2); font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; }
+.ske-fr[aria-pressed="true"] { background: var(--primary-bg); color: var(--primary-ink); border-color: transparent; }
+.ske-frames.busy { opacity: .6; pointer-events: none; }

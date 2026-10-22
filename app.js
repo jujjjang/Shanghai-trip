@@ -1576,57 +1576,64 @@
     }
   }
   /* ---------- 스티커: 기록 이미지 위에 직접 붙이기 ----------
-     each sticker draws itself centred on (0, 0) in image pixels (the image is 1080 wide) */
-  const STK_WORDS = [["맛집 인정", "lemon"], ["인생샷", "pink"], ["또 올래", "mint"], ["최고", "sky"], ["배불러", "peach"], ["행복", "lilac"]];
+     little drawn characters with faces (all made here, nothing borrowed), words in a speech bubble, a 上海 seal and washi tape.
+     Each one is drawn in a 200 × 200 box, then gets a white die-cut edge and a soft shadow. Image units: the picture is 1080 wide. */
+  const STK_OL = "#4B3A4E";
+  const STK_WORDS = [["냠냠", "#FFE3A3", "#8A5A00"], ["최고!", "#FFC9DD", "#9C2F5B"], ["여행 중", "#BDE8F5", "#165E7A"], ["또 올래", "#CDEFD8", "#1F6B45"], ["인생샷", "#E2DAFF", "#4B3AA8"], ["배불러", "#FFD9C9", "#9A3F1C"]];
   const STK_TAPES = ["#F7C9D9", "#A9E3CF", "#FAD48E", "#BBD9F5", "#D5D1F7"];
-  const STK_IDS = ["ic:camera:sky", "ic:boba:pink", "ic:dumpling:lemon", "ic:cherry:peach", "ic:flower:lilac", "ic:plane:mint", "ic:icecream:pink", "ic:teapot:leaf", "ic:cat:stone", "heart", "seal", "spark"]
-    .concat(STK_WORDS.map((w, i) => "w:" + i), STK_TAPES.map((t, i) => "tape:" + i));
-  const STK_FONT = "'IBM Plex Sans KR', 'Apple SD Gothic Neo', sans-serif";
+  const STK_CHARS = ["dumpling", "boba", "tower", "cloud", "panda", "lantern", "star", "heart", "plane", "moon", "bao"];
+  const STK_IDS = STK_CHARS.map((k) => "c:" + k).concat(STK_WORDS.map((w, i) => "w:" + i), ["seal"], STK_TAPES.map((t, i) => "tape:" + i));
+  const STK_WFONT = "Jua, 'IBM Plex Sans KR', 'Apple SD Gothic Neo', sans-serif";
+  const STK_PAD = 26;
+  function stkWordW(i) { const c = document.createElement("canvas").getContext("2d"); c.font = "48px " + STK_WFONT; return Math.ceil(c.measureText(STK_WORDS[i][0]).width) + 70; }
   function stkSize(id) {
     if (id.indexOf("tape:") === 0) return [270, 100];
-    if (id.indexOf("w:") === 0) {
-      const c = document.createElement("canvas").getContext("2d");
-      c.font = "700 40px " + STK_FONT;
-      return [Math.ceil(c.measureText(STK_WORDS[+id.slice(2)][0]).width) + 56 + 56, 124];
+    if (id.indexOf("w:") === 0) return [stkWordW(+id.slice(2)) + STK_PAD * 2, 150 + STK_PAD * 2];
+    return [200 + STK_PAD * 2, 200 + STK_PAD * 2];
+  }
+  /* a kawaii face: two shiny eyes, pink cheeks, a small mouth */
+  function stkFace(c, x, y, s, o) {
+    o = o || {};
+    c.save(); c.translate(x, y); c.scale(s, s);
+    c.fillStyle = "rgba(255, 120, 160, .5)";
+    [-1, 1].forEach((d) => { c.beginPath(); c.ellipse(d * 30, 14, 11, 6.5, 0, 0, Math.PI * 2); c.fill(); });
+    if (o.sleepy) {
+      c.strokeStyle = STK_OL; c.lineWidth = 4; c.lineCap = "round";
+      [-1, 1].forEach((d) => { c.beginPath(); c.arc(d * 17, -2, 8, 0.15 * Math.PI, 0.85 * Math.PI); c.stroke(); });
+    } else {
+      [-1, 1].forEach((d) => {
+        c.fillStyle = o.eye || STK_OL; c.beginPath(); c.ellipse(d * 17, -2, 7, 8.5, 0, 0, Math.PI * 2); c.fill();
+        c.fillStyle = "#FFFFFF"; c.beginPath(); c.arc(d * 17 + 2.5, -5.5, 2.8, 0, Math.PI * 2); c.fill();
+      });
     }
-    return id === "spark" ? [140, 140] : [176, 176];
+    c.strokeStyle = o.eye || STK_OL; c.lineWidth = 3.6; c.lineCap = "round"; c.lineJoin = "round";
+    c.beginPath();
+    if (o.open) { c.fillStyle = "#E8546E"; c.moveTo(-8, 9); c.quadraticCurveTo(0, 22, 8, 9); c.closePath(); c.fill(); c.stroke(); }
+    else { c.moveTo(-8, 9); c.quadraticCurveTo(-4, 14, 0, 9); c.quadraticCurveTo(4, 14, 8, 9); c.stroke(); }
+    c.restore();
   }
-  function stkCut(c, path) { /* the white die-cut edge with a soft shadow */
-    c.save(); c.shadowColor = "rgba(40, 30, 110, .28)"; c.shadowBlur = 16; c.shadowOffsetY = 5; c.fillStyle = "#FFFFFF"; path(); c.fill(); c.restore();
+  /* fill + outline for one or more shapes; joined shapes get one outline round the outside */
+  function stkBlob(c, shapes, fill, lw) {
+    lw = lw || 5;
+    c.save(); c.strokeStyle = STK_OL; c.lineWidth = lw * 2; c.lineJoin = "round";
+    shapes.forEach((sh) => { c.beginPath(); sh(); c.stroke(); });
+    c.fillStyle = fill; shapes.forEach((sh) => { c.beginPath(); sh(); c.fill(); });
+    c.restore();
   }
-  function stkDraw(c, id) {
+  const stkCircle = (c, x, y, r) => () => c.arc(x, y, r, 0, Math.PI * 2);
+  const stkPath = (c, d) => { const p = new Path2D(d); return { fill: (col) => { c.fillStyle = col; c.fill(p); }, stroke: (lw, col) => { c.strokeStyle = col || STK_OL; c.lineWidth = lw || 5; c.lineJoin = "round"; c.lineCap = "round"; c.stroke(p); } }; };
+  function stkArt(c, id) {
     const p = id.split(":");
-    if (p[0] === "ic") {
-      const col = AVC[p[2]] || AVC.sky;
-      stkCut(c, () => { c.beginPath(); c.arc(0, 0, 68, 0, Math.PI * 2); });
-      c.fillStyle = col[0]; c.beginPath(); c.arc(0, 0, 59, 0, Math.PI * 2); c.fill();
-      c.save(); c.translate(-36, -36); c.scale(3, 3); c.lineWidth = 1.8; c.lineCap = "round"; c.lineJoin = "round"; c.strokeStyle = col[1];
-      svgPaths(AVI[p[1]]).forEach((pa) => c.stroke(pa)); c.restore();
-    } else if (id === "heart") {
-      const pa = svgPaths(ICON.heart)[0];
-      c.save(); c.translate(-66, -70); c.scale(5.5, 5.5);
-      c.save(); c.shadowColor = "rgba(40, 30, 110, .28)"; c.shadowBlur = 16; c.shadowOffsetY = 5; c.strokeStyle = "#FFFFFF"; c.lineWidth = 3.2; c.lineJoin = "round"; c.stroke(pa); c.fillStyle = "#FFFFFF"; c.fill(pa); c.restore();
-      c.fillStyle = "#F06A9A"; c.fill(pa);
-      c.globalAlpha = 0.5; c.fillStyle = "#FFFFFF"; c.beginPath(); c.ellipse(8.4, 10.2, 1.6, 1, -0.6, 0, Math.PI * 2); c.fill(); c.restore();
-    } else if (id === "seal") {
-      const z = 116;
-      stkCut(c, () => rrect(c, -z / 2 - 9, -z / 2 - 9, z + 18, z + 18, 24));
-      c.fillStyle = "#D9483B"; rrect(c, -z / 2, -z / 2, z, z, 16); c.fill();
-      c.strokeStyle = "rgba(255, 255, 255, .85)"; c.lineWidth = 3; rrect(c, -z / 2 + 9, -z / 2 + 9, z - 18, z - 18, 9); c.stroke();
-      c.fillStyle = "#FFFFFF"; c.font = "900 40px 'Noto Serif SC', 'Songti SC', STSong, serif"; c.textAlign = "center";
-      c.fillText("上", 0, -5); c.fillText("海", 0, 37); c.textAlign = "left";
-    } else if (id === "spark") {
-      const star = () => { const r = 50; c.beginPath(); c.moveTo(0, -r); c.quadraticCurveTo(r * 0.18, -r * 0.18, r, 0); c.quadraticCurveTo(r * 0.18, r * 0.18, 0, r); c.quadraticCurveTo(-r * 0.18, r * 0.18, -r, 0); c.quadraticCurveTo(-r * 0.18, -r * 0.18, 0, -r); c.closePath(); };
-      c.save(); c.shadowColor = "rgba(40, 30, 110, .28)"; c.shadowBlur = 14; c.shadowOffsetY = 4; c.strokeStyle = "#FFFFFF"; c.lineWidth = 16; c.lineJoin = "round"; star(); c.stroke(); c.restore();
-      c.fillStyle = "#FFC94D"; star(); c.fill();
-    } else if (p[0] === "w") {
-      const w = STK_WORDS[+p[1]], col = AVC[w[1]];
-      c.font = "700 40px " + STK_FONT;
-      const tw = c.measureText(w[0]).width, bw = tw + 56, bh = 72;
-      stkCut(c, () => rrect(c, -bw / 2 - 9, -bh / 2 - 9, bw + 18, bh + 18, (bh + 18) / 2));
-      c.fillStyle = col[0]; rrect(c, -bw / 2, -bh / 2, bw, bh, bh / 2); c.fill();
-      c.fillStyle = col[1]; c.textAlign = "center"; c.fillText(w[0], 0, 14); c.textAlign = "left";
-    } else if (p[0] === "tape") {
+    if (p[0] === "w") {
+      const w = STK_WORDS[+p[1]], bw = stkWordW(+p[1]), bh = 96;
+      const b = new Path2D();
+      const x = -bw / 2, y = -bh / 2 - 10, r = bh / 2;
+      b.moveTo(x + r, y); b.lineTo(x + bw - r, y); b.arc(x + bw - r, y + r, r, -Math.PI / 2, Math.PI / 2); b.lineTo(-6, y + bh); b.lineTo(-26, y + bh + 26); b.lineTo(-30, y + bh); b.lineTo(x + r, y + bh); b.arc(x + r, y + r, r, Math.PI / 2, Math.PI * 1.5); b.closePath();
+      c.fillStyle = w[1]; c.fill(b); c.strokeStyle = STK_OL; c.lineWidth = 5; c.lineJoin = "round"; c.stroke(b);
+      c.fillStyle = w[2]; c.font = "48px " + STK_WFONT; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(w[0], 0, y + bh / 2 + 3); c.textAlign = "left"; c.textBaseline = "alphabetic";
+      return;
+    }
+    if (p[0] === "tape") {
       const w = 240, h = 62, n = 6, zz = h / n;
       c.globalAlpha = 0.85; c.fillStyle = STK_TAPES[+p[1]]; c.beginPath();
       c.moveTo(-w / 2, -h / 2); c.lineTo(w / 2, -h / 2);
@@ -1637,20 +1644,144 @@
       c.globalAlpha = 0.24; c.fillStyle = "#FFFFFF";
       for (let sx = -w / 2 + 12; sx < w / 2 - 10; sx += 30) c.fillRect(sx, -h / 2, 12, h);
       c.globalAlpha = 1;
+      return;
+    }
+    if (id === "seal") {
+      const z = 150;
+      c.fillStyle = "#D9483B"; rrect(c, -z / 2, -z / 2, z, z, 20); c.fill();
+      c.strokeStyle = "rgba(255, 255, 255, .85)"; c.lineWidth = 4; rrect(c, -z / 2 + 11, -z / 2 + 11, z - 22, z - 22, 11); c.stroke();
+      c.fillStyle = "#FFFFFF"; c.font = "900 52px 'Noto Serif SC', 'Songti SC', STSong, serif"; c.textAlign = "center";
+      c.fillText("上", 0, -6); c.fillText("海", 0, 48); c.textAlign = "left";
+      return;
+    }
+    switch (p[1]) {
+      case "dumpling": {
+        const b = stkPath(c, "M-86 34 Q-90 -40 0 -50 Q90 -40 86 34 Q70 62 0 62 Q-70 62 -86 34 Z");
+        b.stroke(10); b.fill("#FFF0D2");
+        c.strokeStyle = STK_OL; c.lineWidth = 4.5; c.lineCap = "round";
+        [-48, -24, 0, 24, 48].forEach((x) => { c.beginPath(); c.moveTo(x - 6, -44 + Math.abs(x) * 0.18); c.quadraticCurveTo(x + 2, -30, x + 4, -18 + Math.abs(x) * 0.1); c.stroke(); });
+        stkFace(c, 0, 22, 1);
+        break;
+      }
+      case "bao": { /* 샤오롱바오 in a little steamer */
+        c.strokeStyle = "#B8C7D9"; c.lineWidth = 6; c.lineCap = "round";
+        [[-22, -72], [0, -84], [22, -72]].forEach((q) => { c.beginPath(); c.moveTo(q[0], q[1] + 22); c.bezierCurveTo(q[0] - 10, q[1] + 10, q[0] + 10, q[1] + 2, q[0], q[1] - 10); c.stroke(); });
+        stkBlob(c, [() => rrect(c, -92, 30, 184, 52, 14)], "#E8B66E");
+        c.strokeStyle = "#C28C45"; c.lineWidth = 4; [44, 62].forEach((y) => { c.beginPath(); c.moveTo(-84, y); c.lineTo(84, y); c.stroke(); });
+        const b = stkPath(c, "M-70 36 Q-74 -30 -10 -42 Q0 -56 10 -42 Q74 -30 70 36 Z");
+        b.stroke(10); b.fill("#FFF6EA");
+        c.strokeStyle = STK_OL; c.lineWidth = 4; c.lineCap = "round";
+        [-26, -12, 12, 26].forEach((x) => { c.beginPath(); c.moveTo(x * 0.4, -40); c.quadraticCurveTo(x * 0.9, -20, x * 1.4, -6); c.stroke(); });
+        stkFace(c, 0, 10, 0.85);
+        break;
+      }
+      case "boba": {
+        const straw = stkPath(c, "M14 -96 L30 -96 L22 -30 L6 -30 Z"); straw.stroke(10); straw.fill("#FF8FB1");
+        const cup = stkPath(c, "M-56 -34 L56 -34 L44 82 Q42 94 30 94 L-30 94 Q-42 94 -44 82 Z"); cup.stroke(10); cup.fill("#F6D2B0");
+        c.fillStyle = "rgba(255, 255, 255, .45)"; c.fillRect(-46, -26, 12, 80);
+        [[-24, 74], [0, 78], [24, 74], [-12, 58], [12, 58]].forEach((q) => { c.fillStyle = STK_OL; c.beginPath(); c.arc(q[0], q[1], 8.5, 0, Math.PI * 2); c.fill(); });
+        stkBlob(c, [() => rrect(c, -66, -50, 132, 22, 11)], "#FFFFFF");
+        stkFace(c, 0, 14, 0.9);
+        break;
+      }
+      case "tower": { /* 동방명주 */
+        c.strokeStyle = STK_OL; c.lineWidth = 5; c.lineCap = "round";
+        c.beginPath(); c.moveTo(0, -78); c.lineTo(0, -98); c.stroke();
+        [[-1, 1], [1, 1], [0, 1]].forEach((d) => { c.lineWidth = 12; c.strokeStyle = STK_OL; c.beginPath(); c.moveTo(d[0] * 8, 70); c.lineTo(d[0] * 36, 98); c.stroke(); c.lineWidth = 6; c.strokeStyle = "#B9A6F2"; c.stroke(); });
+        stkBlob(c, [() => rrect(c, -11, -70, 22, 150, 8)], "#CDBDF7");
+        stkBlob(c, [stkCircle(c, 0, -74, 10)], "#FFC2DA");
+        stkBlob(c, [stkCircle(c, 0, -26, 26)], "#FFC2DA");
+        stkBlob(c, [stkCircle(c, 0, 42, 44)], "#FFB3D0");
+        c.fillStyle = "rgba(255, 255, 255, .7)"; c.beginPath(); c.ellipse(-10, -34, 8, 5, -0.6, 0, Math.PI * 2); c.fill();
+        stkFace(c, 0, 44, 0.85);
+        break;
+      }
+      case "cloud": {
+        stkBlob(c, [stkCircle(c, -52, 16, 40), stkCircle(c, -8, -18, 52), stkCircle(c, 46, 6, 42), stkCircle(c, 2, 30, 44), () => rrect(c, -88, 18, 176, 40, 20)], "#FFFFFF");
+        stkFace(c, 0, 18, 1, { eye: STK_OL });
+        break;
+      }
+      case "panda": {
+        stkBlob(c, [stkCircle(c, -52, -50, 24), stkCircle(c, 52, -50, 24)], "#3B3340");
+        stkBlob(c, [() => c.ellipse(0, 4, 82, 74, 0, 0, Math.PI * 2)], "#FFFFFF");
+        c.fillStyle = "#3B3340";
+        [-1, 1].forEach((d) => { c.beginPath(); c.ellipse(d * 30, 0, 17, 23, d * -0.5, 0, Math.PI * 2); c.fill(); });
+        [-1, 1].forEach((d) => { c.fillStyle = "#FFFFFF"; c.beginPath(); c.arc(d * 28, -2, 6.5, 0, Math.PI * 2); c.fill(); c.fillStyle = "#3B3340"; c.beginPath(); c.arc(d * 28, -1, 3.6, 0, Math.PI * 2); c.fill(); });
+        c.fillStyle = "rgba(255, 120, 160, .5)"; [-1, 1].forEach((d) => { c.beginPath(); c.ellipse(d * 52, 26, 12, 7, 0, 0, Math.PI * 2); c.fill(); });
+        c.fillStyle = "#3B3340"; c.beginPath(); c.ellipse(0, 22, 9, 6, 0, 0, Math.PI * 2); c.fill();
+        c.strokeStyle = "#3B3340"; c.lineWidth = 3.6; c.lineCap = "round"; c.beginPath(); c.moveTo(-9, 34); c.quadraticCurveTo(-4, 40, 0, 32); c.quadraticCurveTo(4, 40, 9, 34); c.stroke();
+        break;
+      }
+      case "lantern": {
+        c.strokeStyle = "#E3A92C"; c.lineWidth = 5; c.beginPath(); c.moveTo(0, -96); c.lineTo(0, -70); c.moveTo(0, 70); c.lineTo(0, 92); c.stroke();
+        stkBlob(c, [() => rrect(c, -14, 88, 28, 12, 5)], "#F2B33D", 4);
+        stkBlob(c, [() => c.ellipse(0, 0, 82, 66, 0, 0, Math.PI * 2)], "#FF5D5D");
+        c.strokeStyle = "rgba(160, 20, 40, .35)"; c.lineWidth = 4;
+        [-46, 0, 46].forEach((x) => { c.beginPath(); c.ellipse(0, 0, Math.abs(x) || 1, 64, 0, -Math.PI / 2, Math.PI / 2, x < 0); c.stroke(); });
+        stkBlob(c, [() => rrect(c, -40, -78, 80, 20, 8)], "#F2B33D", 4);
+        stkBlob(c, [() => rrect(c, -40, 58, 80, 20, 8)], "#F2B33D", 4);
+        stkFace(c, 0, 10, 0.95);
+        break;
+      }
+      case "star": {
+        const pts = []; for (let i = 0; i < 10; i++) { const r = i % 2 ? 44 : 96, a = -Math.PI / 2 + (i * Math.PI) / 5; pts.push([Math.cos(a) * r, Math.sin(a) * r + 8]); }
+        const sp = () => { pts.forEach((q, i) => (i ? c.lineTo(q[0], q[1]) : c.moveTo(q[0], q[1]))); c.closePath(); };
+        c.save(); c.lineJoin = "round"; c.strokeStyle = STK_OL; c.lineWidth = 22; c.beginPath(); sp(); c.stroke(); c.strokeStyle = "#FFD447"; c.lineWidth = 12; c.stroke(); c.fillStyle = "#FFD447"; c.fill(); c.restore();
+        stkFace(c, 0, 18, 0.95);
+        break;
+      }
+      case "heart": {
+        const h = stkPath(c, "M0 86 C-30 64 -94 26 -94 -22 C-94 -58 -66 -80 -40 -80 C-20 -80 -6 -68 0 -54 C6 -68 20 -80 40 -80 C66 -80 94 -58 94 -22 C94 26 30 64 0 86 Z");
+        h.stroke(10); h.fill("#FF8FB1");
+        c.fillStyle = "rgba(255, 255, 255, .55)"; c.beginPath(); c.ellipse(-52, -44, 14, 8, -0.7, 0, Math.PI * 2); c.fill();
+        stkFace(c, 0, 4, 1, { open: true });
+        break;
+      }
+      case "plane": {
+        const wing = stkPath(c, "M-6 6 L40 6 L-20 70 L-44 70 Z"); wing.stroke(10); wing.fill("#9FD0F0");
+        const tail = stkPath(c, "M52 -10 L70 -62 L92 -62 L88 -6 Z"); tail.stroke(10); tail.fill("#9FD0F0");
+        stkBlob(c, [() => rrect(c, -96, -34, 192, 64, 32)], "#FFFFFF");
+        const top = stkPath(c, "M-14 -2 L30 -2 L-8 -40 L-28 -40 Z"); top.stroke(9); top.fill("#BFE0F5");
+        c.fillStyle = "#9FD0F0"; [10, 32, 54].forEach((x) => { c.beginPath(); c.arc(x, -6, 7, 0, Math.PI * 2); c.fill(); });
+        stkFace(c, -54, -4, 0.62);
+        break;
+      }
+      case "moon": { /* a full circle with a bite taken out, outlined on both edges */
+        c.fillStyle = STK_OL; c.beginPath(); c.arc(-6, 6, 90, 0, Math.PI * 2); c.fill();
+        c.fillStyle = "#FFE08A"; c.beginPath(); c.arc(-6, 6, 85, 0, Math.PI * 2); c.fill();
+        c.save(); c.globalCompositeOperation = "destination-out"; c.beginPath(); c.arc(40, -24, 72, 0, Math.PI * 2); c.fill(); c.restore();
+        c.save(); c.globalCompositeOperation = "source-atop"; c.strokeStyle = STK_OL; c.lineWidth = 10; c.beginPath(); c.arc(40, -24, 72, 0, Math.PI * 2); c.stroke(); c.restore();
+        c.save(); c.globalCompositeOperation = "source-atop"; c.fillStyle = "rgba(230, 170, 60, .35)"; [[-62, -10, 8], [-30, 70, 7], [-70, 44, 6]].forEach((q) => { c.beginPath(); c.arc(q[0], q[1], q[2], 0, Math.PI * 2); c.fill(); }); c.restore();
+        stkFace(c, -44, 30, 0.6, { sleepy: true });
+        c.fillStyle = STK_OL; c.font = "34px " + STK_WFONT; c.fillText("z", 40, -30); c.font = "24px " + STK_WFONT; c.fillText("z", 64, -56);
+        break;
+      }
     }
   }
-  const stkPics = {};
-  function stkPic(id) {
-    if (stkPics[id]) return stkPics[id];
-    const sz = stkSize(id), k = 2, cv = document.createElement("canvas");
-    cv.width = sz[0] * k; cv.height = sz[1] * k;
-    const c = cv.getContext("2d"); c.scale(k, k); c.translate(sz[0] / 2, sz[1] / 2); stkDraw(c, id);
-    return (stkPics[id] = cv.toDataURL("image/png"));
+  /* art → white die-cut edge (the art pushed out in every direction, painted white) → soft shadow → the art on top */
+  function stkCanvas(id, k) {
+    const sz = stkSize(id), w = Math.round(sz[0] * k), h = Math.round(sz[1] * k);
+    const art = document.createElement("canvas"); art.width = w; art.height = h;
+    const a = art.getContext("2d"); a.scale(k, k); a.translate(sz[0] / 2, sz[1] / 2); stkArt(a, id);
+    if (id.indexOf("tape:") === 0) return art;
+    const edge = document.createElement("canvas"); edge.width = w; edge.height = h;
+    const e = edge.getContext("2d"), R = 10 * k;
+    for (let i = 0; i < 24; i++) e.drawImage(art, Math.cos((i * Math.PI) / 12) * R, Math.sin((i * Math.PI) / 12) * R);
+    e.drawImage(art, 0, 0);
+    e.globalCompositeOperation = "source-in"; e.fillStyle = "#FFFFFF"; e.fillRect(0, 0, w, h);
+    const out = document.createElement("canvas"); out.width = w; out.height = h;
+    const o = out.getContext("2d");
+    o.save(); o.shadowColor = "rgba(40, 30, 110, .3)"; o.shadowBlur = 10 * k; o.shadowOffsetY = 4 * k; o.drawImage(edge, 0, 0); o.restore();
+    o.drawImage(art, 0, 0);
+    return out;
   }
+  function stkDraw(c, id) { const sz = stkSize(id); c.drawImage(stkCanvas(id, 3), -sz[0] / 2, -sz[1] / 2, sz[0], sz[1]); }
+  const stkPics = {};
+  function stkPic(id) { return stkPics[id] || (stkPics[id] = stkCanvas(id, 1.5).toDataURL("image/png")); }
   let stkFontsOk = false;
   async function stkFonts() {
     if (stkFontsOk || !document.fonts) return;
-    await Promise.race([Promise.all([document.fonts.load("700 40px 'IBM Plex Sans KR'", STK_WORDS.map((w) => w[0]).join("")).catch(() => null), document.fonts.load("900 40px 'Noto Serif SC'", "上海").catch(() => null)]), new Promise((r) => setTimeout(r, 4000))]);
+    await Promise.race([Promise.all([document.fonts.load("48px Jua", STK_WORDS.map((w) => w[0]).join("") + "z").catch(() => null), document.fonts.load("900 40px 'Noto Serif SC'", "上海").catch(() => null)]), new Promise((r) => setTimeout(r, 4000))]);
     stkFontsOk = true;
   }
   /* the editor: the picture you scroll through, stickers on top (drag to move, the round handle to size and turn), a tray to add more */
@@ -1667,6 +1798,7 @@
     el.innerHTML = '<div class="ske-top"><button class="btn ghost sm" type="button" data-act="ske-close">닫기</button>' +
       '<div class="seg limg-th ske-th" role="group" aria-label="이미지 테마">' + [["light", "낮"], ["dark", "밤"]].map((o) => '<button type="button" class="seg-b" data-act="ske-theme" data-v="' + o[0] + '" aria-pressed="' + ((o[0] === "dark") === logImgOpt.dark) + '">' + (o[0] === "dark" ? ICON.moon : ICON.cloud) + o[1] + "</button>").join("") + "</div>" +
       '<button class="btn primary sm" type="button" data-act="ske-done">다 됐어요</button></div>' +
+      (logImgOpt.sel === "fc" ? '<div class="ske-frames" role="group" aria-label="프레임">' + FC_FRAMES.map((f) => '<button type="button" class="ske-fr" data-act="ske-frame" data-v="' + f[0] + '" aria-pressed="' + (f[0] === logImgOpt.frame) + '">' + f[1] + "</button>").join("") + "</div>" : "") +
       '<div class="ske-scroll"><p class="ske-tip">스티커를 누르면 붙어요 · 끌어서 옮기고 파란 손잡이로 크기·각도</p><div class="ske-pg"><img class="ske-base" alt="기록 이미지" src="' + ske.url + '"><div class="ske-layer"></div></div></div>' +
       '<div class="ske-tray" role="toolbar" aria-label="스티커">' + STK_IDS.map((id) => '<button type="button" data-act="stk-add" data-id="' + id + '" aria-label="스티커 붙이기"><img src="' + stkPic(id) + '" alt=""></button>').join("") + "</div>";
     document.body.classList.add("noscroll");
@@ -1728,12 +1860,12 @@
     return await new Promise((res) => cv.toBlob(res, "image/jpeg", 0.92));
   }
   let logImgUrl = "", logImgFile = null, logImgOpt = { sel: "all", dark: false };
-  function logImgMake(sel, dark, btn) {
-    logImgOpt = { sel, dark };
+  function logImgMake(sel, dark, btn, frame) {
+    logImgOpt = { sel, dark, frame: frame || logImgOpt.frame || "film" };
     const keep = btn ? btn.innerHTML : "";
     if (btn) { btn.disabled = true; btn.innerHTML = (btn.querySelector("svg") ? btn.querySelector("svg").outerHTML : "") + "만드는 중…"; }
     const back = () => { if (btn && btn.isConnected) { btn.disabled = false; btn.innerHTML = keep; } };
-    return (sel === "fc" ? fourCut(fcPick, dark) : logImage(sel, dark)).then((b) => { back(); if (b) skeOpen(b); else toast("아직 기록이 없어요"); }).catch(() => { back(); toast("이미지를 못 만들었어요"); });
+    return (sel === "fc" ? fourCut(fcPick, dark, logImgOpt.frame) : logImage(sel, dark)).then((b) => { back(); if (b) skeOpen(b); else toast("아직 기록이 없어요"); }).catch(() => { back(); toast("이미지를 못 만들었어요"); });
   }
   /* ---------- 네컷: 사진 4장을 골라 인생네컷 같은 세로 띠로 ---------- */
   let fcPick = [];
@@ -1763,50 +1895,85 @@
       foot: '<span class="grow"></span><button class="btn" type="button" data-act="sh-close">취소</button><button class="btn primary" type="button" data-act="fc-make"' + (fcPick.length < need ? " disabled" : "") + ">" + ICON.camera + "만들기 " + fcPick.length + "/" + need + "</button>"
     });
   }
-  async function fourCut(pids, dark) {
+  /* 네컷 frames: same 2 × 2 photo spots in every frame (so stickers stay put when you switch) */
+  const FC_FRAMES = [["film", "필름"], ["pass", "탑승권"], ["mail", "에어메일"]];
+  async function fourCut(pids, dark, frame) {
+    frame = frame || "film";
     const list = pids.slice(0, 4);
     if (!list.length) return null;
     while (list.length < 4) list.push(list[list.length % pids.length]);
-    const T = themeVars(dark), title = fcName(), dates = String(state.trip.dates || "").split("·")[0].trim();
+    const title = fcName(), dates = String(state.trip.dates || "").split("·")[0].trim(), leg = state.flight.legs[0] || {};
+    const route = iata(leg.from) + "  →  " + iata(leg.to), flightNo = leg.no || "";
+    const FT = "Hahmlet, 'IBM Plex Sans KR', serif", FM = "'IBM Plex Mono', 'IBM Plex Sans KR', monospace";
     if (document.fonts) {
-      await Promise.race([Promise.all([document.fonts.load("700 10px Hahmlet", title).catch(() => null), document.fonts.load("600 10px 'IBM Plex Mono'", dates).catch(() => null), document.fonts.load("600 10px 'IBM Plex Sans KR'", dates).catch(() => null)]), new Promise((r) => setTimeout(r, 5000))]);
+      await Promise.race([Promise.all(["700 10px Hahmlet", "600 10px 'IBM Plex Mono'", "500 10px 'IBM Plex Mono'", "600 10px 'IBM Plex Sans KR'"].map((f) => document.fonts.load(f, title + dates + route + flightNo + "BOARDING PASS PAR AVION 항공우편 SHANGHAI FILM").catch(() => null))), new Promise((r) => setTimeout(r, 5000))]);
       try { await document.fonts.ready; } catch (e) {}
     }
     const imgs = await Promise.all(list.map((pid) => photoUrl(pid).then((u) => (u ? loadImg(u) : null)).catch(() => null)));
-    const W = 1080, M = 64, G = 28, PW = W - M * 2, PH = Math.round(PW * 0.7), TOP = 80, BOT = 340, H = TOP + PH * 4 + G * 3 + BOT;
+    const W = 1080, H = 1620, M = 46, G = 16, TOP = 118, BOT = 150, CW = (W - M * 2 - G) / 2, CH = (H - TOP - BOT - G) / 2;
     const cv = document.createElement("canvas"); cv.width = W; cv.height = H;
     const c = cv.getContext("2d");
-    const g = c.createLinearGradient(0, 0, 0, H);
-    if (dark) { g.addColorStop(0, "#0A0E2E"); g.addColorStop(0.55, "#1B1A55"); g.addColorStop(1, "#3B2D8A"); }
-    else { g.addColorStop(0, "#9FD0F0"); g.addColorStop(0.5, "#CFE6F6"); g.addColorStop(1, "#FBE2EB"); }
-    c.fillStyle = g; c.fillRect(0, 0, W, H);
-    let sd = 5; const rnd = () => { sd = (sd * 9301 + 49297) % 233280; return sd / 233280; };
-    const star = (x, y, r, col) => { c.fillStyle = col; c.beginPath(); c.moveTo(x, y - r); c.quadraticCurveTo(x + r * 0.18, y - r * 0.18, x + r, y); c.quadraticCurveTo(x + r * 0.18, y + r * 0.18, x, y + r); c.quadraticCurveTo(x - r * 0.18, y + r * 0.18, x - r, y); c.quadraticCurveTo(x - r * 0.18, y - r * 0.18, x, y - r); c.fill(); };
-    for (let i = 0; i < 90; i++) { c.globalAlpha = dark ? 0.25 + rnd() * 0.5 : 0.35 + rnd() * 0.4; c.fillStyle = "#FFFFFF"; c.beginPath(); c.arc(rnd() * W, rnd() * H, dark ? 0.8 + rnd() * 2 : 1.5 + rnd() * 3, 0, Math.PI * 2); c.fill(); }
-    c.globalAlpha = 1;
-    imgs.forEach((im, i) => {
-      const x = M, y = TOP + i * (PH + G);
-      c.save(); c.shadowColor = dark ? "rgba(0, 0, 0, .4)" : "rgba(60, 90, 150, .18)"; c.shadowBlur = 26; c.shadowOffsetY = 8; c.fillStyle = "#FFFFFF"; rrect(c, x, y, PW, PH, 20); c.fill(); c.restore();
-      if (!im) return;
-      c.save(); rrect(c, x, y, PW, PH, 20); c.clip();
-      const k = Math.max(PW / im.width, PH / im.height), sw = PW / k, sh = PH / k;
-      c.drawImage(im, (im.width - sw) / 2, (im.height - sh) / 2, sw, sh, x, y, PW, PH);
+    const ink = dark ? "#EEF0FA" : "#1E1B3A", soft = dark ? "rgba(238, 240, 250, .62)" : "#6A6788";
+    const spaced = (t, x, y, sp, align) => { let w = 0; for (const ch of t) w += c.measureText(ch).width + sp; w -= sp; let xx = align === "right" ? x - w : align === "center" ? x - w / 2 : x; for (const ch of t) { c.fillText(ch, xx, y); xx += c.measureText(ch).width + sp; } };
+    const photos = (r) => imgs.forEach((im, i) => {
+      const x = M + (i % 2) * (CW + G), y = TOP + Math.floor(i / 2) * (CH + G);
+      c.save(); rrect(c, x, y, CW, CH, r); c.clip();
+      c.fillStyle = dark ? "#222A5A" : "#E9EEF6"; c.fillRect(x, y, CW, CH);
+      if (im) { const k = Math.max(CW / im.width, CH / im.height), sw = CW / k, sh = CH / k; c.drawImage(im, (im.width - sw) / 2, (im.height - sh) / 2, sw, sh, x, y, CW, CH); }
       c.restore();
     });
-    const by = TOP + PH * 4 + G * 3;
-    const sp = dark ? "#FFD36B" : "#FFFFFF";
-    star(W / 2 - 250, by + 96, 18, sp); star(W / 2 + 254, by + 82, 12, sp); star(W / 2 + 222, by + 128, 7, sp);
-    c.textAlign = "center"; c.fillStyle = dark ? "#FFFFFF" : "#1E1B3A"; c.font = "700 86px Hahmlet, 'IBM Plex Sans KR', serif";
-    c.fillText(title, W / 2, by + 140, PW);
-    c.fillStyle = dark ? "rgba(255, 255, 255, .7)" : T.muted; c.font = "600 28px 'IBM Plex Mono', 'IBM Plex Sans KR', monospace";
-    let x = W / 2 - (c.measureText(dates).width + 3 * (dates.length - 1)) / 2; c.textAlign = "left";
-    for (const ch of dates) { c.fillText(ch, x, by + 200); x += c.measureText(ch).width + 3; }
-    /* a little skyline along the bottom edge */
-    c.fillStyle = dark ? "rgba(180, 168, 255, .22)" : "rgba(90, 150, 210, .2)";
-    const base = H;
-    [[300, 34, 30], [334, 56, 24], [362, 42, 34], [400, 70, 22], [626, 48, 30], [660, 86, 26], [690, 60, 34], [728, 38, 30]].forEach((b) => c.fillRect(b[0], base - b[1], b[2], b[1]));
-    c.fillRect(536, base - 120, 8, 120); c.fillRect(538.5, base - 150, 3, 32);
-    [[540, base - 44, 18], [540, base - 92, 12], [540, base - 124, 6]].forEach((q) => { c.beginPath(); c.arc(q[0], q[1], q[2], 0, Math.PI * 2); c.fill(); });
+    const cloudMark = (x, y, k, col) => { c.fillStyle = col; c.beginPath(); [[0, 0, 13], [16, -8, 17], [32, 0, 13], [16, 5, 12]].forEach((q) => { c.moveTo(x + (q[0] + q[2]) * k, y + q[1] * k); c.arc(x + q[0] * k, y + q[1] * k, q[2] * k, 0, Math.PI * 2); }); c.fill(); };
+    if (frame === "film") { /* like a photo-booth strip: one soft colour, a small cloud mark, the name at the bottom */
+      c.fillStyle = dark ? "#1A1F4E" : "#D9E8F6"; c.fillRect(0, 0, W, H);
+      if (dark) { let sd = 3; const r = () => { sd = (sd * 9301 + 49297) % 233280; return sd / 233280; }; for (let i = 0; i < 70; i++) { c.globalAlpha = 0.25 + r() * 0.5; c.fillStyle = "#FFFFFF"; c.beginPath(); c.arc(r() * W, r() * H, 0.8 + r() * 1.8, 0, Math.PI * 2); c.fill(); } c.globalAlpha = 1; }
+      cloudMark(M + 14, 64, 1.25, dark ? "#B4A8FF" : "#FFFFFF");
+      c.fillStyle = soft; c.font = "500 22px " + FM; spaced("SHANGHAI FILM", W - M, 72, 5, "right");
+      photos(6);
+      c.fillStyle = ink; c.font = "700 50px " + FT; c.fillText(title, M, H - 60);
+      c.fillStyle = soft; c.font = "600 24px " + FM; spaced(dates, W - M, H - 66, 2, "right");
+    } else if (frame === "pass") { /* a boarding pass: header, the four photos, a tear-off stub with a barcode */
+      const g = c.createLinearGradient(0, 0, 0, H);
+      if (dark) { g.addColorStop(0, "#0A0E2E"); g.addColorStop(1, "#2C2572"); } else { g.addColorStop(0, "#9FD0F0"); g.addColorStop(1, "#FBE2EB"); }
+      c.fillStyle = g; c.fillRect(0, 0, W, H);
+      const tx = 22, ty = 22, tw = W - 44, th = H - 44, sy = H - BOT + 6;
+      c.save(); c.shadowColor = dark ? "rgba(0, 0, 0, .45)" : "rgba(50, 80, 140, .22)"; c.shadowBlur = 30; c.shadowOffsetY = 10;
+      c.fillStyle = dark ? "#161D45" : "#FFFFFF"; rrect(c, tx, ty, tw, th, 34); c.fill(); c.restore();
+      c.save(); c.globalCompositeOperation = "destination-out"; [tx, tx + tw].forEach((x) => { c.beginPath(); c.arc(x, sy, 22, 0, Math.PI * 2); c.fill(); }); c.restore();
+      c.save(); c.globalCompositeOperation = "destination-over"; c.fillStyle = g; c.fillRect(0, 0, W, H); c.restore();
+      c.strokeStyle = dark ? "rgba(180, 168, 255, .45)" : "#C9D7EA"; c.lineWidth = 3; c.setLineDash([12, 10]); c.beginPath(); c.moveTo(tx + 34, sy); c.lineTo(tx + tw - 34, sy); c.stroke(); c.setLineDash([]);
+      c.fillStyle = dark ? "#B4A8FF" : "#3584C4"; c.font = "600 22px " + FM; spaced("BOARDING PASS", M + 4, 80, 6);
+      c.fillStyle = ink; c.font = "600 34px " + FM; spaced(route, W - M - 4, 82, 2, "right");
+      photos(14);
+      c.fillStyle = ink; c.font = "700 46px " + FT; c.fillText(title, M + 8, H - 76);
+      c.fillStyle = soft; c.font = "600 22px " + FM; spaced([dates, flightNo].filter(Boolean).join("   "), M + 8, H - 42, 2);
+      let bx = W - M - 230; let sd = 9; const r = () => { sd = (sd * 9301 + 49297) % 233280; return sd / 233280; };
+      c.fillStyle = ink; while (bx < W - M - 10) { const bw = 2 + Math.floor(r() * 4) * 2; c.fillRect(bx, H - 118, bw, 70); bx += bw + 3 + Math.floor(r() * 3) * 2; }
+    } else { /* airmail: striped edge, a stamp and a postmark */
+      c.fillStyle = dark ? "#151A42" : "#FFF9F0"; c.fillRect(0, 0, W, H);
+      const s1 = dark ? "#FFC94D" : "#E2493F", s2 = dark ? "#9C8CF0" : "#2E6FD8", bw = 20;
+      c.save(); c.beginPath(); c.rect(0, 0, W, H); c.rect(bw, bw, W - bw * 2, H - bw * 2); c.clip("evenodd");
+      for (let i = -H; i < W + H; i += 60) { c.fillStyle = (i / 60) % 2 ? s2 : s1; c.beginPath(); c.moveTo(i, 0); c.lineTo(i + 30, 0); c.lineTo(i + 30 - H, H); c.lineTo(i - H, H); c.closePath(); c.fill(); }
+      c.restore();
+      c.fillStyle = soft; c.font = "600 22px " + FM; spaced("PAR AVION · 항공우편", M + 4, 78, 4);
+      /* stamp: perforated edge, a tiny tower */
+      const px = W - M - 92, py = 14, pw = 92, ph = 96;
+      c.save(); c.shadowColor = "rgba(40, 30, 110, .2)"; c.shadowBlur = 8; c.shadowOffsetY = 3; c.fillStyle = "#FFFFFF"; c.fillRect(px, py, pw, ph); c.restore();
+      c.save(); c.globalCompositeOperation = "destination-out"; for (let x = px; x <= px + pw; x += 12) [py, py + ph].forEach((y) => { c.beginPath(); c.arc(x, y, 4, 0, Math.PI * 2); c.fill(); }); for (let y = py; y <= py + ph; y += 12) [px, px + pw].forEach((x) => { c.beginPath(); c.arc(x, y, 4, 0, Math.PI * 2); c.fill(); }); c.restore();
+      c.save(); c.globalCompositeOperation = "destination-over"; c.fillStyle = dark ? "#151A42" : "#FFF9F0"; c.fillRect(px - 6, py - 6, pw + 12, ph + 12); c.restore();
+      const sg = c.createLinearGradient(0, py + 8, 0, py + ph - 8); sg.addColorStop(0, dark ? "#2C2572" : "#9FD0F0"); sg.addColorStop(1, dark ? "#6A55C8" : "#FBE2EB");
+      c.fillStyle = sg; c.fillRect(px + 8, py + 8, pw - 16, ph - 16);
+      c.fillStyle = dark ? "#FFC2EC" : "#FFFFFF"; c.fillRect(px + pw / 2 - 2, py + 22, 4, ph - 30);
+      [[py + ph - 28, 11], [py + 44, 7], [py + 26, 3.5]].forEach((q) => { c.beginPath(); c.arc(px + pw / 2, q[0], q[1], 0, Math.PI * 2); c.fill(); });
+      /* postmark */
+      const mx = px - 34, my = py + 62;
+      c.strokeStyle = dark ? "rgba(255, 201, 77, .7)" : "rgba(60, 50, 90, .55)"; c.lineWidth = 3;
+      c.beginPath(); c.arc(mx, my, 44, 0, Math.PI * 2); c.stroke(); c.beginPath(); c.arc(mx, my, 34, 0, Math.PI * 2); c.stroke();
+      c.fillStyle = c.strokeStyle; c.font = "600 13px " + FM; c.textAlign = "center"; c.fillText("SHANGHAI", mx, my - 4); c.fillText(dates.slice(0, 10), mx, my + 14); c.textAlign = "left";
+      for (let i = 0; i < 3; i++) { c.beginPath(); for (let x = mx - 170; x <= mx - 52; x += 4) { const y = my - 16 + i * 16 + Math.sin(x / 10) * 4; x === mx - 170 ? c.moveTo(x, y) : c.lineTo(x, y); } c.stroke(); }
+      photos(10);
+      c.fillStyle = ink; c.font = "700 50px " + FT; c.fillText(title, M + 4, H - 66);
+      c.fillStyle = soft; c.font = "600 24px " + FM; spaced(dates, W - M - 4, H - 72, 2, "right");
+    }
     return await new Promise((res) => cv.toBlob(res, "image/jpeg", 0.93));
   }
   function logImgSheet(blob) {
@@ -3344,6 +3511,13 @@
         return;
       }
       case "ske-close": skeClose(); return;
+      case "ske-frame": {
+        const fr = t.getAttribute("data-v"), g = t.closest(".ske-frames");
+        if (fr === logImgOpt.frame || g.classList.contains("busy")) return;
+        g.classList.add("busy");
+        logImgMake("fc", logImgOpt.dark, t, fr);
+        return;
+      }
       case "stk-add": {
         if (!ske) return;
         const sc = $("#ske .ske-scroll"), pg = $("#ske .ske-pg"), id = t.getAttribute("data-id");
