@@ -1308,3 +1308,14 @@ body { background-color: var(--edge) !important; }
 .sp-ok { color: var(--accent); }
 .sp-ok svg { width: 14px; height: 14px; flex: none; }
 .sp-no { color: var(--coral, #C0566B); }
+
+/* 나만 보는 할 일 */
+.mine-ic { display: inline-flex; vertical-align: -2px; margin-left: 5px; color: var(--muted); font-style: normal; }
+.mine-ic svg { width: 13px; height: 13px; }
+.minebtn { flex: none; display: inline-flex; align-items: center; gap: 4px; padding: 0 12px; color: var(--muted); }
+.minebtn svg { width: 15px; height: 15px; }
+.minebtn[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+.ck-note { margin: -4px 2px 0; font-size: 12px; }
+.mine-sw { color: var(--faint, #C5CEDA); }
+.mine-sw svg { width: 17px; height: 17px; }
+.mine-sw.on { color: var(--accent); }

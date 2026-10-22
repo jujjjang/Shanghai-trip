@@ -63,6 +63,7 @@
     bag: I('<rect x="4" y="7.5" width="16" height="12.5" rx="2"/><path d="M9 7.5V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5v2"/>'),
     phone: I('<rect x="7" y="3" width="10" height="18" rx="2.2"/><path d="M11 17.5h2"/>'),
     info: I('<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.8v.2"/>'),
+    lock: I('<rect x="5" y="11" width="14" height="9" rx="2.2"/><path d="M8.2 11V8.2a3.8 3.8 0 0 1 7.6 0V11"/>'),
     note: I('<path d="M6 3.5h9l4 4v13H6z"/><path d="M14.5 3.5v4.5h4.5M9 12h7M9 15.5h5"/>'),
     eye: I('<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.8"/>'),
     moon: I('<path d="M19.5 14.5A8 8 0 0 1 9.5 4.5a8 8 0 1 0 10 10z"/>'),
@@ -145,7 +146,7 @@
     d.settle = d.settle || {}; d.settle.members = d.settle.members || []; d.settle.expenses = d.settle.expenses || [];
     d.days = d.days || []; d.days.forEach((x) => { x.stops = x.stops || []; });
     d.done = d.done || {}; d.skip = d.skip || {}; d.journal = d.journal || {}; d.placePhotos = d.placePhotos || {};
-    d.posts = d.posts || []; d.postPhotos = d.postPhotos || {}; d.likes = d.likes || {}; d.shared = d.shared || {}; d.tasks = d.tasks || []; d.layAck = d.layAck || {}; d.avatars = d.avatars || {};
+    d.posts = d.posts || []; d.postPhotos = d.postPhotos || {}; d.likes = d.likes || {}; d.shared = d.shared || {}; d.tasks = d.tasks || []; d.layAck = d.layAck || {}; d.avatars = d.avatars || {}; d.mine = d.mine || [];
     /* 메모 is a single personal note now: older separate memos are folded into it */
     if (d.memos.length > 1) d.memos = [{ id: d.memos[0].id, text: d.memos.map((m) => m.text).filter(Boolean).join("\n\n"), at: d.memos[0].at }];
     /* 기록 used to be one text box + photos per day: each becomes that day's first post, with the same id on every phone */
@@ -359,7 +360,8 @@
   const starsHtml = (p) => (p && STARS[p] ? '<span class="stars" role="img" aria-label="' + PRI[p] + '">' + STARS[p] + "</span>" : "");
   const tagsHtml = (it) => (it.tags || []).map((t) => '<span class="tag">' + esc(t) + "</span>").join("");
   function ckHtml(x, label, cls) {
-    return '<label class="' + (cls || "ck") + (state.done[x.id] ? " on" : "") + '"><input type="checkbox" data-ck="' + x.id + '"' + (state.done[x.id] ? " checked" : "") + "><span>" + (label || esc(x.t)) + "</span></label>";
+    return '<label class="' + (cls || "ck") + (state.done[x.id] ? " on" : "") + '"><input type="checkbox" data-ck="' + x.id + '"' + (state.done[x.id] ? " checked" : "") + "><span>" + (label || esc(x.t)) +
+      (x.list ? '<i class="mine-ic" title="나만 보는 할 일">' + ICON.lock + "</i>" : "") + "</span></label>";
   }
   function field(name, label, value, o) {
     o = o || {};
@@ -593,9 +595,13 @@
   };
   const CK_TITLE = { todo: "출발 전 할 일", pack: "필수 준비물", apps: "필수 앱" };
   /* list keys: todo / pack / apps (preparation), or "tk:<dayId>" / "tk:after" for each day's own 할 일 */
+  /* 할 일 can be 같이 (synced) or 나만 (state.mine: stays on this phone, shown with a lock) */
+  const canMine = (key) => key === "todo" || String(key).indexOf("tk:") === 0;
+  const isMine = (id) => state.mine.some((x) => x.id === id);
   function ckList(key) {
-    if (state.prep[key]) return state.prep[key];
-    if (String(key).indexOf("tk:") === 0) { const d = key.slice(3); return state.tasks.filter((x) => x.day === d); }
+    const mine = canMine(key) ? state.mine.filter((x) => x.list === key) : [];
+    if (state.prep[key]) return state.prep[key].concat(mine);
+    if (String(key).indexOf("tk:") === 0) { const d = key.slice(3); return state.tasks.filter((x) => x.day === d).concat(mine); }
     return [];
   }
   function ckTitle(key) {
@@ -604,15 +610,31 @@
     if (!d) return "다녀와서 할 일";
     return d.iso === todayIso() ? "오늘 할 일" : (isNum(d.n) ? "Day " + d.n : "귀국날") + " 할 일";
   }
-  function ckAdd(key, text) {
-    if (state.prep[key]) state.prep[key].push(key === "apps" ? { id: newId("a"), t: text, u: "" } : { id: newId(key === "todo" ? "t" : "k"), t: text });
+  function ckAdd(key, text, mine) {
+    if (mine && canMine(key)) state.mine.push({ id: newId("m"), t: text, list: key });
+    else if (state.prep[key]) state.prep[key].push(key === "apps" ? { id: newId("a"), t: text, u: "" } : { id: newId(key === "todo" ? "t" : "k"), t: text });
     else state.tasks.push({ id: newId("t"), t: text, day: key.slice(3) });
   }
   function ckDel(key, id) {
+    state.mine = state.mine.filter((x) => x.id !== id);
     if (state.prep[key]) state.prep[key] = state.prep[key].filter((x) => x.id !== id);
     else state.tasks = state.tasks.filter((x) => x.id !== id);
   }
-  const ckKeyOf = (id) => Object.keys(CK_TITLE).find((k) => state.prep[k].some((x) => x.id === id)) || ((state.tasks.find((x) => x.id === id) || {}).day ? "tk:" + state.tasks.find((x) => x.id === id).day : "");
+  /* move one 할 일 between 같이 and 나만, keeping its tick */
+  function ckMove(key, id) {
+    const m = state.mine.find((x) => x.id === id);
+    if (m) {
+      state.mine = state.mine.filter((x) => x !== m);
+      if (key === "todo") state.prep.todo.push({ id: m.id, t: m.t }); else state.tasks.push({ id: m.id, t: m.t, day: key.slice(3) });
+      return "같이";
+    }
+    const src = key === "todo" ? state.prep.todo : state.tasks, x = src.find((y) => y.id === id);
+    if (!x) return "";
+    if (key === "todo") state.prep.todo = state.prep.todo.filter((y) => y !== x); else state.tasks = state.tasks.filter((y) => y !== x);
+    state.mine.push({ id: x.id, t: x.t, list: key });
+    return "나만";
+  }
+  const ckKeyOf = (id) => (state.mine.find((x) => x.id === id) || {}).list || Object.keys(CK_TITLE).find((k) => state.prep[k].some((x) => x.id === id)) || ((state.tasks.find((x) => x.id === id) || {}).day ? "tk:" + state.tasks.find((x) => x.id === id).day : "");
   const todoKey = (ctx) => (ctx.ph.k === "before" ? "todo" : ctx.ph.k === "after" ? "tk:after" : "tk:" + ctx.day.id);
   /* each home view keeps its own widgets; a view that was never edited starts from the old shared set */
   function wKey() { const ph = phase(); return ph.k === "during" ? ph.day.id : ph.k; }
@@ -1512,6 +1534,7 @@
   const sheetKey = () => (!sheet.hidden && sheetCtx ? sheetCtx.key : "");
 
   /* checklist sheet: check, add, delete in one place */
+  let ckMineOn = false;
   function ckSheet(key) {
     const list = ckList(key), doneN = list.filter((x) => state.done[x.id]).length, title = ckTitle(key);
     openSheet({
@@ -1519,9 +1542,12 @@
       center: true,
       title,
       body: '<div class="addline"><input id="add-' + key + '" data-addkey="' + key + '" placeholder="' + (key === "apps" ? "앱 이름 추가" : "추가할 것") + '" autocomplete="off" enterkeyhint="done" aria-label="' + esc(title) + ' 추가">' +
+        (canMine(key) ? '<button class="btn minebtn" type="button" data-act="ck-mine" data-list="' + key + '" aria-pressed="' + ckMineOn + '" title="켜면 내 폰에만 저장돼요">' + ICON.lock + "나만</button>" : "") +
         '<button class="btn primary" type="button" data-act="li-add" data-list="' + key + '">추가</button></div>' +
+        (canMine(key) ? '<p class="note ck-note">자물쇠 = 나만 보는 할 일 · 나머지는 친구 폰에도 떠요</p>' : "") +
         '<div class="ckhead"><div class="wprog" data-prog="' + key + '"><i style="width:' + (list.length ? (doneN / list.length) * 100 : 0) + '%"></i></div><span class="mono" data-count="' + key + '">' + doneN + " / " + list.length + "</span></div>" +
         (list.length ? '<div class="cklist">' + list.map((x) => '<div class="li">' + ckHtml(x, esc(x.t)) +
+          (canMine(key) ? '<button class="icon-btn mine-sw' + (x.list ? " on" : "") + '" type="button" data-act="li-mine" data-list="' + key + '" data-id="' + x.id + '" aria-pressed="' + !!x.list + '" aria-label="' + (x.list ? "친구랑 같이 보기로 바꾸기" : "나만 보기로 바꾸기") + '">' + ICON.lock + "</button>" : "") +
           '<button class="icon-btn" type="button" data-act="li-del" data-list="' + key + '" data-id="' + x.id + '" aria-label="' + esc(x.t) + ' 지우기">' + ICON.x + "</button></div>").join("") + "</div>" : '<p class="empty">아직 비어 있어요</p>')
     });
   }
@@ -2172,7 +2198,7 @@
     post: [() => state.posts, (a) => { state.posts = a; }],
     task: [() => state.tasks, (a) => { state.tasks = a; }]
   };
-  const personalIds = () => { const s = new Set(); state.prep.pack.concat(state.prep.apps).forEach((x) => s.add(x.id)); return s; };
+  const personalIds = () => { const s = new Set(); state.prep.pack.concat(state.prep.apps, state.mine).forEach((x) => s.add(x.id)); return s; };
   function flatten() {
     const m = {}, per = personalIds();
     m.trip = state.trip; m.hotel = state.hotel; m.flight = state.flight;
@@ -2713,11 +2739,13 @@
       case "li-add": {
         const key = t.getAttribute("data-list"), inp = document.getElementById("add-" + key), v = inp ? inp.value.trim() : "";
         if (!v) { if (inp) inp.focus(); return; }
-        ckAdd(key, v);
+        ckAdd(key, v, ckMineOn);
         save(); render(); ckSheet(key);
         const again = document.getElementById("add-" + key); if (again) again.focus();
         return;
       }
+      case "ck-mine": ckMineOn = !ckMineOn; { const k = t.getAttribute("data-list"), inp = document.getElementById("add-" + k), v = inp ? inp.value : ""; ckSheet(k); const again = document.getElementById("add-" + k); if (again) { again.value = v; again.focus(); } } return;
+      case "li-mine": { const k = t.getAttribute("data-list"), r = ckMove(k, id); save(); render(); ckSheet(k); if (r) toast(r === "나만" ? "이제 내 폰에만 보여요" : "이제 친구 폰에도 보여요"); return; }
       case "li-del": {
         const key = t.getAttribute("data-list");
         ckDel(key, id);
