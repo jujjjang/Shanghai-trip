@@ -2519,7 +2519,7 @@
         '<button class="bigopt main" type="button" data-act="sync-create"><span class="ri">' + ICON.plus + '</span><span class="rt"><b>새 여행 코드 만들기</b><span>지금 이 폰에 있는 일정으로 시작해요</span></span></button>' +
         '<div class="ordiv"><span>친구가 이미 만들었으면</span></div>' +
         joinBox(prefill, "SH-XXXX-XXXX 또는 초대 링크") +
-        '<p class="note">참여하면 일정 · 정산 · 기록 같은 같이 보는 내용이 친구 것으로 바뀌어요. 준비물 · 앱 체크는 그대로고, 이 폰에 있던 사진은 친구 여행에 다시 올라가요.</p>' +
+        '<p class="note">참여하면 일정 · 정산 · 기록 같은 같이 보는 내용이 친구 것으로 바뀌어요. 준비물 · 앱, 할 일 체크, 나만 할 일은 그대로고, 이 폰에 있던 사진은 친구 여행에 다시 올라가요.</p>' +
         (fixedCfg() ? "" : '<button class="btn ghost sm" type="button" data-act="sync-cfgclear">저장소 연결 바꾸기</button>');
     }
     openSheet({ key: "share", title: "친구랑 같이 쓰기", body });
