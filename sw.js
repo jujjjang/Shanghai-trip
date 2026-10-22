@@ -1,7 +1,8 @@
 /* Offline support: the app shell answers from cache at once and refreshes in the background,
    so the trip still opens with no signal in China. Fonts are kept the first time they load. */
-const VERSION = "sht-2026-10-23o";
+const VERSION = "sht-2026-10-23p";
 const FONTS = "sht-fonts";
+const IMGS = "sht-imgs"; /* place pictures from the internet: kept on the phone so they show at once (and in China, where Wikimedia is blocked) */
 const CORE = [
   "./",
   "./index.html",
@@ -22,7 +23,7 @@ self.addEventListener("install", (e) => {
 self.addEventListener("activate", (e) => {
   e.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== VERSION && k !== FONTS).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => k !== VERSION && k !== FONTS && k !== IMGS).map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
@@ -74,6 +75,7 @@ self.addEventListener("fetch", (e) => {
     return;
   }
 
-  /* other sites (photos, the shared-trip server) go straight to the network */
+  /* other sites: fonts and internet pictures are kept; the shared-trip server (and its photos, kept in IndexedDB) go straight to the network */
   if (url.hostname === "fonts.googleapis.com" || url.hostname === "fonts.gstatic.com") cacheFirst(e, FONTS, 0);
+  else if (req.destination === "image" && !/supabase\.co$/.test(url.hostname)) cacheFirst(e, IMGS, 200);
 });

@@ -1351,3 +1351,37 @@ body { background-color: var(--edge) !important; }
 .viewer-foot .btn { background: #1d1d22; color: #fff; border-color: #33333a; }
 .wper { margin-top: 6px; font-size: 12px; }
 .wper + .wbig { margin-top: 0; }
+
+/* 가계부 */
+.exp-ic { width: 32px; height: 32px; flex: none; }
+.exp-ic svg { width: 18px; height: 18px; }
+.exp-dh { display: flex; justify-content: space-between; margin: 14px 22px 6px; font-family: var(--f-mono); font-size: 12px; color: var(--muted); }
+.exp-box { padding-top: 2px; padding-bottom: 2px; }
+.exp-box .exp:first-child { border-top: 0; }
+.catsum { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.cs { display: inline-flex; align-items: center; gap: 4px; padding: 5px 10px; border-radius: 999px; background: var(--inner); font-size: 12.5px; color: var(--ink-2); }
+.cs svg { width: 14px; height: 14px; color: var(--muted); }
+.cs b { font-family: var(--f-mono); font-weight: 600; color: var(--ink); }
+.sc { padding: 0; }
+.sc-sum { display: flex; align-items: center; gap: 10px; padding: 14px 16px; cursor: pointer; list-style: none; }
+.sc-sum::-webkit-details-marker { display: none; }
+.sc-l b { display: block; font-size: 15px; }
+.sc-l span { font-size: 12.5px; color: var(--muted); }
+.sc-r { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-size: 14px; text-align: right; }
+.sc-r b { font-family: var(--f-mono); }
+.sc-r.note { font-size: 12.5px; }
+.sc .chev { flex: none; }
+.sc-more { padding: 0 16px 14px; border-top: 1px solid var(--line-2); }
+.sc-more > .note:first-child { margin: 10px 0 4px; }
+.sc-p { display: flex; justify-content: space-between; padding: 4px 0; font-size: 14px; }
+.fold.flat { border: 0; background: none; box-shadow: none; margin-top: 10px; }
+.fold.flat > summary { padding-left: 0; padding-right: 0; }
+.catchip span { gap: 4px; }
+.catchip svg { width: 15px; height: 15px; }
+.minechk { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 12px; background: var(--inner); font-size: 13.5px; color: var(--ink-2); cursor: pointer; }
+.minechk input { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); }
+.minechk span { display: inline-flex; align-items: center; gap: 5px; }
+.minechk svg { width: 15px; height: 15px; color: var(--muted); }
+.expform { display: flex; flex-direction: column; gap: 12px; }
+.expform:has(input[name="mine"]:checked) .payrow { display: none; }
+.expform .field select { min-height: 46px; }

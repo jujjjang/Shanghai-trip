@@ -63,6 +63,9 @@
     bag: I('<rect x="4" y="7.5" width="16" height="12.5" rx="2"/><path d="M9 7.5V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5v2"/>'),
     phone: I('<rect x="7" y="3" width="10" height="18" rx="2.2"/><path d="M11 17.5h2"/>'),
     info: I('<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.8v.2"/>'),
+    ticket: I('<path d="M15 5v2M15 11v2M15 17v2"/><path d="M5 5h14a2 2 0 0 1 2 2v3a2 2 0 0 0 0 4v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-3a2 2 0 0 0 0-4V7a2 2 0 0 1 2-2"/>'),
+    receipt: I('<path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16l-3-2-2 2-2-2-2 2-2-2-3 2"/><path d="M14 8h-2.5a1.5 1.5 0 0 0 0 3h1a1.5 1.5 0 0 1 0 3H10m2 0v1.5m0-9V8"/>'),
+    bowl: I('<path d="M4 11h16a1 1 0 0 1 1 1v.5c0 1.5-2.517 5.573-4 6.5v1a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1v-1c-1.687-1.054-4-5-4-6.5V12a1 1 0 0 1 1-1"/><path d="M19 7l-14 1M19 2L5 8"/>'),
     lock: I('<rect x="5" y="11" width="14" height="9" rx="2.2"/><path d="M8.2 11V8.2a3.8 3.8 0 0 1 7.6 0V11"/>'),
     note: I('<path d="M6 3.5h9l4 4v13H6z"/><path d="M14.5 3.5v4.5h4.5M9 12h7M9 15.5h5"/>'),
     eye: I('<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.8"/>'),
@@ -159,7 +162,7 @@
     d.settle = d.settle || {}; d.settle.members = d.settle.members || []; d.settle.expenses = d.settle.expenses || [];
     d.days = d.days || []; d.days.forEach((x) => { x.stops = x.stops || []; });
     d.done = d.done || {}; d.skip = d.skip || {}; d.journal = d.journal || {}; d.placePhotos = d.placePhotos || {};
-    d.posts = d.posts || []; d.postPhotos = d.postPhotos || {}; d.likes = d.likes || {}; d.shared = d.shared || {}; d.tasks = d.tasks || []; d.layAck = d.layAck || {}; d.avatars = d.avatars || {}; d.mine = d.mine || [];
+    d.posts = d.posts || []; d.postPhotos = d.postPhotos || {}; d.likes = d.likes || {}; d.shared = d.shared || {}; d.tasks = d.tasks || []; d.layAck = d.layAck || {}; d.avatars = d.avatars || {}; d.mine = d.mine || []; d.myExp = d.myExp || [];
     /* 메모 is a single personal note now: older separate memos are folded into it */
     if (d.memos.length > 1) d.memos = [{ id: d.memos[0].id, text: d.memos.map((m) => m.text).filter(Boolean).join("\n\n"), at: d.memos[0].at }];
     /* 기록 used to be one text box + photos per day: each becomes that day's first post, with the same id on every phone */
@@ -378,7 +381,7 @@
       if (debt[i].v <= eps) i++;
       if (cred[j].v <= eps) j++;
     }
-    return { base, rate, total, share, n, xs, skipped };
+    return { base, rate, total, share, n, xs, skipped, paid };
   }
   const money = (v, c) => (c.base === "KRW" ? wonFmt(v) + (c.rate ? "<small>" + yuanFmt(v / c.rate) + "</small>" : "") : yuanFmt(v));
   const totalFmt = (c) => (c.base === "KRW" ? wonFmt(c.total) : yuanFmt(c.total));
@@ -409,7 +412,7 @@
   }
   function fxHtml(pre) {
     const rate = +state.settle.rate || 0;
-    if (!rate) return '<p class="note">정산 탭 \'환율\'에 환율을 넣으면 바로 계산돼요</p>';
+    if (!rate) return '<p class="note">가계부 탭 맨 아래 \'환율\'에 환율을 넣으면 바로 계산돼요</p>';
     return '<div class="calc fxpair"><label class="cin"><span>¥</span><input id="' + pre + 'Y" data-keep data-fx="y" inputmode="decimal" placeholder="0" autocomplete="off" aria-label="위안"></label>' +
       '<span class="mono note" aria-hidden="true">=</span><label class="cin"><span>₩</span><input id="' + pre + 'W" data-keep data-fx="w" inputmode="decimal" placeholder="0" autocomplete="off" aria-label="원"></label></div>';
   }
@@ -615,7 +618,7 @@
     pack: { name: "필수 준비물", desc: "짐 체크리스트", icon: "bag", size: "big" },
     apps: { name: "필수 앱", desc: "깔아 둘 앱 체크", icon: "phone", size: "half" },
     route: { name: "오늘 동선", desc: "갈 곳을 작은 지도로", icon: "map", size: "half" },
-    settle: { name: "지출 내역", desc: "1인당 · 총 지출 · 보낼 돈", icon: "money", size: "half" },
+    settle: { name: "가계부", desc: "총 지출 · 오늘 · 정산", icon: "money", size: "half" },
     fx: { name: "환율 계산", desc: "위안 ↔ 원 바로 계산", icon: "swap", size: "half" },
     photos: { name: "오늘 기록", desc: "최근 기록 · 바로 쓰기", icon: "camera", size: "half" },
     memo: { name: "메모", desc: "나만 보는 메모 한 장", icon: "note", size: "half" }
@@ -1010,12 +1013,10 @@
         return wrapW(id, d ? routeMap(d, 172, 138, { mini: true, uid: "w", padT: 22, padB: 18, padL: 22, padR: 22 }) + '<span class="wtag">' + (ctx.ph.k === "during" ? "오늘 동선" : (isNum(d.n) ? "DAY " + d.n : "귀국") + " 동선") + "</span>" : "", "wmap", d ? ' data-act="go-plan" data-day="' + d.id + '"' : "");
       }
       case "settle": {
-        const c = settleCalc(), x = c.xs[0];
-        return wrapW(id, '<div class="hd"><span class="lbl">지출 내역</span>' + ICON.money + "</div>" +
-          (state.settle.members.length
-            ? '<span class="sub wper">1인당 · ' + c.n + '명</span><b class="big wbig">' + (c.base === "KRW" ? wonFmt(c.share) : yuanFmt(c.share)) + "</b>" + '<span class="sub">총 ' + totalFmt(c) + "</span>"
-            : '<span class="sub">인원을 먼저 넣어주세요</span>') +
-          '<span class="sub push wxfer">' + (x ? "<b>" + esc(x.from) + "</b> → <b>" + esc(x.to) + "</b> " + (c.base === "KRW" ? wonFmt(x.v) : yuanFmt(x.v)) + (c.xs.length > 1 ? " 외 " + (c.xs.length - 1) + "건" : "") : state.settle.expenses.length ? "보낼 돈 없어요" : "아직 지출이 없어요") + "</span>",
+        const L = ledgerSum(), c = L.c, x = c.xs[0];
+        return wrapW(id, '<div class="hd"><span class="lbl">가계부</span>' + ICON.money + "</div>" +
+          '<span class="sub wper">여행 총 지출</span><b class="big wbig">' + amtFmt(L.total, c) + "</b>" + '<span class="sub">오늘 ' + amtFmt(L.today, c) + "</span>" +
+          '<span class="sub push wxfer">' + (x ? "<b>" + esc(x.from) + "</b> → <b>" + esc(x.to) + "</b> " + amtFmt(x.v, c) + (c.xs.length > 1 ? " 외 " + (c.xs.length - 1) + "건" : "") : state.settle.expenses.length ? "정산할 돈 없어요" : "아직 같이 쓴 돈 없어요") + "</span>",
           "", ' data-act="tab" data-tab="money"');
       }
       case "fx": return wrapW(id, '<div class="hd"><span class="lbl">환율 계산</span><span class="mono sub">' + (state.settle.rate ? "1 : " + esc(state.settle.rate) : "") + "</span></div>" + '<div class="wfx">' + fxHtml("wfx") + "</div>");
@@ -1380,6 +1381,26 @@
   /* ---------- MONEY ---------- */
   let armedExp = null, armedTimer = null;
   function dayLabel(ts) { const t = new Date(ts); return (t.getMonth() + 1) + "." + t.getDate() + " " + "일월화수목금토"[t.getDay()]; }
+  /* ---------- 가계부: every expense by day, with 정산 for the shared ones ----------
+     같이 쓴 돈 → state.settle.expenses (synced, split N ways) · 나만 쓴 돈 → state.myExp (this phone only, not split) */
+  const CATS = [["food", "식비", "bowl", "pink"], ["move", "교통", "taxi", "sky"], ["shop", "쇼핑", "bag", "lilac"], ["fun", "관광", "ticket", "mint"], ["etc", "기타", "receipt", "stone"]];
+  const catOf = (k) => CATS.find((c) => c[0] === k) || CATS[4];
+  const catIc = (k) => { const c = catOf(k); return '<span class="av pic exp-ic" style="' + avStyle(c[3]) + '">' + ICON[c[2]] + "</span>"; };
+  function allExp() {
+    return state.settle.expenses.map((e) => Object.assign({ mine: false }, e)).concat(state.myExp.map((e) => Object.assign({ mine: true }, e)));
+  }
+  function inBase(e, c) { const v = +e.amt || 0; return c.base === "KRW" ? (e.cur === "KRW" ? v : v * c.rate) : e.cur === "KRW" ? 0 : v; }
+  const amtFmt = (v, c) => (c.base === "KRW" ? wonFmt(v) : yuanFmt(v));
+  function ledgerSum() {
+    const c = settleCalc(), all = allExp(), tIso = todayIso(), cats = {};
+    let total = 0, today = 0;
+    all.forEach((e) => {
+      const v = inBase(e, c), d = new Date(e.at || 0), iso = d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+      total += v; if (iso === tIso) today += v;
+      const k = catOf(e.cat)[0]; cats[k] = (cats[k] || 0) + v;
+    });
+    return { c, all, total, today, cats };
+  }
   /* which day an expense belongs to: today, or any trip day (for writing things down later) */
   let expDay = "";
   function expDayOpts() {
@@ -1388,61 +1409,80 @@
     trip.forEach((d) => out.push([d.iso === tIso ? "" : d.iso, (d.iso === tIso ? "오늘 · " : "") + (isNum(d.n) ? "Day " + d.n : "귀국") + " · " + d.date]));
     return out;
   }
-  function expDayRow() {
-    return '<label class="chips exp-dayrow"><span class="lbl">날짜</span><select data-change="exp-day" aria-label="날짜">' +
-      expDayOpts().map((o) => '<option value="' + o[0] + '"' + (o[0] === expDay ? " selected" : "") + ">" + esc(o[1]) + "</option>").join("") + "</select></label>";
-  }
-  function expAt() {
-    const m = String(expDay || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  function expAt(day) {
+    const m = String(day || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
     if (!m) return Date.now();
     const n = new Date(); n.setFullYear(+m[1], +m[2] - 1, +m[3]); return n.getTime();
   }
+  function expNewSheet() {
+    const ppl = state.settle.members, cat = ui.cat || "food";
+    const radio = (name, val, label, on, cls) => '<label class="rchip' + (cls ? " " + cls : "") + '"><input type="radio" name="' + name + '" value="' + esc(val) + '"' + (on ? " checked" : "") + "><span>" + label + "</span></label>";
+    openSheet({
+      key: "exp-new", title: "지출 추가",
+      body: '<div class="expform">' +
+        '<div class="amtrow"><label class="field" style="flex:1"><span class="vh">금액</span><input name="amt" inputmode="decimal" placeholder="금액" autocomplete="off"></label>' +
+          '<div class="chips">' + radio("cur", "CNY", "¥", ui.cur !== "KRW") + radio("cur", "KRW", "₩", ui.cur === "KRW") + "</div></div>" +
+        field("what", "어디에 썼는지", "", { ph: "예: 점심 딤섬" }) +
+        '<div class="field"><span>종류</span><div class="chips">' + CATS.map((k) => radio("cat", k[0], ICON[k[2]] + k[1], k[0] === cat, "catchip")).join("") + "</div></div>" +
+        '<label class="minechk"><input type="checkbox" name="mine"' + (ui.expMine ? " checked" : "") + "><span>" + ICON.lock + "나만 쓴 돈 · 정산 안 하고 내 폰에만 남겨요</span></label>" +
+        (ppl.length ? '<div class="field payrow"><span>낸 사람</span><div class="chips">' + ppl.map((p) => radio("payer", p, esc(p), p === ui.payer)).join("") + "</div></div>" : "") +
+        '<label class="field"><span>날짜</span><select name="day">' + expDayOpts().map((o) => '<option value="' + o[0] + '"' + (o[0] === expDay ? " selected" : "") + ">" + esc(o[1]) + "</option>").join("") + "</select></label>" +
+        "</div>",
+      foot: '<span class="grow"></span><button class="btn" type="button" data-act="sh-close">취소</button><button class="btn primary" type="button" data-act="sh" data-k="save">추가</button>',
+      on(k, v) {
+        if (k !== "save") return;
+        const amt = parseFloat(String(v.amt || "").replace(/[,\s]/g, ""));
+        if (!(amt > 0)) { toast("금액을 넣어주세요"); const a = sheet.querySelector('input[name="amt"]'); if (a) a.focus(); return; }
+        const mine = !!v.mine || !ppl.length;
+        const e = { id: newId("x"), amt, cur: v.cur === "KRW" ? "KRW" : "CNY", what: v.what || "", cat: v.cat || "etc", at: expAt(v.day) };
+        if (mine) state.myExp.push(e);
+        else { e.payer = v.payer || ppl[0]; state.settle.expenses.push(e); ui.payer = e.payer; }
+        ui.cur = e.cur; ui.cat = e.cat; ui.expMine = !!v.mine; expDay = v.day || ""; saveUI();
+        save(); closeSheet(); render(); toast(mine ? "나만 쓴 돈으로 넣었어요" : "추가했어요");
+      }
+    });
+    const a = sheet.querySelector('input[name="amt"]'); if (a) a.focus();
+  }
+  function settleCard(L) {
+    const S = state.settle, ppl = S.members, c = L.c;
+    if (!ppl.length) return '<div class="pad"><div class="box"><p class="note">더보기 → 설정 → 여행 인원을 넣으면 같이 쓴 돈을 나눠 드려요</p></div></div>';
+    const head = '<span class="sc-l"><b>정산</b><span>1인당 ' + amtFmt(c.share, c) + "</span></span>";
+    let right = !S.expenses.length ? '<span class="sc-r note">같이 쓴 돈이 아직 없어요</span>' : !c.xs.length ? '<span class="sc-r note">딱 맞아요</span>'
+      : '<span class="sc-r">' + c.xs.map((x) => "<span>" + esc(x.from) + " → " + esc(x.to) + " <b>" + amtFmt(x.v, c) + "</b></span>").join("") + "</span>";
+    const detail = '<div class="sc-more"><p class="note">같이 쓴 돈 ' + amtFmt(c.total, c) + " · " + c.n + "명이 나눠요</p>" +
+      ppl.map((p) => '<div class="sc-p"><span>' + esc(p) + '</span><span class="mono">' + amtFmt(c.paid[p] || 0, c) + " 냄</span></div>").join("") +
+      (c.xs.length ? c.xs.map((x) => '<div class="xfer"><b>' + esc(x.from) + '</b><span class="note">→</span><b>' + esc(x.to) + '</b><span class="amt">' + money(x.v, c) + "</span></div>").join("") : "") +
+      (c.skipped ? '<p class="note">원화로 넣은 지출 ' + c.skipped + "건은 환율을 넣어야 합산돼요</p>" : "") + "</div>";
+    return '<div class="pad"><details class="box sc" data-fold="settle-card"' + (ui.open["settle-card"] ? " open" : "") + '><summary class="sc-sum">' + head + right + '<span class="chev" aria-hidden="true"></span></summary>' + detail + "</details></div>";
+  }
   function moneyHtml() {
-    const S = state.settle, ppl = S.members, c = settleCalc();
+    const S = state.settle, ppl = S.members, L = ledgerSum(), c = L.c;
     if (ppl.indexOf(ui.payer) < 0) ui.payer = ppl[0] || "";
-    let s = pageHead("정산", c.rate ? "1위안 = " + c.rate + "원" : "N빵 · 환율 계산", true);
-    s += '<div class="pad"><div class="box"><span class="lbl">환율 계산</span><div style="margin-top:8px">' + fxHtml("fx") + "</div></div></div>";
-    s += '<div class="sec-h"><h2>정산</h2></div><div class="pad"><div class="box">';
-    if (!ppl.length) s += '<p class="note">더보기 → 설정 → 여행 인원에서 같이 가는 사람을 먼저 넣어주세요</p>';
-    else {
-      const amt = (v) => (c.base === "KRW" ? wonFmt(v) : yuanFmt(v));
-      s += '<div class="stiles"><div class="stile"><span>1인당 · ' + c.n + "명</span><b>" + amt(c.share) + "</b></div>" +
-        '<div class="stile"><span>총 지출</span><b>' + totalFmt(c) + "</b></div></div>";
-      if (!S.expenses.length) s += '<p class="note xfer">지출을 넣으면 누가 누구한테 얼마 보낼지 여기 나와요</p>';
-      else if (!c.xs.length) s += '<p class="note xfer">딱 맞아요. 보낼 돈이 없어요</p>';
-      else c.xs.forEach((x) => { s += '<div class="xfer"><b>' + esc(x.from) + '</b><span class="note">→</span><b>' + esc(x.to) + '</b><span class="amt">' + money(x.v, c) + "</span></div>"; });
-      if (c.skipped) s += '<p class="note">원화로 넣은 지출 ' + c.skipped + "건은 환율을 넣어야 합산돼요</p>";
-    }
-    s += "</div></div>";
-    if (ppl.length) {
-      s += '<div class="sec-h"><h2>지출 추가</h2></div><div class="pad"><div class="box form">' +
-        '<div class="amtrow"><input id="eAmt" data-keep inputmode="decimal" placeholder="금액" aria-label="금액" autocomplete="off">' +
-        '<div class="seg2" role="group" aria-label="통화"><button class="btn" type="button" data-act="cur" data-cur="CNY" aria-pressed="' + (ui.cur !== "KRW") + '">¥</button>' +
-        '<button class="btn" type="button" data-act="cur" data-cur="KRW" aria-pressed="' + (ui.cur === "KRW") + '">₩</button></div></div>' +
-        '<input id="eWhat" data-keep placeholder="어디에 썼는지 (예: 점심 딤섬)" aria-label="내용" autocomplete="off">' +
-        '<div class="chips"><span class="lbl">낸 사람</span>' + ppl.map((p) => '<button class="btn sm chipbtn" type="button" data-act="payer" data-p="' + esc(p) + '" aria-pressed="' + (p === ui.payer) + '">' + esc(p) + "</button>").join("") + "</div>" +
-        expDayRow() +
-        '<button class="btn primary" type="button" data-act="exp-add">추가</button></div></div>';
-    }
-    if (S.expenses.length) {
-      const list = S.expenses.slice().sort((a, b) => (b.at || 0) - (a.at || 0));
+    let s = pageHead("가계부", c.rate ? "1위안 = " + c.rate + "원" : "여행 지출 · 정산", true);
+    s += '<div class="pad"><div class="box"><div class="stiles"><div class="stile"><span>여행 총 지출</span><b>' + amtFmt(L.total, c) + "</b></div>" +
+      '<div class="stile"><span>오늘</span><b>' + amtFmt(L.today, c) + "</b></div></div>" +
+      (L.all.length ? '<div class="catsum">' + CATS.filter((k) => L.cats[k[0]]).map((k) => '<span class="cs">' + ICON[k[2]] + k[1] + " <b>" + amtFmt(L.cats[k[0]], c) + "</b></span>").join("") + "</div>" : "") + "</div></div>";
+    s += settleCard(L);
+    if (L.all.length) {
+      const list = L.all.slice().sort((a, b) => (b.at || 0) - (a.at || 0)), days = {};
+      list.forEach((e) => { const dl = dayLabel(e.at || 0); days[dl] = (days[dl] || 0) + inBase(e, c); });
       let last = "";
-      s += '<div class="sec-h"><h2>내역 ' + list.length + '건</h2></div><div class="pad"><div class="box" style="padding-top:4px">';
       list.forEach((e) => {
         const dl = dayLabel(e.at || 0);
-        if (dl !== last) { s += '<div class="exp-day">' + dl + "</div>"; last = dl; }
+        if (dl !== last) { s += (last ? "</div></div>" : "") + '<div class="exp-dh"><span>' + dl + "</span><span>" + amtFmt(days[dl], c) + '</span></div><div class="pad"><div class="box exp-box">'; last = dl; }
         const armed = armedExp === e.id;
-        s += '<div class="exp"><button class="exp-open" type="button" data-act="exp-edit" data-id="' + e.id + '" aria-label="' + esc(e.what || "지출") + ' 고치기"><span class="w2"><b>' + esc(e.what || "지출") + "</b><span>" + esc(e.payer) + " 냄</span></span>" +
+        s += '<div class="exp">' + catIc(e.cat) + '<button class="exp-open" type="button" data-act="exp-edit" data-id="' + e.id + '" aria-label="' + esc(e.what || "지출") + ' 금액 고치기"><span class="w2"><b>' + esc(e.what || catOf(e.cat)[1]) +
+          (e.mine ? '<i class="mine-ic" title="나만 쓴 돈">' + ICON.lock + "</i>" : "") + "</b><span>" + (e.mine ? "나만 · 정산 안 함" : esc(e.payer) + " 냄") + "</span></span>" +
           '<span class="a">' + (e.cur === "KRW" ? wonFmt(+e.amt) : yuanFmt(+e.amt)) + (e.cur !== "KRW" && c.rate ? "<small>" + wonFmt(e.amt * c.rate) + "</small>" : "") + "</span></button>" +
           '<button class="btn sm ' + (armed ? "danger armed" : "ghost") + '" type="button" data-act="exp-del" data-id="' + e.id + '" aria-label="이 지출 지우기">' + (armed ? "지우기" : ICON.x) + "</button></div>";
       });
       s += "</div></div>";
-    }
-    s += '<div class="pad sec"><details class="fold" data-fold="settle-set"' + (ui.open["settle-set"] || !S.rate ? " open" : "") +
-      '><summary><span class="ft">환율</span><span class="chev" aria-hidden="true"></span></summary><div class="fold-b form">' +
-      '<label class="field"><span>환율 (1위안 = ?원)</span><input id="mRate" data-keep inputmode="decimal" value="' + esc(S.rate || "") + '" autocomplete="off"></label>' +
-      '<button class="btn" type="button" data-act="settle-save">저장</button></div></details></div>';
-    return s;
+    } else s += '<div class="pad"><p class="note" style="text-align:center;padding:18px 0">＋를 눌러 첫 지출을 적어보세요</p></div>';
+    s += '<div class="sec-h"><h2>환율</h2></div><div class="pad"><div class="box form">' + fxHtml("fx") +
+      '<details class="fold flat" data-fold="settle-set"' + (ui.open["settle-set"] || !S.rate ? " open" : "") + '><summary><span class="ft">환율 바꾸기</span><span class="chev" aria-hidden="true"></span></summary><div class="fold-b form">' +
+      '<label class="field"><span>1위안 = ?원</span><input id="mRate" data-keep inputmode="decimal" value="' + esc(S.rate || "") + '" autocomplete="off"></label>' +
+      '<button class="btn" type="button" data-act="settle-save">저장</button></div></details></div></div>';
+    return s + '<div class="fpad"></div><button class="fab" type="button" data-act="exp-new" aria-label="지출 추가">' + ICON.plus + "</button>";
   }
 
   /* ---------- MORE ---------- */
@@ -2783,8 +2823,9 @@
         save(); render(); toast("추가했어요");
         return;
       }
+      case "exp-new": expNewSheet(); return;
       case "exp-edit": { /* the amount turns into a box right there; Enter or tapping away saves it */
-        const e = state.settle.expenses.find((x) => x.id === id);
+        const e = state.settle.expenses.find((x) => x.id === id) || state.myExp.find((x) => x.id === id);
         if (!e) return;
         const box = document.createElement("div");
         box.className = "exp-open editing";
@@ -2809,6 +2850,7 @@
         if (armedExp !== id) { armedExp = id; render(); armedTimer = setTimeout(() => { armedExp = null; render(); }, 3500); return; }
         armedExp = null;
         state.settle.expenses = state.settle.expenses.filter((x) => x.id !== id);
+        state.myExp = state.myExp.filter((x) => x.id !== id);
         save(); render(); toast("지웠어요");
         return;
       }
@@ -2903,7 +2945,6 @@
       else t.value = tripTitle();
       return;
     }
-    if (t.getAttribute("data-change") === "exp-day") { expDay = t.value; return; }
     if (t.getAttribute("data-change") === "preview") {
       ui.preview = t.value; saveUI();
       toast("홈 화면이 바뀌었어요", { label: "홈 보기", fn: () => go("home") }, 4000);
@@ -2968,6 +3009,14 @@
   takeInviteFromUrl();
   if (sync.code) setTimeout(syncNow, 400);
   setTimeout(locateMissing, 5000); /* places added without a pin (or by a friend whose phone was offline) get one */
+  /* fetch every place picture once in the background so the service worker keeps it: opening a card later shows it at once, offline too */
+  function warmPictures() {
+    if (!("serviceWorker" in navigator) || !navigator.serviceWorker.controller || navigator.onLine === false) return;
+    const urls = [];
+    state.days.forEach((d) => d.stops.forEach((st) => [st].concat(st.spots || []).forEach((x) => { if (x.img && urls.indexOf(x.img) < 0) urls.push(x.img); })));
+    urls.reduce((pr, u) => pr.then(() => new Promise((ok) => { const im = new Image(); im.referrerPolicy = "no-referrer"; im.onload = im.onerror = () => ok(); im.src = u; setTimeout(ok, 8000); })), Promise.resolve());
+  }
+  setTimeout(warmPictures, 3000);
   try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (ui.tab === "plan") { fitPlan(); drawMap(); } }); } catch (e) {}
   setInterval(applyTheme, 60000);
   document.addEventListener("visibilitychange", () => { if (!document.hidden) { applyTheme(); if (ui.tab === "home" && !editing) render(); } });
