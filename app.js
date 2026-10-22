@@ -1544,7 +1544,7 @@
       body: '<div class="addline"><input id="add-' + key + '" data-addkey="' + key + '" placeholder="' + (key === "apps" ? "앱 이름 추가" : "추가할 것") + '" autocomplete="off" enterkeyhint="done" aria-label="' + esc(title) + ' 추가">' +
         (canMine(key) ? '<button class="btn minebtn" type="button" data-act="ck-mine" data-list="' + key + '" aria-pressed="' + ckMineOn + '" title="켜면 내 폰에만 저장돼요">' + ICON.lock + "나만</button>" : "") +
         '<button class="btn primary" type="button" data-act="li-add" data-list="' + key + '">추가</button></div>' +
-        (canMine(key) ? '<p class="note ck-note">자물쇠 = 나만 보는 할 일 · 나머지는 친구 폰에도 떠요</p>' : "") +
+        (canMine(key) ? '<p class="note ck-note">자물쇠 = 나만 보는 할 일 · 나머지는 친구 폰에도 떠요 · 체크는 각자</p>' : "") +
         '<div class="ckhead"><div class="wprog" data-prog="' + key + '"><i style="width:' + (list.length ? (doneN / list.length) * 100 : 0) + '%"></i></div><span class="mono" data-count="' + key + '">' + doneN + " / " + list.length + "</span></div>" +
         (list.length ? '<div class="cklist">' + list.map((x) => '<div class="li">' + ckHtml(x, esc(x.t)) +
           (canMine(key) ? '<button class="icon-btn mine-sw' + (x.list ? " on" : "") + '" type="button" data-act="li-mine" data-list="' + key + '" data-id="' + x.id + '" aria-pressed="' + !!x.list + '" aria-label="' + (x.list ? "친구랑 같이 보기로 바꾸기" : "나만 보기로 바꾸기") + '">' + ICON.lock + "</button>" : "") +
@@ -2198,7 +2198,8 @@
     post: [() => state.posts, (a) => { state.posts = a; }],
     task: [() => state.tasks, (a) => { state.tasks = a; }]
   };
-  const personalIds = () => { const s = new Set(); state.prep.pack.concat(state.prep.apps, state.mine).forEach((x) => s.add(x.id)); return s; };
+  /* ticks that stay on this phone: 준비물 · 앱, and every 할 일 (같이 할 일 too — the list is shared, the checking is each person's own) */
+  const personalIds = () => { const s = new Set(); state.prep.pack.concat(state.prep.apps, state.mine, state.prep.todo, state.tasks).forEach((x) => s.add(x.id)); return s; };
   function flatten() {
     const m = {}, per = personalIds();
     m.trip = state.trip; m.hotel = state.hotel; m.flight = state.flight;
@@ -2264,7 +2265,7 @@
         }
         break;
       }
-      case "done": if (v) state.done[id] = true; else delete state.done[id]; break;
+      case "done": if (personalIds().has(id)) break; if (v) state.done[id] = true; else delete state.done[id]; break;
       case "skip": if (v) state.skip[id] = true; else delete state.skip[id]; break;
     }
   }
@@ -2279,7 +2280,8 @@
   function pendingRows() {
     const cur = flatten(), rows = [];
     Object.keys(cur).forEach((k) => { if (baseOf(k) !== s2(cur[k])) rows.push({ k, v: cur[k] }); });
-    Object.keys(sync.base).forEach((k) => { if (!(k in cur) && sync.base[k] !== "null") rows.push({ k, v: null }); });
+    const per = personalIds();
+    Object.keys(sync.base).forEach((k) => { if (!(k in cur) && sync.base[k] !== "null" && !(k.indexOf("done:") === 0 && per.has(k.slice(5)))) rows.push({ k, v: null }); });
     return rows;
   }
 
@@ -2457,8 +2459,12 @@
       sync.base[r.k] = s2(r.v); sync.ts[r.k] = ts;
       if (!sync.cursor || ts > sync.cursor) sync.cursor = ts;
     });
+    const ticks = Object.assign({}, state.done);
     rows.forEach((r) => applyKey(r.k, r.v));
     Object.keys(LISTS).forEach(orderList);
+    /* a 할 일 tick that arrived before its list row: ticks on 할 일 are each person's own, so keep what this phone had */
+    const per2 = personalIds();
+    rows.forEach((r) => { if (r.k.indexOf("done:") === 0) { const i = r.k.slice(5); if (per2.has(i)) { if (ticks[i]) state.done[i] = true; else delete state.done[i]; } } });
     state = norm(state);
     lsSet(LS_STATE, state);
     sync.last = Date.now();
