@@ -1478,7 +1478,7 @@
       });
       s += "</div></div>";
     } else s += '<div class="pad"><p class="note" style="text-align:center;padding:18px 0">＋를 눌러 첫 지출을 적어보세요</p></div>';
-    s += '<div class="sec-h"><h2>환율</h2></div><div class="pad"><div class="box form">' + fxHtml("fx") +
+    s += '<div class="sec-h"><h2>환율</h2></div><div class="pad"><div class="box">' + fxHtml("fx") +
       '<details class="fold flat" data-fold="settle-set"' + (ui.open["settle-set"] || !S.rate ? " open" : "") + '><summary><span class="ft">환율 바꾸기</span><span class="chev" aria-hidden="true"></span></summary><div class="fold-b form">' +
       '<label class="field"><span>1위안 = ?원</span><input id="mRate" data-keep inputmode="decimal" value="' + esc(S.rate || "") + '" autocomplete="off"></label>' +
       '<button class="btn" type="button" data-act="settle-save">저장</button></div></details></div></div>';
