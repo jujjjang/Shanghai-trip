@@ -1452,8 +1452,6 @@ body { background-color: var(--edge) !important; }
 .stk-h { right: -14px; bottom: -14px; background: var(--accent); color: #fff; }
 .stk-x svg, .stk-h svg { width: 14px; height: 14px; }
 .ske-tray { display: flex; gap: 6px; overflow-x: auto; padding: 10px 12px calc(var(--safe-b) + 10px); background: var(--surface); border-top: 1px solid var(--line); -webkit-overflow-scrolling: touch; }
-.ske-tray button { flex: none; width: 62px; height: 62px; border: 0; border-radius: 14px; background: var(--inner); display: grid; place-items: center; padding: 5px; cursor: pointer; }
-.ske-tray img { max-width: 100%; max-height: 100%; display: block; }
 /* 네컷: 사진 고르기 */
 .fc-note { margin: 0 0 10px; }
 .fcgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
@@ -1465,7 +1463,23 @@ body { background-color: var(--edge) !important; }
 .img-pick-g { display: grid; gap: 10px; }
 button.bigopt { width: 100%; text-align: left; font: inherit; cursor: pointer; }
 button.bigopt + button.bigopt { margin-top: 10px; }
-.ske-frames { display: flex; gap: 6px; padding: 8px 12px; background: var(--surface); border-bottom: 1px solid var(--line); overflow-x: auto; }
-.ske-fr { flex: none; min-height: 34px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--line); background: var(--inner); color: var(--ink-2); font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; }
-.ske-fr[aria-pressed="true"] { background: var(--primary-bg); color: var(--primary-ink); border-color: transparent; }
-.ske-frames.busy { opacity: .6; pointer-events: none; }
+/* 꾸미기: 배치 · 배경 · 도형 · 글자 */
+.ske-opts { background: var(--surface); border-bottom: 1px solid var(--line); padding: 8px 12px 10px; display: grid; gap: 8px; }
+.ske-opts.busy { opacity: .6; pointer-events: none; }
+.ske-tpls { display: flex; gap: 6px; overflow-x: auto; }
+.ske-tpl { flex: none; display: inline-flex; align-items: center; gap: 7px; min-height: 42px; padding: 0 12px 0 10px; border-radius: 12px; border: 1px solid var(--line); background: var(--inner); color: var(--ink-2); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.ske-tpl[aria-pressed="true"] { background: var(--primary-bg); color: var(--primary-ink); border-color: transparent; }
+.ske-bgs, .ske-cols { display: flex; gap: 8px; overflow-x: auto; padding: 2px; }
+.ske-bg, .ske-col { flex: none; width: 30px; height: 30px; border-radius: 50%; border: 0; padding: 0; background: var(--sw); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .14); cursor: pointer; position: relative; }
+.ske-bg.on, .ske-col.on { box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .14), 0 0 0 2px var(--surface), 0 0 0 4px var(--accent); }
+.ske-tray { flex-direction: column; gap: 8px; }
+.ske-shapes { display: flex; gap: 6px; overflow-x: auto; }
+.ske-shapes button { flex: none; width: 54px; height: 54px; border: 0; border-radius: 14px; background: var(--inner); display: grid; place-items: center; padding: 9px; cursor: pointer; }
+.ske-shapes img { max-width: 100%; max-height: 100%; display: block; }
+.ske-shapes .ske-txt { width: auto; padding: 0 14px; display: inline-flex; gap: 5px; color: var(--ink); font: inherit; font-size: 14px; font-weight: 700; }
+.ske-shapes .ske-txt svg { width: 16px; height: 16px; }
+.stk-e { position: absolute; right: -14px; top: -14px; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; padding: 0; border: 2px solid #fff; background: #2A2550; color: #fff; box-shadow: 0 2px 8px rgba(20, 10, 60, .25); }
+.stk-e::before { content: ""; position: absolute; inset: -9px; }
+.stk-e svg { width: 13px; height: 13px; }
+.ske-cols.in { flex-wrap: wrap; }
+.ske-cols.in .ske-col { display: block; }

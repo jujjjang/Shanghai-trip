@@ -1575,232 +1575,91 @@
       return logImage(sel, dark, true);
     }
   }
-  /* ---------- 스티커: 기록 이미지 위에 직접 붙이기 ----------
-     little drawn characters with faces (all made here, nothing borrowed), words in a speech bubble, a 上海 seal and washi tape.
-     Each one is drawn in a 200 × 200 box, then gets a white die-cut edge and a soft shadow. Image units: the picture is 1080 wide. */
-  const STK_OL = "#4B3A4E";
-  const STK_WORDS = [["냠냠", "#FFE3A3", "#8A5A00"], ["최고!", "#FFC9DD", "#9C2F5B"], ["여행 중", "#BDE8F5", "#165E7A"], ["또 올래", "#CDEFD8", "#1F6B45"], ["인생샷", "#E2DAFF", "#4B3AA8"], ["배불러", "#FFD9C9", "#9A3F1C"]];
-  const STK_TAPES = ["#F7C9D9", "#A9E3CF", "#FAD48E", "#BBD9F5", "#D5D1F7"];
-  const STK_CHARS = ["dumpling", "boba", "tower", "cloud", "panda", "lantern", "star", "heart", "plane", "moon", "bao"];
-  const STK_IDS = STK_CHARS.map((k) => "c:" + k).concat(STK_WORDS.map((w, i) => "w:" + i), ["seal"], STK_TAPES.map((t, i) => "tape:" + i));
-  const STK_WFONT = "Jua, 'IBM Plex Sans KR', 'Apple SD Gothic Neo', sans-serif";
-  const STK_PAD = 26;
-  function stkWordW(i) { const c = document.createElement("canvas").getContext("2d"); c.font = "48px " + STK_WFONT; return Math.ceil(c.measureText(STK_WORDS[i][0]).width) + 70; }
-  function stkSize(id) {
-    if (id.indexOf("tape:") === 0) return [270, 100];
-    if (id.indexOf("w:") === 0) return [stkWordW(+id.slice(2)) + STK_PAD * 2, 150 + STK_PAD * 2];
-    return [200 + STK_PAD * 2, 200 + STK_PAD * 2];
+  /* ---------- 꾸미기: 기본 도형 + 글자 ----------
+     shapes are plain flat drawings, like a paint program; words are your own, in 고딕 or 굴림 느낌.
+     Everything is drawn centred on (0, 0) in image pixels (every picture here is 1080 wide). */
+  const STK_SHAPES = [["circle", "동그라미"], ["heart", "하트"], ["star", "별"], ["cloud", "구름"], ["note", "음표"], ["notes", "음표 둘"]];
+  const STK_COLORS = ["#FFFFFF", "#2B2540", "#FF8FB1", "#F2545B", "#FF9F5A", "#FFD447", "#6FD3A8", "#6BB8F0", "#3D6FE0", "#B49CF5", "#8A5A44"];
+  const TXT_FONTS = { goth: ["고딕", "'IBM Plex Sans KR', 'Apple SD Gothic Neo', sans-serif", 600], gul: ["굴림", "'Gowun Dodum', 'Apple SD Gothic Neo', sans-serif", 400] };
+  let stkCol = "#FF8FB1";
+  const txtLines = (it) => String(it.text || "").split("\n");
+  const txtFont = (it) => { const f = TXT_FONTS[it.font] || TXT_FONTS.goth; return f[2] + " 64px " + f[1]; };
+  function stkSize(it) {
+    if (it.id !== "txt") return [200, 200];
+    const c = document.createElement("canvas").getContext("2d");
+    c.font = txtFont(it);
+    return [Math.ceil(Math.max(40, ...txtLines(it).map((l) => c.measureText(l).width))) + 24, txtLines(it).length * 84 + 16];
   }
-  /* a kawaii face: two shiny eyes, pink cheeks, a small mouth */
-  function stkFace(c, x, y, s, o) {
-    o = o || {};
-    c.save(); c.translate(x, y); c.scale(s, s);
-    c.fillStyle = "rgba(255, 120, 160, .5)";
-    [-1, 1].forEach((d) => { c.beginPath(); c.ellipse(d * 30, 14, 11, 6.5, 0, 0, Math.PI * 2); c.fill(); });
-    if (o.sleepy) {
-      c.strokeStyle = STK_OL; c.lineWidth = 4; c.lineCap = "round";
-      [-1, 1].forEach((d) => { c.beginPath(); c.arc(d * 17, -2, 8, 0.15 * Math.PI, 0.85 * Math.PI); c.stroke(); });
-    } else {
-      [-1, 1].forEach((d) => {
-        c.fillStyle = o.eye || STK_OL; c.beginPath(); c.ellipse(d * 17, -2, 7, 8.5, 0, 0, Math.PI * 2); c.fill();
-        c.fillStyle = "#FFFFFF"; c.beginPath(); c.arc(d * 17 + 2.5, -5.5, 2.8, 0, Math.PI * 2); c.fill();
-      });
-    }
-    c.strokeStyle = o.eye || STK_OL; c.lineWidth = 3.6; c.lineCap = "round"; c.lineJoin = "round";
-    c.beginPath();
-    if (o.open) { c.fillStyle = "#E8546E"; c.moveTo(-8, 9); c.quadraticCurveTo(0, 22, 8, 9); c.closePath(); c.fill(); c.stroke(); }
-    else { c.moveTo(-8, 9); c.quadraticCurveTo(-4, 14, 0, 9); c.quadraticCurveTo(4, 14, 8, 9); c.stroke(); }
-    c.restore();
-  }
-  /* fill + outline for one or more shapes; joined shapes get one outline round the outside */
-  function stkBlob(c, shapes, fill, lw) {
-    lw = lw || 5;
-    c.save(); c.strokeStyle = STK_OL; c.lineWidth = lw * 2; c.lineJoin = "round";
-    shapes.forEach((sh) => { c.beginPath(); sh(); c.stroke(); });
-    c.fillStyle = fill; shapes.forEach((sh) => { c.beginPath(); sh(); c.fill(); });
-    c.restore();
-  }
-  const stkCircle = (c, x, y, r) => () => c.arc(x, y, r, 0, Math.PI * 2);
-  const stkPath = (c, d) => { const p = new Path2D(d); return { fill: (col) => { c.fillStyle = col; c.fill(p); }, stroke: (lw, col) => { c.strokeStyle = col || STK_OL; c.lineWidth = lw || 5; c.lineJoin = "round"; c.lineCap = "round"; c.stroke(p); } }; };
-  function stkArt(c, id) {
-    const p = id.split(":");
-    if (p[0] === "w") {
-      const w = STK_WORDS[+p[1]], bw = stkWordW(+p[1]), bh = 96;
-      const b = new Path2D();
-      const x = -bw / 2, y = -bh / 2 - 10, r = bh / 2;
-      b.moveTo(x + r, y); b.lineTo(x + bw - r, y); b.arc(x + bw - r, y + r, r, -Math.PI / 2, Math.PI / 2); b.lineTo(-6, y + bh); b.lineTo(-26, y + bh + 26); b.lineTo(-30, y + bh); b.lineTo(x + r, y + bh); b.arc(x + r, y + r, r, Math.PI / 2, Math.PI * 1.5); b.closePath();
-      c.fillStyle = w[1]; c.fill(b); c.strokeStyle = STK_OL; c.lineWidth = 5; c.lineJoin = "round"; c.stroke(b);
-      c.fillStyle = w[2]; c.font = "48px " + STK_WFONT; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(w[0], 0, y + bh / 2 + 3); c.textAlign = "left"; c.textBaseline = "alphabetic";
+  function stkArt(c, it) {
+    if (it.id === "txt") {
+      const ls = txtLines(it), n = ls.length;
+      c.font = txtFont(it); c.fillStyle = it.col || "#2B2540"; c.textAlign = "center"; c.textBaseline = "middle";
+      ls.forEach((l, i) => c.fillText(l, 0, (i - (n - 1) / 2) * 84));
+      c.textAlign = "left"; c.textBaseline = "alphabetic";
       return;
     }
-    if (p[0] === "tape") {
-      const w = 240, h = 62, n = 6, zz = h / n;
-      c.globalAlpha = 0.85; c.fillStyle = STK_TAPES[+p[1]]; c.beginPath();
-      c.moveTo(-w / 2, -h / 2); c.lineTo(w / 2, -h / 2);
-      for (let i = 1; i <= n; i++) c.lineTo(w / 2 - (i % 2 ? 7 : 0), -h / 2 + zz * i);
-      c.lineTo(-w / 2, h / 2);
-      for (let i = n - 1; i >= 0; i--) c.lineTo(-w / 2 + (i % 2 ? 7 : 0), -h / 2 + zz * i);
-      c.closePath(); c.fill();
-      c.globalAlpha = 0.24; c.fillStyle = "#FFFFFF";
-      for (let sx = -w / 2 + 12; sx < w / 2 - 10; sx += 30) c.fillRect(sx, -h / 2, 12, h);
-      c.globalAlpha = 1;
-      return;
-    }
-    if (id === "seal") {
-      const z = 150;
-      c.fillStyle = "#D9483B"; rrect(c, -z / 2, -z / 2, z, z, 20); c.fill();
-      c.strokeStyle = "rgba(255, 255, 255, .85)"; c.lineWidth = 4; rrect(c, -z / 2 + 11, -z / 2 + 11, z - 22, z - 22, 11); c.stroke();
-      c.fillStyle = "#FFFFFF"; c.font = "900 52px 'Noto Serif SC', 'Songti SC', STSong, serif"; c.textAlign = "center";
-      c.fillText("上", 0, -6); c.fillText("海", 0, 48); c.textAlign = "left";
-      return;
-    }
-    switch (p[1]) {
-      case "dumpling": {
-        const b = stkPath(c, "M-86 34 Q-90 -40 0 -50 Q90 -40 86 34 Q70 62 0 62 Q-70 62 -86 34 Z");
-        b.stroke(10); b.fill("#FFF0D2");
-        c.strokeStyle = STK_OL; c.lineWidth = 4.5; c.lineCap = "round";
-        [-48, -24, 0, 24, 48].forEach((x) => { c.beginPath(); c.moveTo(x - 6, -44 + Math.abs(x) * 0.18); c.quadraticCurveTo(x + 2, -30, x + 4, -18 + Math.abs(x) * 0.1); c.stroke(); });
-        stkFace(c, 0, 22, 1);
-        break;
-      }
-      case "bao": { /* 샤오롱바오 in a little steamer */
-        c.strokeStyle = "#B8C7D9"; c.lineWidth = 6; c.lineCap = "round";
-        [[-22, -72], [0, -84], [22, -72]].forEach((q) => { c.beginPath(); c.moveTo(q[0], q[1] + 22); c.bezierCurveTo(q[0] - 10, q[1] + 10, q[0] + 10, q[1] + 2, q[0], q[1] - 10); c.stroke(); });
-        stkBlob(c, [() => rrect(c, -92, 30, 184, 52, 14)], "#E8B66E");
-        c.strokeStyle = "#C28C45"; c.lineWidth = 4; [44, 62].forEach((y) => { c.beginPath(); c.moveTo(-84, y); c.lineTo(84, y); c.stroke(); });
-        const b = stkPath(c, "M-70 36 Q-74 -30 -10 -42 Q0 -56 10 -42 Q74 -30 70 36 Z");
-        b.stroke(10); b.fill("#FFF6EA");
-        c.strokeStyle = STK_OL; c.lineWidth = 4; c.lineCap = "round";
-        [-26, -12, 12, 26].forEach((x) => { c.beginPath(); c.moveTo(x * 0.4, -40); c.quadraticCurveTo(x * 0.9, -20, x * 1.4, -6); c.stroke(); });
-        stkFace(c, 0, 10, 0.85);
-        break;
-      }
-      case "boba": {
-        const straw = stkPath(c, "M14 -96 L30 -96 L22 -30 L6 -30 Z"); straw.stroke(10); straw.fill("#FF8FB1");
-        const cup = stkPath(c, "M-56 -34 L56 -34 L44 82 Q42 94 30 94 L-30 94 Q-42 94 -44 82 Z"); cup.stroke(10); cup.fill("#F6D2B0");
-        c.fillStyle = "rgba(255, 255, 255, .45)"; c.fillRect(-46, -26, 12, 80);
-        [[-24, 74], [0, 78], [24, 74], [-12, 58], [12, 58]].forEach((q) => { c.fillStyle = STK_OL; c.beginPath(); c.arc(q[0], q[1], 8.5, 0, Math.PI * 2); c.fill(); });
-        stkBlob(c, [() => rrect(c, -66, -50, 132, 22, 11)], "#FFFFFF");
-        stkFace(c, 0, 14, 0.9);
-        break;
-      }
-      case "tower": { /* 동방명주 */
-        c.strokeStyle = STK_OL; c.lineWidth = 5; c.lineCap = "round";
-        c.beginPath(); c.moveTo(0, -78); c.lineTo(0, -98); c.stroke();
-        [[-1, 1], [1, 1], [0, 1]].forEach((d) => { c.lineWidth = 12; c.strokeStyle = STK_OL; c.beginPath(); c.moveTo(d[0] * 8, 70); c.lineTo(d[0] * 36, 98); c.stroke(); c.lineWidth = 6; c.strokeStyle = "#B9A6F2"; c.stroke(); });
-        stkBlob(c, [() => rrect(c, -11, -70, 22, 150, 8)], "#CDBDF7");
-        stkBlob(c, [stkCircle(c, 0, -74, 10)], "#FFC2DA");
-        stkBlob(c, [stkCircle(c, 0, -26, 26)], "#FFC2DA");
-        stkBlob(c, [stkCircle(c, 0, 42, 44)], "#FFB3D0");
-        c.fillStyle = "rgba(255, 255, 255, .7)"; c.beginPath(); c.ellipse(-10, -34, 8, 5, -0.6, 0, Math.PI * 2); c.fill();
-        stkFace(c, 0, 44, 0.85);
-        break;
-      }
-      case "cloud": {
-        stkBlob(c, [stkCircle(c, -52, 16, 40), stkCircle(c, -8, -18, 52), stkCircle(c, 46, 6, 42), stkCircle(c, 2, 30, 44), () => rrect(c, -88, 18, 176, 40, 20)], "#FFFFFF");
-        stkFace(c, 0, 18, 1, { eye: STK_OL });
-        break;
-      }
-      case "panda": {
-        stkBlob(c, [stkCircle(c, -52, -50, 24), stkCircle(c, 52, -50, 24)], "#3B3340");
-        stkBlob(c, [() => c.ellipse(0, 4, 82, 74, 0, 0, Math.PI * 2)], "#FFFFFF");
-        c.fillStyle = "#3B3340";
-        [-1, 1].forEach((d) => { c.beginPath(); c.ellipse(d * 30, 0, 17, 23, d * -0.5, 0, Math.PI * 2); c.fill(); });
-        [-1, 1].forEach((d) => { c.fillStyle = "#FFFFFF"; c.beginPath(); c.arc(d * 28, -2, 6.5, 0, Math.PI * 2); c.fill(); c.fillStyle = "#3B3340"; c.beginPath(); c.arc(d * 28, -1, 3.6, 0, Math.PI * 2); c.fill(); });
-        c.fillStyle = "rgba(255, 120, 160, .5)"; [-1, 1].forEach((d) => { c.beginPath(); c.ellipse(d * 52, 26, 12, 7, 0, 0, Math.PI * 2); c.fill(); });
-        c.fillStyle = "#3B3340"; c.beginPath(); c.ellipse(0, 22, 9, 6, 0, 0, Math.PI * 2); c.fill();
-        c.strokeStyle = "#3B3340"; c.lineWidth = 3.6; c.lineCap = "round"; c.beginPath(); c.moveTo(-9, 34); c.quadraticCurveTo(-4, 40, 0, 32); c.quadraticCurveTo(4, 40, 9, 34); c.stroke();
-        break;
-      }
-      case "lantern": {
-        c.strokeStyle = "#E3A92C"; c.lineWidth = 5; c.beginPath(); c.moveTo(0, -96); c.lineTo(0, -70); c.moveTo(0, 70); c.lineTo(0, 92); c.stroke();
-        stkBlob(c, [() => rrect(c, -14, 88, 28, 12, 5)], "#F2B33D", 4);
-        stkBlob(c, [() => c.ellipse(0, 0, 82, 66, 0, 0, Math.PI * 2)], "#FF5D5D");
-        c.strokeStyle = "rgba(160, 20, 40, .35)"; c.lineWidth = 4;
-        [-46, 0, 46].forEach((x) => { c.beginPath(); c.ellipse(0, 0, Math.abs(x) || 1, 64, 0, -Math.PI / 2, Math.PI / 2, x < 0); c.stroke(); });
-        stkBlob(c, [() => rrect(c, -40, -78, 80, 20, 8)], "#F2B33D", 4);
-        stkBlob(c, [() => rrect(c, -40, 58, 80, 20, 8)], "#F2B33D", 4);
-        stkFace(c, 0, 10, 0.95);
-        break;
-      }
-      case "star": {
-        const pts = []; for (let i = 0; i < 10; i++) { const r = i % 2 ? 44 : 96, a = -Math.PI / 2 + (i * Math.PI) / 5; pts.push([Math.cos(a) * r, Math.sin(a) * r + 8]); }
-        const sp = () => { pts.forEach((q, i) => (i ? c.lineTo(q[0], q[1]) : c.moveTo(q[0], q[1]))); c.closePath(); };
-        c.save(); c.lineJoin = "round"; c.strokeStyle = STK_OL; c.lineWidth = 22; c.beginPath(); sp(); c.stroke(); c.strokeStyle = "#FFD447"; c.lineWidth = 12; c.stroke(); c.fillStyle = "#FFD447"; c.fill(); c.restore();
-        stkFace(c, 0, 18, 0.95);
-        break;
-      }
-      case "heart": {
-        const h = stkPath(c, "M0 86 C-30 64 -94 26 -94 -22 C-94 -58 -66 -80 -40 -80 C-20 -80 -6 -68 0 -54 C6 -68 20 -80 40 -80 C66 -80 94 -58 94 -22 C94 26 30 64 0 86 Z");
-        h.stroke(10); h.fill("#FF8FB1");
-        c.fillStyle = "rgba(255, 255, 255, .55)"; c.beginPath(); c.ellipse(-52, -44, 14, 8, -0.7, 0, Math.PI * 2); c.fill();
-        stkFace(c, 0, 4, 1, { open: true });
-        break;
-      }
-      case "plane": {
-        const wing = stkPath(c, "M-6 6 L40 6 L-20 70 L-44 70 Z"); wing.stroke(10); wing.fill("#9FD0F0");
-        const tail = stkPath(c, "M52 -10 L70 -62 L92 -62 L88 -6 Z"); tail.stroke(10); tail.fill("#9FD0F0");
-        stkBlob(c, [() => rrect(c, -96, -34, 192, 64, 32)], "#FFFFFF");
-        const top = stkPath(c, "M-14 -2 L30 -2 L-8 -40 L-28 -40 Z"); top.stroke(9); top.fill("#BFE0F5");
-        c.fillStyle = "#9FD0F0"; [10, 32, 54].forEach((x) => { c.beginPath(); c.arc(x, -6, 7, 0, Math.PI * 2); c.fill(); });
-        stkFace(c, -54, -4, 0.62);
-        break;
-      }
-      case "moon": { /* a full circle with a bite taken out, outlined on both edges */
-        c.fillStyle = STK_OL; c.beginPath(); c.arc(-6, 6, 90, 0, Math.PI * 2); c.fill();
-        c.fillStyle = "#FFE08A"; c.beginPath(); c.arc(-6, 6, 85, 0, Math.PI * 2); c.fill();
-        c.save(); c.globalCompositeOperation = "destination-out"; c.beginPath(); c.arc(40, -24, 72, 0, Math.PI * 2); c.fill(); c.restore();
-        c.save(); c.globalCompositeOperation = "source-atop"; c.strokeStyle = STK_OL; c.lineWidth = 10; c.beginPath(); c.arc(40, -24, 72, 0, Math.PI * 2); c.stroke(); c.restore();
-        c.save(); c.globalCompositeOperation = "source-atop"; c.fillStyle = "rgba(230, 170, 60, .35)"; [[-62, -10, 8], [-30, 70, 7], [-70, 44, 6]].forEach((q) => { c.beginPath(); c.arc(q[0], q[1], q[2], 0, Math.PI * 2); c.fill(); }); c.restore();
-        stkFace(c, -44, 30, 0.6, { sleepy: true });
-        c.fillStyle = STK_OL; c.font = "34px " + STK_WFONT; c.fillText("z", 40, -30); c.font = "24px " + STK_WFONT; c.fillText("z", 64, -56);
-        break;
-      }
+    c.fillStyle = it.col || "#FF8FB1";
+    const disc = (x, y, r) => { c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill(); };
+    const head = (x, y, rx, ry) => { c.beginPath(); c.ellipse(x, y, rx, ry, -0.45, 0, Math.PI * 2); c.fill(); };
+    switch (it.id.slice(3)) {
+      case "circle": disc(0, 0, 90); break;
+      case "heart": c.fill(new Path2D("M0 88 C-32 64 -96 26 -96 -24 C-96 -60 -68 -84 -40 -84 C-20 -84 -6 -72 0 -56 C6 -72 20 -84 40 -84 C68 -84 96 -60 96 -24 C96 26 32 64 0 88 Z")); break;
+      case "star":
+        c.beginPath();
+        for (let i = 0; i < 10; i++) { const r = i % 2 ? 40 : 98, a = -Math.PI / 2 + (i * Math.PI) / 5, x = Math.cos(a) * r, y = Math.sin(a) * r + 10; if (i) c.lineTo(x, y); else c.moveTo(x, y); }
+        c.closePath(); c.fill(); break;
+      case "cloud":
+        [[-54, 16, 38], [-12, -16, 50], [42, 4, 42], [0, 30, 40]].forEach((q) => disc(q[0], q[1], q[2]));
+        rrect(c, -92, 14, 184, 56, 28); c.fill(); break;
+      case "note":
+        head(-26, 58, 36, 26); c.fillRect(2, -88, 14, 146);
+        c.fill(new Path2D("M16 -88 C40 -70 72 -48 58 -4 C54 10 46 18 40 22 C52 -10 42 -40 16 -52 Z")); break;
+      case "notes":
+        head(-50, 62, 30, 22); head(50, 46, 30, 22);
+        c.fillRect(-26, -66, 12, 128); c.fillRect(74, -84, 12, 130);
+        c.beginPath(); c.moveTo(-26, -66); c.lineTo(86, -84); c.lineTo(86, -56); c.lineTo(-26, -38); c.closePath(); c.fill(); break;
     }
   }
-  /* art → white die-cut edge (the art pushed out in every direction, painted white) → soft shadow → the art on top */
-  function stkCanvas(id, k) {
-    const sz = stkSize(id), w = Math.round(sz[0] * k), h = Math.round(sz[1] * k);
-    const art = document.createElement("canvas"); art.width = w; art.height = h;
-    const a = art.getContext("2d"); a.scale(k, k); a.translate(sz[0] / 2, sz[1] / 2); stkArt(a, id);
-    if (id.indexOf("tape:") === 0) return art;
-    const edge = document.createElement("canvas"); edge.width = w; edge.height = h;
-    const e = edge.getContext("2d"), R = 10 * k;
-    for (let i = 0; i < 24; i++) e.drawImage(art, Math.cos((i * Math.PI) / 12) * R, Math.sin((i * Math.PI) / 12) * R);
-    e.drawImage(art, 0, 0);
-    e.globalCompositeOperation = "source-in"; e.fillStyle = "#FFFFFF"; e.fillRect(0, 0, w, h);
-    const out = document.createElement("canvas"); out.width = w; out.height = h;
-    const o = out.getContext("2d");
-    o.save(); o.shadowColor = "rgba(40, 30, 110, .3)"; o.shadowBlur = 10 * k; o.shadowOffsetY = 4 * k; o.drawImage(edge, 0, 0); o.restore();
-    o.drawImage(art, 0, 0);
-    return out;
-  }
-  function stkDraw(c, id) { const sz = stkSize(id); c.drawImage(stkCanvas(id, 3), -sz[0] / 2, -sz[1] / 2, sz[0], sz[1]); }
   const stkPics = {};
-  function stkPic(id) { return stkPics[id] || (stkPics[id] = stkCanvas(id, 1.5).toDataURL("image/png")); }
-  let stkFontsOk = false;
-  async function stkFonts() {
-    if (stkFontsOk || !document.fonts) return;
-    await Promise.race([Promise.all([document.fonts.load("48px Jua", STK_WORDS.map((w) => w[0]).join("") + "z").catch(() => null), document.fonts.load("900 40px 'Noto Serif SC'", "上海").catch(() => null)]), new Promise((r) => setTimeout(r, 4000))]);
-    stkFontsOk = true;
+  function stkPic(it) {
+    const key = [it.id, it.col, it.font, it.text].join("|");
+    if (stkPics[key]) return stkPics[key];
+    const sz = stkSize(it), k = 1.5, cv = document.createElement("canvas");
+    cv.width = Math.max(1, Math.round(sz[0] * k)); cv.height = Math.max(1, Math.round(sz[1] * k));
+    const c = cv.getContext("2d"); c.scale(k, k); c.translate(sz[0] / 2, sz[1] / 2); stkArt(c, it);
+    return (stkPics[key] = cv.toDataURL("image/png"));
   }
-  /* the editor: the picture you scroll through, stickers on top (drag to move, the round handle to size and turn), a tray to add more */
+  async function txtFonts(text) {
+    if (!document.fonts) return;
+    await Promise.race([Promise.all(Object.keys(TXT_FONTS).map((k) => document.fonts.load(TXT_FONTS[k][2] + " 64px " + TXT_FONTS[k][1].split(",")[0], text || "가").catch(() => null))), new Promise((r) => setTimeout(r, 4000))]);
+  }
+  /* ---------- the editor: the picture you scroll through, stickers and words on top, the tray below ---------- */
   let ske = null, skeDrag = null;
   const skeLists = {};
+  const skeKey = () => (logImgOpt.sel === "fc" ? "fc:" + logImgOpt.tpl : logImgOpt.sel);
+  const isDarkBg = (hex) => { const n = parseInt(String(hex).slice(1), 16); return 0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255) < 140; };
+  function skeTray() {
+    return '<div class="ske-cols" role="group" aria-label="색">' + STK_COLORS.map((col) => '<button type="button" class="ske-col' + (col === stkCol ? " on" : "") + '" data-act="stk-col" data-v="' + col + '" aria-label="색 ' + col + '" style="--sw:' + col + '"></button>').join("") + "</div>" +
+      '<div class="ske-shapes"><button type="button" class="ske-txt" data-act="txt-new">' + ICON.pen + "글자</button>" +
+      STK_SHAPES.map((s) => '<button type="button" data-act="stk-add" data-id="sh:' + s[0] + '" aria-label="' + s[1] + ' 붙이기"><img src="' + stkPic({ id: "sh:" + s[0], col: stkCol === "#FFFFFF" ? "#E4E1EC" : stkCol }) + '" alt=""></button>').join("") + "</div>";
+  }
   async function skeOpen(blob) {
-    await stkFonts();
-    const key = logImgOpt.sel;
+    await txtFonts(state.trip.title + "0123456789");
+    const key = skeKey(), fresh = !skeLists[key];
     if (ske && ske.url) URL.revokeObjectURL(ske.url);
     ske = { blob, url: URL.createObjectURL(blob), list: skeLists[key] || (skeLists[key] = []), sel: "", f: 1, h: 1080 };
+    if (fresh && logImgOpt.sel === "fc") fcDefaults(ske.list);
     let el = document.getElementById("ske");
     if (!el) { el = document.createElement("div"); el.id = "ske"; el.className = "ske"; document.body.appendChild(el); skeWire(el); }
     el.hidden = false;
-    el.innerHTML = '<div class="ske-top"><button class="btn ghost sm" type="button" data-act="ske-close">닫기</button>' +
-      '<div class="seg limg-th ske-th" role="group" aria-label="이미지 테마">' + [["light", "낮"], ["dark", "밤"]].map((o) => '<button type="button" class="seg-b" data-act="ske-theme" data-v="' + o[0] + '" aria-pressed="' + ((o[0] === "dark") === logImgOpt.dark) + '">' + (o[0] === "dark" ? ICON.moon : ICON.cloud) + o[1] + "</button>").join("") + "</div>" +
+    const fc = logImgOpt.sel === "fc";
+    el.innerHTML = '<div class="ske-top"><button class="btn ghost sm" type="button" data-act="ske-close">닫기</button><span class="grow"></span>' +
+      (fc ? "" : '<div class="seg limg-th ske-th" role="group" aria-label="이미지 테마">' + [["light", "낮"], ["dark", "밤"]].map((o) => '<button type="button" class="seg-b" data-act="ske-theme" data-v="' + o[0] + '" aria-pressed="' + ((o[0] === "dark") === logImgOpt.dark) + '">' + (o[0] === "dark" ? ICON.moon : ICON.cloud) + o[1] + "</button>").join("") + "</div>") +
       '<button class="btn primary sm" type="button" data-act="ske-done">다 됐어요</button></div>' +
-      (logImgOpt.sel === "fc" ? '<div class="ske-frames" role="group" aria-label="프레임">' + FC_FRAMES.map((f) => '<button type="button" class="ske-fr" data-act="ske-frame" data-v="' + f[0] + '" aria-pressed="' + (f[0] === logImgOpt.frame) + '">' + f[1] + "</button>").join("") + "</div>" : "") +
-      '<div class="ske-scroll"><p class="ske-tip">스티커를 누르면 붙어요 · 끌어서 옮기고 파란 손잡이로 크기·각도</p><div class="ske-pg"><img class="ske-base" alt="기록 이미지" src="' + ske.url + '"><div class="ske-layer"></div></div></div>' +
-      '<div class="ske-tray" role="toolbar" aria-label="스티커">' + STK_IDS.map((id) => '<button type="button" data-act="stk-add" data-id="' + id + '" aria-label="스티커 붙이기"><img src="' + stkPic(id) + '" alt=""></button>').join("") + "</div>";
+      (fc ? '<div class="ske-opts"><div class="ske-tpls" role="group" aria-label="사진 배치">' + FC_TPLS.map((t) => '<button type="button" class="ske-tpl" data-act="ske-tpl" data-v="' + t[0] + '" aria-pressed="' + (t[0] === logImgOpt.tpl) + '">' + fcTplIcon(t[0]) + "<span>" + t[1] + "</span></button>").join("") + "</div>" +
+        '<div class="ske-bgs" role="group" aria-label="배경">' + FC_BGS.map((b) => '<button type="button" class="ske-bg' + (b === logImgOpt.bg ? " on" : "") + '" data-act="ske-bg" data-v="' + b + '" aria-label="배경 ' + b + '" style="--sw:' + b + '"></button>').join("") + "</div></div>" : "") +
+      '<div class="ske-scroll"><div class="ske-pg"><img class="ske-base" alt="꾸밀 이미지" src="' + ske.url + '"><div class="ske-layer"></div></div></div>' +
+      '<div class="ske-tray" role="toolbar" aria-label="도형 · 글자">' + skeTray() + "</div>";
     document.body.classList.add("noscroll");
     const img = el.querySelector(".ske-base");
     const fit = () => { if (!img.naturalWidth) return; ske.f = img.clientWidth / 1080; ske.h = (img.naturalHeight * 1080) / img.naturalWidth; skeDraw(); };
@@ -1811,14 +1670,14 @@
     if (!layer || !ske) return;
     const f = ske.f;
     layer.innerHTML = ske.list.map((t) => {
-      const sz = stkSize(t.id), on = t.k === ske.sel;
-      return '<div class="stk' + (on ? " on" : "") + '" data-k="' + t.k + '" style="left:' + (t.x * f).toFixed(1) + "px;top:" + (t.y * f).toFixed(1) + "px;width:" + (sz[0] * t.s * f).toFixed(1) + "px;height:" + (sz[1] * t.s * f).toFixed(1) + "px;transform:translate(-50%,-50%) rotate(" + t.r.toFixed(3) + 'rad)"><img src="' + stkPic(t.id) + '" alt="" draggable="false">' +
-        (on ? '<button type="button" class="stk-x" data-act="stk-del" aria-label="스티커 떼기">' + ICON.x + '</button><span class="stk-h" aria-label="크기 · 각도">' + ICON.sync + "</span>" : "") + "</div>";
+      const sz = stkSize(t), on = t.k === ske.sel;
+      return '<div class="stk' + (on ? " on" : "") + '" data-k="' + t.k + '" style="left:' + (t.x * f).toFixed(1) + "px;top:" + (t.y * f).toFixed(1) + "px;width:" + (sz[0] * t.s * f).toFixed(1) + "px;height:" + (sz[1] * t.s * f).toFixed(1) + "px;transform:translate(-50%,-50%) rotate(" + t.r.toFixed(3) + 'rad)"><img src="' + stkPic(t) + '" alt="" draggable="false">' +
+        (on ? '<button type="button" class="stk-x" data-act="stk-del" aria-label="떼기">' + ICON.x + "</button>" + (t.id === "txt" ? '<button type="button" class="stk-e" data-act="txt-edit" aria-label="글자 고치기">' + ICON.pen + "</button>" : "") + '<span class="stk-h" aria-label="크기 · 각도">' + ICON.sync + "</span>" : "") + "</div>";
     }).join("");
   }
   function skeWire(el) {
     el.addEventListener("pointerdown", (e) => {
-      if (!ske || !e.target.closest(".ske-pg") || e.target.closest(".stk-x")) return;
+      if (!ske || !e.target.closest(".ske-pg") || e.target.closest(".stk-x, .stk-e")) return;
       const st = e.target.closest(".stk");
       if (!st) { if (ske.sel) { ske.sel = ""; skeDraw(); } return; }
       e.preventDefault();
@@ -1835,7 +1694,7 @@
       e.preventDefault();
       const d = skeDrag, t = d.t;
       if (d.rs) {
-        t.s = Math.min(4, Math.max(0.3, (d.s0 * Math.hypot(e.clientX - d.cx, e.clientY - d.cy)) / d.d0));
+        t.s = Math.min(5, Math.max(0.15, (d.s0 * Math.hypot(e.clientX - d.cx, e.clientY - d.cy)) / d.d0));
         t.r = d.r0 + Math.atan2(e.clientY - d.cy, e.clientX - d.cx) - d.a0;
       } else {
         t.x = Math.min(1080, Math.max(0, d.sx + (e.clientX - d.x0) / ske.f));
@@ -1851,23 +1710,54 @@
     if (el) { el.hidden = true; el.innerHTML = ""; }
     if (sheet.hidden) document.body.classList.remove("noscroll");
   }
+  function skeAdd(it) {
+    if (!ske) return;
+    const sc = $("#ske .ske-scroll"), pg = $("#ske .ske-pg"), yv = (sc.scrollTop + sc.clientHeight * 0.42 - pg.offsetTop) / ske.f;
+    it.k = "k" + Date.now().toString(36) + Math.floor(Math.random() * 1e4);
+    it.x = it.x == null ? 540 + (Math.random() - 0.5) * 520 : it.x;
+    it.y = it.y == null ? Math.min(ske.h - 90, Math.max(90, yv + (Math.random() - 0.5) * 260)) : it.y;
+    it.s = it.s || (it.id === "txt" ? 0.8 : 0.5); it.r = it.r || 0;
+    ske.list.push(it); ske.sel = it.k; skeDraw();
+  }
+  /* writing / changing words: a small sheet over the editor */
+  function txtSheet(it) {
+    const cur = it || { text: "", font: "goth", col: logImgOpt.sel === "fc" && isDarkBg(logImgOpt.bg) ? "#FFFFFF" : "#2B2540" };
+    openSheet({
+      key: "txt", center: true, title: it ? "글자 고치기" : "글자 넣기",
+      body: '<label class="field"><span class="vh">글자</span><textarea name="text" rows="2" placeholder="예: 상하이 3박 4일" style="min-height:76px">' + esc(cur.text) + "</textarea></label>" +
+        '<div class="field"><span>글씨체</span><div class="chips">' + Object.keys(TXT_FONTS).map((k) => '<label class="rchip"><input type="radio" name="font" value="' + k + '"' + (k === (cur.font || "goth") ? " checked" : "") + '><span style="font-family:' + esc(TXT_FONTS[k][1]) + ";font-weight:" + TXT_FONTS[k][2] + '">' + TXT_FONTS[k][0] + "</span></label>").join("") + "</div></div>" +
+        '<div class="field"><span>색</span><div class="ske-cols in">' + STK_COLORS.map((col) => '<label class="ske-col' + (col === cur.col ? " on" : "") + '" style="--sw:' + col + '"><input class="vh" type="radio" name="col" value="' + col + '"' + (col === cur.col ? " checked" : "") + "></label>").join("") + "</div></div>",
+      foot: (it ? '<button class="btn danger" type="button" data-act="sh" data-k="del">지우기</button>' : "") + '<span class="grow"></span><button class="btn" type="button" data-act="sh-close">취소</button><button class="btn primary" type="button" data-act="sh" data-k="ok">' + (it ? "바꾸기" : "넣기") + "</button>",
+      on(k, v) {
+        if (k === "del" && it) { ske.list.splice(ske.list.indexOf(it), 1); ske.sel = ""; closeSheet(); skeDraw(); return; }
+        if (k !== "ok") return;
+        const text = String(v.text || "").replace(/\s+$/, "");
+        if (!text.trim()) { toast("글자를 써주세요"); return; }
+        const o = { id: "txt", text, font: TXT_FONTS[v.font] ? v.font : "goth", col: v.col || cur.col };
+        txtFonts(text).then(() => { if (it) Object.assign(it, o); else skeAdd(o); closeSheet(); skeDraw(); });
+      }
+    });
+    const sw = sheet.querySelector(".ske-cols.in");
+    if (sw) sw.addEventListener("change", () => sw.querySelectorAll(".ske-col").forEach((l) => l.classList.toggle("on", l.querySelector("input").checked)));
+    const ta = sheet.querySelector("textarea"); if (ta) { ta.focus(); ta.select(); }
+  }
   async function skeExport() {
     const im = await loadImg(ske.url), cv = document.createElement("canvas");
     cv.width = im.naturalWidth; cv.height = im.naturalHeight;
     const c = cv.getContext("2d"), fk = im.naturalWidth / 1080;
     c.drawImage(im, 0, 0);
-    ske.list.forEach((t) => { c.save(); c.translate(t.x * fk, t.y * fk); c.rotate(t.r); c.scale(t.s * fk, t.s * fk); stkDraw(c, t.id); c.restore(); });
+    ske.list.forEach((t) => { c.save(); c.translate(t.x * fk, t.y * fk); c.rotate(t.r); c.scale(t.s * fk, t.s * fk); stkArt(c, t); c.restore(); });
     return await new Promise((res) => cv.toBlob(res, "image/jpeg", 0.92));
   }
-  let logImgUrl = "", logImgFile = null, logImgOpt = { sel: "all", dark: false };
-  function logImgMake(sel, dark, btn, frame) {
-    logImgOpt = { sel, dark, frame: frame || logImgOpt.frame || "film" };
+  let logImgUrl = "", logImgFile = null, logImgOpt = { sel: "all", dark: false, tpl: "stack", bg: "#FFFFFF" };
+  function logImgMake(sel, o, btn) {
+    logImgOpt = Object.assign({}, logImgOpt, o || {}, { sel });
     const keep = btn ? btn.innerHTML : "";
     if (btn) { btn.disabled = true; btn.innerHTML = (btn.querySelector("svg") ? btn.querySelector("svg").outerHTML : "") + "만드는 중…"; }
     const back = () => { if (btn && btn.isConnected) { btn.disabled = false; btn.innerHTML = keep; } };
-    return (sel === "fc" ? fourCut(fcPick, dark, logImgOpt.frame) : logImage(sel, dark)).then((b) => { back(); if (b) skeOpen(b); else toast("아직 기록이 없어요"); }).catch(() => { back(); toast("이미지를 못 만들었어요"); });
+    return (sel === "fc" ? fourCut(fcPick, logImgOpt.tpl, logImgOpt.bg) : logImage(sel, logImgOpt.dark)).then((b) => { back(); if (b) skeOpen(b); else toast("아직 기록이 없어요"); }).catch(() => { back(); toast("이미지를 못 만들었어요"); });
   }
-  /* ---------- 네컷: 사진 4장을 골라 인생네컷 같은 세로 띠로 ---------- */
+  /* ---------- 네컷: 사진 4장 → 고른 배치 · 배경 위에 ---------- */
   let fcPick = [];
   const allPostPics = () => {
     const out = [];
@@ -1879,7 +1769,7 @@
     const sel = ui.logDay && logDay(ui.logDay) ? ui.logDay : "all", d = sel !== "all" ? logDay(sel) : null;
     openSheet({
       key: "img-pick", center: true, title: "이미지 만들기",
-      body: '<button class="bigopt main" type="button" data-act="fc-open"><span class="ri">' + ICON.camera + '</span><span class="rt"><b>' + esc(fcName()) + "</b><span>사진 4장 골라서 인생네컷처럼</span></span></button>" +
+      body: '<button class="bigopt main" type="button" data-act="fc-open"><span class="ri">' + ICON.camera + '</span><span class="rt"><b>' + esc(fcName()) + "</b><span>사진 4장 골라서 배치 · 배경 · 글자 · 도형으로 꾸미기</span></span></button>" +
         '<button class="bigopt" type="button" data-act="log-img"><span class="ri">' + ICON.log + "</span><span class=\"rt\"><b>" + (d ? esc(d.pre ? "여행 전" : (isNum(d.n) ? "Day " + d.n : "귀국날")) + " 기록 한 장" : "기록 전체 한 장") + "</b><span>글이랑 사진을 긴 이미지 하나로</span></span></button>"
     });
   }
@@ -1890,90 +1780,52 @@
     const need = Math.min(4, all.length);
     openSheet({
       key: "fc", title: fcName(),
-      body: '<p class="note fc-note">위에서부터 들어갈 순서대로 ' + need + "장 골라요</p>" +
+      body: '<p class="note fc-note">들어갈 순서대로 ' + need + "장 골라요</p>" +
         '<div class="fcgrid">' + all.map((pid) => { const i = fcPick.indexOf(pid); return '<button type="button" class="fcpic' + (i >= 0 ? " on" : "") + '" data-act="fc-pick" data-pid="' + esc(pid) + '" aria-pressed="' + (i >= 0) + '"><img data-pid="' + esc(pid) + '" alt="">' + (i >= 0 ? "<b>" + (i + 1) + "</b>" : "") + "</button>"; }).join("") + "</div>",
       foot: '<span class="grow"></span><button class="btn" type="button" data-act="sh-close">취소</button><button class="btn primary" type="button" data-act="fc-make"' + (fcPick.length < need ? " disabled" : "") + ">" + ICON.camera + "만들기 " + fcPick.length + "/" + need + "</button>"
     });
   }
-  /* 네컷 frames: same 2 × 2 photo spots in every frame (so stickers stay put when you switch) */
-  const FC_FRAMES = [["film", "필름"], ["pass", "탑승권"], ["mail", "에어메일"]];
-  async function fourCut(pids, dark, frame) {
-    frame = frame || "film";
+  /* four layouts (from 윤주's sketch): [width, height, spots[x, y, w, h, turn, white edge], where the words go first] */
+  const FC_TPLS = [["stack", "세로 네 장"], ["collage", "콜라주"], ["grid", "2×2"], ["duo", "큰 두 장"]];
+  const FC_BGS = ["#FFFFFF", "#FBF6EE", "#DCEBF8", "#FBE4EC", "#ECE7FB", "#E3F4EA", "#FFF4D2", "#4A3A33", "#13173F", "#1A1A1A"];
+  function fcLayout(t) {
+    switch (t) {
+      case "collage": return { W: 1080, H: 1660, spots: [[150, 170, 570, 620, 0, 0], [500, 520, 310, 350, -0.07, 1], [200, 950, 340, 220, 0, 0], [280, 1235, 560, 310, 0, 0]], words: [850, 1060, -0.08] };
+      case "grid": return { W: 1080, H: 1350, spots: [[110, 250, 400, 300, 0, 0], [570, 230, 400, 300, 0, 0], [140, 700, 380, 280, 0, 0], [560, 710, 400, 280, 0, 0]], words: [540, 1130, 0] };
+      case "duo": return { W: 1080, H: 1380, spots: [[120, 260, 380, 680, 0, 0], [590, 215, 290, 700, 0, 0], [700, 130, 200, 240, 0.08, 1], [140, 820, 330, 190, -0.05, 1]], words: [540, 1170, 0] };
+      default: return { W: 1080, H: 1620, spots: [[150, 150, 560, 300, 0, 0], [150, 500, 560, 300, 0, 0], [150, 850, 560, 300, 0, 0], [150, 1200, 560, 300, 0, 0]], words: [895, 820, Math.PI / 2] };
+    }
+  }
+  function fcTplIcon(t) {
+    const L = fcLayout(t), k = 30 / L.H;
+    return '<svg viewBox="0 0 ' + (L.W * k).toFixed(1) + ' 30" width="' + (L.W * k).toFixed(1) + '" height="30" aria-hidden="true"><rect x=".5" y=".5" width="' + (L.W * k - 1).toFixed(1) + '" height="29" rx="2" fill="none" stroke="currentColor" opacity=".5"/>' +
+      L.spots.map((s) => '<rect x="' + (s[0] * k).toFixed(1) + '" y="' + (s[1] * k).toFixed(1) + '" width="' + (s[2] * k).toFixed(1) + '" height="' + (s[3] * k).toFixed(1) + '" fill="currentColor" transform="rotate(' + ((s[4] * 180) / Math.PI).toFixed(1) + " " + ((s[0] + s[2] / 2) * k).toFixed(1) + " " + ((s[1] + s[3] / 2) * k).toFixed(1) + ')"/>').join("") + "</svg>";
+  }
+  /* the first time a layout opens: the trip name (and dates, smaller) where the layout leaves room */
+  function fcDefaults(list) {
+    const L = fcLayout(logImgOpt.tpl), w = L.words, col = isDarkBg(logImgOpt.bg) ? "#FFFFFF" : "#2B2540", dates = String(state.trip.dates || "").split("·")[0].trim();
+    const mk = (o) => Object.assign({ k: "k" + Math.random().toString(36).slice(2, 9), id: "txt", font: "goth", col }, o);
+    const dx = Math.abs(w[2]) > 1 ? 64 : 0, dy = Math.abs(w[2]) > 1 ? 0 : 74;
+    list.push(mk({ text: (state.trip.title || "여행") + (state.trip.nights ? " " + state.trip.nights : ""), x: w[0], y: w[1], s: 0.82, r: w[2] }));
+    if (dates) list.push(mk({ text: dates, x: w[0] - dx, y: w[1] + dy, s: 0.42, r: w[2] }));
+  }
+  async function fourCut(pids, tpl, bg) {
     const list = pids.slice(0, 4);
     if (!list.length) return null;
     while (list.length < 4) list.push(list[list.length % pids.length]);
-    const title = fcName(), dates = String(state.trip.dates || "").split("·")[0].trim(), leg = state.flight.legs[0] || {};
-    const route = iata(leg.from) + "  →  " + iata(leg.to), flightNo = leg.no || "";
-    const FT = "Hahmlet, 'IBM Plex Sans KR', serif", FM = "'IBM Plex Mono', 'IBM Plex Sans KR', monospace";
-    if (document.fonts) {
-      await Promise.race([Promise.all(["700 10px Hahmlet", "600 10px 'IBM Plex Mono'", "500 10px 'IBM Plex Mono'", "600 10px 'IBM Plex Sans KR'"].map((f) => document.fonts.load(f, title + dates + route + flightNo + "BOARDING PASS PAR AVION 항공우편 SHANGHAI FILM").catch(() => null))), new Promise((r) => setTimeout(r, 5000))]);
-      try { await document.fonts.ready; } catch (e) {}
-    }
-    const imgs = await Promise.all(list.map((pid) => photoUrl(pid).then((u) => (u ? loadImg(u) : null)).catch(() => null)));
-    const W = 1080, H = 1620, M = 46, G = 16, TOP = 118, BOT = 150, CW = (W - M * 2 - G) / 2, CH = (H - TOP - BOT - G) / 2;
-    const cv = document.createElement("canvas"); cv.width = W; cv.height = H;
-    const c = cv.getContext("2d");
-    const ink = dark ? "#EEF0FA" : "#1E1B3A", soft = dark ? "rgba(238, 240, 250, .62)" : "#6A6788";
-    const spaced = (t, x, y, sp, align) => { let w = 0; for (const ch of t) w += c.measureText(ch).width + sp; w -= sp; let xx = align === "right" ? x - w : align === "center" ? x - w / 2 : x; for (const ch of t) { c.fillText(ch, xx, y); xx += c.measureText(ch).width + sp; } };
-    const photos = (r) => imgs.forEach((im, i) => {
-      const x = M + (i % 2) * (CW + G), y = TOP + Math.floor(i / 2) * (CH + G);
-      c.save(); rrect(c, x, y, CW, CH, r); c.clip();
-      c.fillStyle = dark ? "#222A5A" : "#E9EEF6"; c.fillRect(x, y, CW, CH);
-      if (im) { const k = Math.max(CW / im.width, CH / im.height), sw = CW / k, sh = CH / k; c.drawImage(im, (im.width - sw) / 2, (im.height - sh) / 2, sw, sh, x, y, CW, CH); }
+    const L = fcLayout(tpl), imgs = await Promise.all(list.map((pid) => photoUrl(pid).then((u) => (u ? loadImg(u) : null)).catch(() => null)));
+    const cv = document.createElement("canvas"); cv.width = L.W; cv.height = L.H;
+    const c = cv.getContext("2d"), dark = isDarkBg(bg);
+    c.fillStyle = bg || "#FFFFFF"; c.fillRect(0, 0, L.W, L.H);
+    L.spots.forEach((s, i) => {
+      const im = imgs[i], [x, y, w, h, rot, edge] = s;
+      c.save(); c.translate(x + w / 2, y + h / 2); c.rotate(rot);
+      if (edge) { c.save(); c.shadowColor = dark ? "rgba(0, 0, 0, .45)" : "rgba(40, 30, 80, .18)"; c.shadowBlur = 22; c.shadowOffsetY = 6; c.fillStyle = "#FFFFFF"; c.fillRect(-w / 2 - 12, -h / 2 - 12, w + 24, h + 24); c.restore(); }
+      c.beginPath(); c.rect(-w / 2, -h / 2, w, h); c.clip();
+      c.fillStyle = dark ? "#2A2E52" : "#ECEAF2"; c.fillRect(-w / 2, -h / 2, w, h);
+      if (im) { const k = Math.max(w / im.width, h / im.height), sw = w / k, sh = h / k; c.drawImage(im, (im.width - sw) / 2, (im.height - sh) / 2, sw, sh, -w / 2, -h / 2, w, h); }
       c.restore();
     });
-    const cloudMark = (x, y, k, col) => { c.fillStyle = col; c.beginPath(); [[0, 0, 13], [16, -8, 17], [32, 0, 13], [16, 5, 12]].forEach((q) => { c.moveTo(x + (q[0] + q[2]) * k, y + q[1] * k); c.arc(x + q[0] * k, y + q[1] * k, q[2] * k, 0, Math.PI * 2); }); c.fill(); };
-    if (frame === "film") { /* like a photo-booth strip: one soft colour, a small cloud mark, the name at the bottom */
-      c.fillStyle = dark ? "#1A1F4E" : "#D9E8F6"; c.fillRect(0, 0, W, H);
-      if (dark) { let sd = 3; const r = () => { sd = (sd * 9301 + 49297) % 233280; return sd / 233280; }; for (let i = 0; i < 70; i++) { c.globalAlpha = 0.25 + r() * 0.5; c.fillStyle = "#FFFFFF"; c.beginPath(); c.arc(r() * W, r() * H, 0.8 + r() * 1.8, 0, Math.PI * 2); c.fill(); } c.globalAlpha = 1; }
-      cloudMark(M + 14, 64, 1.25, dark ? "#B4A8FF" : "#FFFFFF");
-      c.fillStyle = soft; c.font = "500 22px " + FM; spaced("SHANGHAI FILM", W - M, 72, 5, "right");
-      photos(6);
-      c.fillStyle = ink; c.font = "700 50px " + FT; c.fillText(title, M, H - 60);
-      c.fillStyle = soft; c.font = "600 24px " + FM; spaced(dates, W - M, H - 66, 2, "right");
-    } else if (frame === "pass") { /* a boarding pass: header, the four photos, a tear-off stub with a barcode */
-      const g = c.createLinearGradient(0, 0, 0, H);
-      if (dark) { g.addColorStop(0, "#0A0E2E"); g.addColorStop(1, "#2C2572"); } else { g.addColorStop(0, "#9FD0F0"); g.addColorStop(1, "#FBE2EB"); }
-      c.fillStyle = g; c.fillRect(0, 0, W, H);
-      const tx = 22, ty = 22, tw = W - 44, th = H - 44, sy = H - BOT + 6;
-      c.save(); c.shadowColor = dark ? "rgba(0, 0, 0, .45)" : "rgba(50, 80, 140, .22)"; c.shadowBlur = 30; c.shadowOffsetY = 10;
-      c.fillStyle = dark ? "#161D45" : "#FFFFFF"; rrect(c, tx, ty, tw, th, 34); c.fill(); c.restore();
-      c.save(); c.globalCompositeOperation = "destination-out"; [tx, tx + tw].forEach((x) => { c.beginPath(); c.arc(x, sy, 22, 0, Math.PI * 2); c.fill(); }); c.restore();
-      c.save(); c.globalCompositeOperation = "destination-over"; c.fillStyle = g; c.fillRect(0, 0, W, H); c.restore();
-      c.strokeStyle = dark ? "rgba(180, 168, 255, .45)" : "#C9D7EA"; c.lineWidth = 3; c.setLineDash([12, 10]); c.beginPath(); c.moveTo(tx + 34, sy); c.lineTo(tx + tw - 34, sy); c.stroke(); c.setLineDash([]);
-      c.fillStyle = dark ? "#B4A8FF" : "#3584C4"; c.font = "600 22px " + FM; spaced("BOARDING PASS", M + 4, 80, 6);
-      c.fillStyle = ink; c.font = "600 34px " + FM; spaced(route, W - M - 4, 82, 2, "right");
-      photos(14);
-      c.fillStyle = ink; c.font = "700 46px " + FT; c.fillText(title, M + 8, H - 76);
-      c.fillStyle = soft; c.font = "600 22px " + FM; spaced([dates, flightNo].filter(Boolean).join("   "), M + 8, H - 42, 2);
-      let bx = W - M - 230; let sd = 9; const r = () => { sd = (sd * 9301 + 49297) % 233280; return sd / 233280; };
-      c.fillStyle = ink; while (bx < W - M - 10) { const bw = 2 + Math.floor(r() * 4) * 2; c.fillRect(bx, H - 118, bw, 70); bx += bw + 3 + Math.floor(r() * 3) * 2; }
-    } else { /* airmail: striped edge, a stamp and a postmark */
-      c.fillStyle = dark ? "#151A42" : "#FFF9F0"; c.fillRect(0, 0, W, H);
-      const s1 = dark ? "#FFC94D" : "#E2493F", s2 = dark ? "#9C8CF0" : "#2E6FD8", bw = 20;
-      c.save(); c.beginPath(); c.rect(0, 0, W, H); c.rect(bw, bw, W - bw * 2, H - bw * 2); c.clip("evenodd");
-      for (let i = -H; i < W + H; i += 60) { c.fillStyle = (i / 60) % 2 ? s2 : s1; c.beginPath(); c.moveTo(i, 0); c.lineTo(i + 30, 0); c.lineTo(i + 30 - H, H); c.lineTo(i - H, H); c.closePath(); c.fill(); }
-      c.restore();
-      c.fillStyle = soft; c.font = "600 22px " + FM; spaced("PAR AVION · 항공우편", M + 4, 78, 4);
-      /* stamp: perforated edge, a tiny tower */
-      const px = W - M - 92, py = 14, pw = 92, ph = 96;
-      c.save(); c.shadowColor = "rgba(40, 30, 110, .2)"; c.shadowBlur = 8; c.shadowOffsetY = 3; c.fillStyle = "#FFFFFF"; c.fillRect(px, py, pw, ph); c.restore();
-      c.save(); c.globalCompositeOperation = "destination-out"; for (let x = px; x <= px + pw; x += 12) [py, py + ph].forEach((y) => { c.beginPath(); c.arc(x, y, 4, 0, Math.PI * 2); c.fill(); }); for (let y = py; y <= py + ph; y += 12) [px, px + pw].forEach((x) => { c.beginPath(); c.arc(x, y, 4, 0, Math.PI * 2); c.fill(); }); c.restore();
-      c.save(); c.globalCompositeOperation = "destination-over"; c.fillStyle = dark ? "#151A42" : "#FFF9F0"; c.fillRect(px - 6, py - 6, pw + 12, ph + 12); c.restore();
-      const sg = c.createLinearGradient(0, py + 8, 0, py + ph - 8); sg.addColorStop(0, dark ? "#2C2572" : "#9FD0F0"); sg.addColorStop(1, dark ? "#6A55C8" : "#FBE2EB");
-      c.fillStyle = sg; c.fillRect(px + 8, py + 8, pw - 16, ph - 16);
-      c.fillStyle = dark ? "#FFC2EC" : "#FFFFFF"; c.fillRect(px + pw / 2 - 2, py + 22, 4, ph - 30);
-      [[py + ph - 28, 11], [py + 44, 7], [py + 26, 3.5]].forEach((q) => { c.beginPath(); c.arc(px + pw / 2, q[0], q[1], 0, Math.PI * 2); c.fill(); });
-      /* postmark */
-      const mx = px - 34, my = py + 62;
-      c.strokeStyle = dark ? "rgba(255, 201, 77, .7)" : "rgba(60, 50, 90, .55)"; c.lineWidth = 3;
-      c.beginPath(); c.arc(mx, my, 44, 0, Math.PI * 2); c.stroke(); c.beginPath(); c.arc(mx, my, 34, 0, Math.PI * 2); c.stroke();
-      c.fillStyle = c.strokeStyle; c.font = "600 13px " + FM; c.textAlign = "center"; c.fillText("SHANGHAI", mx, my - 4); c.fillText(dates.slice(0, 10), mx, my + 14); c.textAlign = "left";
-      for (let i = 0; i < 3; i++) { c.beginPath(); for (let x = mx - 170; x <= mx - 52; x += 4) { const y = my - 16 + i * 16 + Math.sin(x / 10) * 4; x === mx - 170 ? c.moveTo(x, y) : c.lineTo(x, y); } c.stroke(); }
-      photos(10);
-      c.fillStyle = ink; c.font = "700 50px " + FT; c.fillText(title, M + 4, H - 66);
-      c.fillStyle = soft; c.font = "600 24px " + FM; spaced(dates, W - M - 4, H - 72, 2, "right");
-    }
     return await new Promise((res) => cv.toBlob(res, "image/jpeg", 0.93));
   }
   function logImgSheet(blob) {
@@ -3492,7 +3344,7 @@
       case "go-plan": closeSheet(); go("plan", { day: t.getAttribute("data-day") }); return;
       case "go-log": ui.logDay = t.getAttribute("data-day") || "all"; go("log"); return;
       case "img-pick": imgPickSheet(); return;
-      case "log-img": if (!t.disabled) logImgMake(ui.logDay && logDay(ui.logDay) ? ui.logDay : "all", isDark(), t).then(() => { if (sheetCtx && sheetCtx.key === "img-pick") closeSheet(); }); return;
+      case "log-img": if (!t.disabled) logImgMake(ui.logDay && logDay(ui.logDay) ? ui.logDay : "all", { dark: isDark() }, t).then(() => { if (sheetCtx && sheetCtx.key === "img-pick") closeSheet(); }); return;
       case "fc-open": fcSheet(); return;
       case "fc-pick": {
         const pid = t.getAttribute("data-pid"), i = fcPick.indexOf(pid);
@@ -3502,30 +3354,36 @@
         fcSheet();
         return;
       }
-      case "fc-make": if (!t.disabled) logImgMake("fc", isDark(), t).then(() => { if (sheetCtx && sheetCtx.key === "fc") closeSheet(); }); return;
+      case "fc-make": if (!t.disabled) logImgMake("fc", {}, t).then(() => { if (sheetCtx && sheetCtx.key === "fc") closeSheet(); }); return;
       case "ske-theme": {
         const dk = t.getAttribute("data-v") === "dark", g = t.closest(".ske-th");
         if (dk === logImgOpt.dark || g.classList.contains("busy")) return;
         g.classList.add("busy");
-        logImgMake(logImgOpt.sel, dk, t);
+        logImgMake(logImgOpt.sel, { dark: dk }, t);
         return;
       }
       case "ske-close": skeClose(); return;
-      case "ske-frame": {
-        const fr = t.getAttribute("data-v"), g = t.closest(".ske-frames");
-        if (fr === logImgOpt.frame || g.classList.contains("busy")) return;
+      case "ske-tpl": case "ske-bg": {
+        const v = t.getAttribute("data-v"), o = act === "ske-tpl" ? { tpl: v } : { bg: v }, g = t.closest(".ske-opts");
+        if ((act === "ske-tpl" ? logImgOpt.tpl : logImgOpt.bg) === v || g.classList.contains("busy")) return;
         g.classList.add("busy");
-        logImgMake("fc", logImgOpt.dark, t, fr);
+        if (act === "ske-bg") { /* words that were in the auto colour follow the new background */
+          const was = isDarkBg(logImgOpt.bg) ? "#FFFFFF" : "#2B2540", now = isDarkBg(v) ? "#FFFFFF" : "#2B2540";
+          Object.keys(skeLists).forEach((k2) => { if (k2.indexOf("fc:") === 0) skeLists[k2].forEach((q) => { if (q.id === "txt" && q.col === was) q.col = now; }); });
+        }
+        logImgMake("fc", o, act === "ske-tpl" ? t : null).then(() => g.classList.remove("busy"));
         return;
       }
-      case "stk-add": {
-        if (!ske) return;
-        const sc = $("#ske .ske-scroll"), pg = $("#ske .ske-pg"), id = t.getAttribute("data-id");
-        const yv = (sc.scrollTop + sc.clientHeight * 0.42 - pg.offsetTop) / ske.f, k = "k" + Date.now().toString(36) + Math.floor(Math.random() * 1e4);
-        ske.list.push({ k, id, x: 540 + (Math.random() - 0.5) * 300, y: Math.min(ske.h - 90, Math.max(90, yv)), s: 1, r: (Math.random() - 0.5) * (id.indexOf("tape:") === 0 ? 0.3 : 0.5) });
-        ske.sel = k; skeDraw();
+      case "stk-col": {
+        stkCol = t.getAttribute("data-v");
+        const it = ske && ske.list.find((q) => q.k === ske.sel);
+        if (it) { it.col = stkCol; skeDraw(); }
+        const tray = $("#ske .ske-tray"); if (tray) tray.innerHTML = skeTray();
         return;
       }
+      case "txt-new": txtSheet(null); return;
+      case "txt-edit": { const it = ske && ske.list.find((q) => q.k === ske.sel); if (it) txtSheet(it); return; }
+      case "stk-add": skeAdd({ id: t.getAttribute("data-id"), col: stkCol }); return;
       case "stk-del": if (ske) { ske.list.splice(0, ske.list.length, ...ske.list.filter((q) => q.k !== ske.sel)); ske.sel = ""; skeDraw(); } return;
       case "ske-done": {
         if (!ske || t.disabled) return;
