@@ -1337,3 +1337,10 @@ body { background-color: var(--edge) !important; }
 .exp-edit input { width: 92px; min-height: 38px; border: 0; background: transparent; padding: 0; text-align: right; font-family: var(--f-mono); font-size: 16px; font-weight: 600; color: var(--ink); outline: none; box-shadow: none; }
 .exp-dayrow select { flex: 1; min-width: 0; min-height: 42px; padding: 0 34px 0 12px; border-radius: 12px; border: 1px solid var(--line); color: var(--ink); font-size: 16px; -webkit-appearance: none; appearance: none;
   background: var(--inner) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%237C8AA0' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 13px center; }
+
+/* 정산 box: per person and total side by side, then who sends whom */
+.stiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.stile { padding: 10px 12px; border-radius: 14px; background: var(--inner); }
+.stile span { display: block; font-size: 12px; color: var(--muted); }
+.stile b { display: block; margin-top: 2px; font-family: var(--f-mono); font-size: 19px; font-weight: 600; line-height: 1.25; }
+.stiles + .xfer, .stiles + .note.xfer { margin-top: 10px; }

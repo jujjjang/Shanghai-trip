@@ -1400,11 +1400,12 @@
     if (ppl.indexOf(ui.payer) < 0) ui.payer = ppl[0] || "";
     let s = pageHead("정산", c.rate ? "1위안 = " + c.rate + "원" : "N빵 · 환율 계산", true);
     s += '<div class="pad"><div class="box"><span class="lbl">환율 계산</span><div style="margin-top:8px">' + fxHtml("fx") + "</div></div></div>";
-    s += '<div class="sec-h"><h2>N빵 결과</h2></div><div class="pad"><div class="box">';
+    s += '<div class="sec-h"><h2>정산</h2></div><div class="pad"><div class="box">';
     if (!ppl.length) s += '<p class="note">더보기 → 설정 → 여행 인원에서 같이 가는 사람을 먼저 넣어주세요</p>';
     else {
-      s += '<span class="lbl">총 지출</span><div class="bigsum">' + totalFmt(c) + "</div>" +
-        '<p class="note">' + c.n + "명 · 1인당 " + (c.base === "KRW" ? wonFmt(c.share) : yuanFmt(c.share)) + "</p>";
+      const amt = (v) => (c.base === "KRW" ? wonFmt(v) : yuanFmt(v));
+      s += '<div class="stiles"><div class="stile"><span>1인당 · ' + c.n + "명</span><b>" + amt(c.share) + "</b></div>" +
+        '<div class="stile"><span>총 지출</span><b>' + totalFmt(c) + "</b></div></div>";
       if (!S.expenses.length) s += '<p class="note xfer">지출을 넣으면 누가 누구한테 얼마 보낼지 여기 나와요</p>';
       else if (!c.xs.length) s += '<p class="note xfer">딱 맞아요. 보낼 돈이 없어요</p>';
       else c.xs.forEach((x) => { s += '<div class="xfer"><b>' + esc(x.from) + '</b><span class="note">→</span><b>' + esc(x.to) + '</b><span class="amt">' + money(x.v, c) + "</span></div>"; });
