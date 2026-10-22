@@ -1447,46 +1447,6 @@
       c.quadraticCurveTo(x + r * 0.18, y - r * 0.18, x + r, y); c.quadraticCurveTo(x + r * 0.18, y + r * 0.18, x, y + r);
       c.quadraticCurveTo(x - r * 0.18, y + r * 0.18, x - r, y); c.quadraticCurveTo(x - r * 0.18, y - r * 0.18, x, y - r); c.fill();
     }
-    /* stickers: white die-cut edge + soft shadow, a little tilted */
-    const STK = [["camera", "sky"], ["boba", "pink"], ["dumpling", "lemon"], ["cherry", "peach"], ["flower", "lilac"], ["plane", "mint"], ["icecream", "pink"], ["teapot", "leaf"]];
-    const TAPE = dark ? ["#F4C0D1", "#9FE1CB", "#FAC775", "#B5D4F4", "#CECBF6"] : ["#F7C9D9", "#A9E3CF", "#FAD48E", "#BBD9F5", "#D5D1F7"];
-    let si = 0;
-    function tilt(c, x, y, rot, fn) { c.save(); c.translate(x, y); c.rotate(rot); fn(); c.restore(); }
-    function cut(c, fn) { c.save(); c.shadowColor = dark ? "rgba(0, 0, 0, .45)" : "rgba(40, 30, 110, .22)"; c.shadowBlur = 18; c.shadowOffsetY = 6; c.fillStyle = "#FFFFFF"; fn(); c.fill(); c.restore(); }
-    function badge(c, x, y, r, rot, fill, inner) {
-      tilt(c, x, y, rot, () => {
-        cut(c, () => { c.beginPath(); c.arc(0, 0, r + 8, 0, Math.PI * 2); });
-        c.fillStyle = fill; c.beginPath(); c.arc(0, 0, r, 0, Math.PI * 2); c.fill();
-        inner();
-      });
-    }
-    function iconSticker(c, x, y, r) {
-      const s = STK[si++ % STK.length], col = AVC[s[1]];
-      badge(c, x, y, r, (si % 2 ? 1 : -1) * 0.16, col[0], () => icon(c, svgPaths(AVI[s[0]]), -r * 0.6, -r * 0.6, r * 1.2, col[1]));
-    }
-    function tape(c, cx, cy, w, h, rot, col) {
-      tilt(c, cx, cy, rot, () => {
-        c.globalAlpha = 0.82; c.fillStyle = col; c.beginPath();
-        const n = 6, zz = h / n;
-        c.moveTo(-w / 2, -h / 2); c.lineTo(w / 2, -h / 2);
-        for (let i = 1; i <= n; i++) c.lineTo(w / 2 - (i % 2 ? 7 : 0), -h / 2 + zz * i);
-        c.lineTo(-w / 2, h / 2);
-        for (let i = n - 1; i >= 0; i--) c.lineTo(-w / 2 + (i % 2 ? 7 : 0), -h / 2 + zz * i);
-        c.closePath(); c.fill();
-        c.globalAlpha = 0.22; c.fillStyle = "#FFFFFF";
-        for (let sx = -w / 2 + 12; sx < w / 2 - 10; sx += 30) c.fillRect(sx, -h / 2, 12, h);
-        c.globalAlpha = 1;
-      });
-    }
-    function seal(c, x, y, sz, rot) {
-      tilt(c, x, y, rot, () => {
-        cut(c, () => rrect(c, -sz / 2 - 8, -sz / 2 - 8, sz + 16, sz + 16, 24));
-        c.fillStyle = "#D9483B"; rrect(c, -sz / 2, -sz / 2, sz, sz, 16); c.fill();
-        c.strokeStyle = "rgba(255, 255, 255, .85)"; c.lineWidth = 3; rrect(c, -sz / 2 + 9, -sz / 2 + 9, sz - 18, sz - 18, 9); c.stroke();
-        c.fillStyle = "#FFFFFF"; c.font = "900 " + Math.round(sz * 0.34) + "px " + F.z; c.textAlign = "center";
-        c.fillText("上", 0, -sz * 0.04); c.fillText("海", 0, sz * 0.31); c.textAlign = "left";
-      });
-    }
     function puff(c, x, y, k, col) {
       c.fillStyle = col; c.beginPath();
       [[0, 0, 26], [30, -16, 34], [64, 0, 28], [32, 8, 26]].forEach((q) => { c.moveTo(x + (q[0] + q[2]) * k, y + q[1] * k); c.arc(x + q[0] * k, y + q[1] * k, q[2] * k, 0, Math.PI * 2); });
@@ -1511,15 +1471,12 @@
             photo(c, imgs[g[0]], M + g[1], y + g[2], g[3], g[4], 30);
             if (g[5]) { c.fillStyle = "rgba(14, 12, 40, .5)"; rrect(c, M + g[1], y + g[2], g[3], g[4], 30); c.fill(); c.fillStyle = "#FFFFFF"; c.font = "600 58px " + F.m; c.textAlign = "center"; c.fillText("+" + g[5], M + g[1] + g[3] / 2, y + g[2] + g[4] / 2 + 20); c.textAlign = "left"; }
           });
-          const g0 = gr.c[0], left = si % 2 === 0;
-          tape(c, M + g0[1] + g0[3] * (left ? 0.24 : 0.76), y + g0[2] + 4, 200, 54, left ? -0.12 : 0.1, TAPE[si % TAPE.length]);
-          iconSticker(c, M + CW - 26, y + gr.h - 20, 54);
         }
         y += gr.h + 34;
       }
       if (lines.length) {
         if (quote) {
-          if (on) { c.fillStyle = T.accent; c.globalAlpha = 0.45; c.font = "700 150px " + F.t; c.fillText("“", M - 6, y + 104); c.globalAlpha = 1; iconSticker(c, W - M - 64, y + 40, 54); }
+          if (on) { c.fillStyle = T.accent; c.globalAlpha = 0.45; c.font = "700 150px " + F.t; c.fillText("“", M - 6, y + 104); c.globalAlpha = 1; }
           y += 70;
         }
         if (on) { c.fillStyle = T.ink; c.font = quote ? "600 50px " + F.t : "400 38px " + F.b; lines.forEach((l, i) => c.fillText(l, M, y + (quote ? 52 : 40) + i * lh)); }
@@ -1574,7 +1531,6 @@
         y += 58;
       }
       if (on) white(() => { c.font = "500 27px " + F.m; c.fillText("기록 " + nPosts + "개" + (nPics ? " · 사진 " + nPics + "장" : ""), M, y); });
-      if (on && /상하이|上海/.test(title)) seal(c, W - M - 66, AH - 170, 112, 0.12); /* like a stamp in the corner of a postcard */
       y = AH - 30;
       days.forEach((d, di) => {
         const col = dayCol(d);
@@ -1583,11 +1539,10 @@
           if (on) {
             c.fillStyle = col; c.fillRect(M, y, 72, 5);
             c.font = "600 30px " + F.m; spaced(c, d.pre ? "BEFORE" : String(d.date || ""), M, y + 60, d.pre ? 6 : 1);
-            const on2 = dark ? "#0B1030" : "#FFFFFF", rot = (di % 2 ? 1 : -1) * 0.13;
-            badge(c, W - M - 62, y + 88, 58, rot, col, () => {
-              if (d.pre) icon(c, plane, -26, -26, 52, on2);
-              else { c.fillStyle = on2; c.font = "600 21px " + F.m; spaced(c, "DAY", -c.measureText("DAY").width / 2 - 4, -12, 4); c.textAlign = "center"; c.font = "600 50px " + F.m; c.fillText(String(state.days.indexOf(d) + 1), 0, 36); c.textAlign = "left"; }
-            });
+            const on2 = dark ? "#0B1030" : "#FFFFFF", bx = W - M - 58, by = y + 86;
+            c.fillStyle = col; c.beginPath(); c.arc(bx, by, 54, 0, Math.PI * 2); c.fill();
+            if (d.pre) icon(c, plane, bx - 24, by - 24, 48, on2);
+            else { c.fillStyle = on2; c.font = "600 20px " + F.m; spaced(c, "DAY", bx - c.measureText("DAY").width / 2 - 4, by - 12, 4); c.textAlign = "center"; c.font = "600 48px " + F.m; c.fillText(String(state.days.indexOf(d) + 1), bx, by + 34); c.textAlign = "left"; }
             if (dark) spark(c, W - M - 150, y + 20, 10, "#FFD36B"); else puff(c, W - M - 230, y + 30, 0.7, "rgba(150, 200, 236, .45)");
           }
           c.font = "700 66px " + F.t;
@@ -1620,13 +1575,165 @@
       return logImage(sel, dark, true);
     }
   }
+  /* ---------- 스티커: 기록 이미지 위에 직접 붙이기 ----------
+     each sticker draws itself centred on (0, 0) in image pixels (the image is 1080 wide) */
+  const STK_WORDS = [["맛집 인정", "lemon"], ["인생샷", "pink"], ["또 올래", "mint"], ["최고", "sky"], ["배불러", "peach"], ["행복", "lilac"]];
+  const STK_TAPES = ["#F7C9D9", "#A9E3CF", "#FAD48E", "#BBD9F5", "#D5D1F7"];
+  const STK_IDS = ["ic:camera:sky", "ic:boba:pink", "ic:dumpling:lemon", "ic:cherry:peach", "ic:flower:lilac", "ic:plane:mint", "ic:icecream:pink", "ic:teapot:leaf", "ic:cat:stone", "heart", "seal", "spark"]
+    .concat(STK_WORDS.map((w, i) => "w:" + i), STK_TAPES.map((t, i) => "tape:" + i));
+  const STK_FONT = "'IBM Plex Sans KR', 'Apple SD Gothic Neo', sans-serif";
+  function stkSize(id) {
+    if (id.indexOf("tape:") === 0) return [270, 100];
+    if (id.indexOf("w:") === 0) {
+      const c = document.createElement("canvas").getContext("2d");
+      c.font = "700 40px " + STK_FONT;
+      return [Math.ceil(c.measureText(STK_WORDS[+id.slice(2)][0]).width) + 56 + 56, 124];
+    }
+    return id === "spark" ? [140, 140] : [176, 176];
+  }
+  function stkCut(c, path) { /* the white die-cut edge with a soft shadow */
+    c.save(); c.shadowColor = "rgba(40, 30, 110, .28)"; c.shadowBlur = 16; c.shadowOffsetY = 5; c.fillStyle = "#FFFFFF"; path(); c.fill(); c.restore();
+  }
+  function stkDraw(c, id) {
+    const p = id.split(":");
+    if (p[0] === "ic") {
+      const col = AVC[p[2]] || AVC.sky;
+      stkCut(c, () => { c.beginPath(); c.arc(0, 0, 68, 0, Math.PI * 2); });
+      c.fillStyle = col[0]; c.beginPath(); c.arc(0, 0, 59, 0, Math.PI * 2); c.fill();
+      c.save(); c.translate(-36, -36); c.scale(3, 3); c.lineWidth = 1.8; c.lineCap = "round"; c.lineJoin = "round"; c.strokeStyle = col[1];
+      svgPaths(AVI[p[1]]).forEach((pa) => c.stroke(pa)); c.restore();
+    } else if (id === "heart") {
+      const pa = svgPaths(ICON.heart)[0];
+      c.save(); c.translate(-66, -70); c.scale(5.5, 5.5);
+      c.save(); c.shadowColor = "rgba(40, 30, 110, .28)"; c.shadowBlur = 16; c.shadowOffsetY = 5; c.strokeStyle = "#FFFFFF"; c.lineWidth = 3.2; c.lineJoin = "round"; c.stroke(pa); c.fillStyle = "#FFFFFF"; c.fill(pa); c.restore();
+      c.fillStyle = "#F06A9A"; c.fill(pa);
+      c.globalAlpha = 0.5; c.fillStyle = "#FFFFFF"; c.beginPath(); c.ellipse(8.4, 10.2, 1.6, 1, -0.6, 0, Math.PI * 2); c.fill(); c.restore();
+    } else if (id === "seal") {
+      const z = 116;
+      stkCut(c, () => rrect(c, -z / 2 - 9, -z / 2 - 9, z + 18, z + 18, 24));
+      c.fillStyle = "#D9483B"; rrect(c, -z / 2, -z / 2, z, z, 16); c.fill();
+      c.strokeStyle = "rgba(255, 255, 255, .85)"; c.lineWidth = 3; rrect(c, -z / 2 + 9, -z / 2 + 9, z - 18, z - 18, 9); c.stroke();
+      c.fillStyle = "#FFFFFF"; c.font = "900 40px 'Noto Serif SC', 'Songti SC', STSong, serif"; c.textAlign = "center";
+      c.fillText("上", 0, -5); c.fillText("海", 0, 37); c.textAlign = "left";
+    } else if (id === "spark") {
+      const star = () => { const r = 50; c.beginPath(); c.moveTo(0, -r); c.quadraticCurveTo(r * 0.18, -r * 0.18, r, 0); c.quadraticCurveTo(r * 0.18, r * 0.18, 0, r); c.quadraticCurveTo(-r * 0.18, r * 0.18, -r, 0); c.quadraticCurveTo(-r * 0.18, -r * 0.18, 0, -r); c.closePath(); };
+      c.save(); c.shadowColor = "rgba(40, 30, 110, .28)"; c.shadowBlur = 14; c.shadowOffsetY = 4; c.strokeStyle = "#FFFFFF"; c.lineWidth = 16; c.lineJoin = "round"; star(); c.stroke(); c.restore();
+      c.fillStyle = "#FFC94D"; star(); c.fill();
+    } else if (p[0] === "w") {
+      const w = STK_WORDS[+p[1]], col = AVC[w[1]];
+      c.font = "700 40px " + STK_FONT;
+      const tw = c.measureText(w[0]).width, bw = tw + 56, bh = 72;
+      stkCut(c, () => rrect(c, -bw / 2 - 9, -bh / 2 - 9, bw + 18, bh + 18, (bh + 18) / 2));
+      c.fillStyle = col[0]; rrect(c, -bw / 2, -bh / 2, bw, bh, bh / 2); c.fill();
+      c.fillStyle = col[1]; c.textAlign = "center"; c.fillText(w[0], 0, 14); c.textAlign = "left";
+    } else if (p[0] === "tape") {
+      const w = 240, h = 62, n = 6, zz = h / n;
+      c.globalAlpha = 0.85; c.fillStyle = STK_TAPES[+p[1]]; c.beginPath();
+      c.moveTo(-w / 2, -h / 2); c.lineTo(w / 2, -h / 2);
+      for (let i = 1; i <= n; i++) c.lineTo(w / 2 - (i % 2 ? 7 : 0), -h / 2 + zz * i);
+      c.lineTo(-w / 2, h / 2);
+      for (let i = n - 1; i >= 0; i--) c.lineTo(-w / 2 + (i % 2 ? 7 : 0), -h / 2 + zz * i);
+      c.closePath(); c.fill();
+      c.globalAlpha = 0.24; c.fillStyle = "#FFFFFF";
+      for (let sx = -w / 2 + 12; sx < w / 2 - 10; sx += 30) c.fillRect(sx, -h / 2, 12, h);
+      c.globalAlpha = 1;
+    }
+  }
+  const stkPics = {};
+  function stkPic(id) {
+    if (stkPics[id]) return stkPics[id];
+    const sz = stkSize(id), k = 2, cv = document.createElement("canvas");
+    cv.width = sz[0] * k; cv.height = sz[1] * k;
+    const c = cv.getContext("2d"); c.scale(k, k); c.translate(sz[0] / 2, sz[1] / 2); stkDraw(c, id);
+    return (stkPics[id] = cv.toDataURL("image/png"));
+  }
+  let stkFontsOk = false;
+  async function stkFonts() {
+    if (stkFontsOk || !document.fonts) return;
+    await Promise.race([Promise.all([document.fonts.load("700 40px 'IBM Plex Sans KR'", STK_WORDS.map((w) => w[0]).join("")).catch(() => null), document.fonts.load("900 40px 'Noto Serif SC'", "上海").catch(() => null)]), new Promise((r) => setTimeout(r, 4000))]);
+    stkFontsOk = true;
+  }
+  /* the editor: the picture you scroll through, stickers on top (drag to move, the round handle to size and turn), a tray to add more */
+  let ske = null, skeDrag = null;
+  const skeLists = {};
+  async function skeOpen(blob) {
+    await stkFonts();
+    const key = logImgOpt.sel;
+    if (ske && ske.url) URL.revokeObjectURL(ske.url);
+    ske = { blob, url: URL.createObjectURL(blob), list: skeLists[key] || (skeLists[key] = []), sel: "", f: 1, h: 1080 };
+    let el = document.getElementById("ske");
+    if (!el) { el = document.createElement("div"); el.id = "ske"; el.className = "ske"; document.body.appendChild(el); skeWire(el); }
+    el.hidden = false;
+    el.innerHTML = '<div class="ske-top"><button class="btn ghost sm" type="button" data-act="ske-close">닫기</button>' +
+      '<div class="seg limg-th ske-th" role="group" aria-label="이미지 테마">' + [["light", "낮"], ["dark", "밤"]].map((o) => '<button type="button" class="seg-b" data-act="ske-theme" data-v="' + o[0] + '" aria-pressed="' + ((o[0] === "dark") === logImgOpt.dark) + '">' + (o[0] === "dark" ? ICON.moon : ICON.cloud) + o[1] + "</button>").join("") + "</div>" +
+      '<button class="btn primary sm" type="button" data-act="ske-done">다 됐어요</button></div>' +
+      '<div class="ske-scroll"><p class="ske-tip">스티커를 누르면 붙어요 · 끌어서 옮기고 파란 손잡이로 크기·각도</p><div class="ske-pg"><img class="ske-base" alt="기록 이미지" src="' + ske.url + '"><div class="ske-layer"></div></div></div>' +
+      '<div class="ske-tray" role="toolbar" aria-label="스티커">' + STK_IDS.map((id) => '<button type="button" data-act="stk-add" data-id="' + id + '" aria-label="스티커 붙이기"><img src="' + stkPic(id) + '" alt=""></button>').join("") + "</div>";
+    document.body.classList.add("noscroll");
+    const img = el.querySelector(".ske-base");
+    const fit = () => { if (!img.naturalWidth) return; ske.f = img.clientWidth / 1080; ske.h = (img.naturalHeight * 1080) / img.naturalWidth; skeDraw(); };
+    if (img.complete) fit(); else img.onload = fit;
+  }
+  function skeDraw() {
+    const layer = $("#ske .ske-layer");
+    if (!layer || !ske) return;
+    const f = ske.f;
+    layer.innerHTML = ske.list.map((t) => {
+      const sz = stkSize(t.id), on = t.k === ske.sel;
+      return '<div class="stk' + (on ? " on" : "") + '" data-k="' + t.k + '" style="left:' + (t.x * f).toFixed(1) + "px;top:" + (t.y * f).toFixed(1) + "px;width:" + (sz[0] * t.s * f).toFixed(1) + "px;height:" + (sz[1] * t.s * f).toFixed(1) + "px;transform:translate(-50%,-50%) rotate(" + t.r.toFixed(3) + 'rad)"><img src="' + stkPic(t.id) + '" alt="" draggable="false">' +
+        (on ? '<button type="button" class="stk-x" data-act="stk-del" aria-label="스티커 떼기">' + ICON.x + '</button><span class="stk-h" aria-label="크기 · 각도">' + ICON.sync + "</span>" : "") + "</div>";
+    }).join("");
+  }
+  function skeWire(el) {
+    el.addEventListener("pointerdown", (e) => {
+      if (!ske || !e.target.closest(".ske-pg") || e.target.closest(".stk-x")) return;
+      const st = e.target.closest(".stk");
+      if (!st) { if (ske.sel) { ske.sel = ""; skeDraw(); } return; }
+      e.preventDefault();
+      const k = st.getAttribute("data-k"), t = ske.list.find((q) => q.k === k);
+      if (!t) return;
+      ske.list.splice(ske.list.indexOf(t), 1); ske.list.push(t); /* the one you touch comes to the front */
+      ske.sel = k;
+      const r = st.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+      skeDrag = { t, rs: !!e.target.closest(".stk-h"), x0: e.clientX, y0: e.clientY, sx: t.x, sy: t.y, s0: t.s, r0: t.r, cx, cy, a0: Math.atan2(e.clientY - cy, e.clientX - cx), d0: Math.max(8, Math.hypot(e.clientX - cx, e.clientY - cy)) };
+      skeDraw();
+    });
+    document.addEventListener("pointermove", (e) => {
+      if (!skeDrag || !ske) return;
+      e.preventDefault();
+      const d = skeDrag, t = d.t;
+      if (d.rs) {
+        t.s = Math.min(4, Math.max(0.3, (d.s0 * Math.hypot(e.clientX - d.cx, e.clientY - d.cy)) / d.d0));
+        t.r = d.r0 + Math.atan2(e.clientY - d.cy, e.clientX - d.cx) - d.a0;
+      } else {
+        t.x = Math.min(1080, Math.max(0, d.sx + (e.clientX - d.x0) / ske.f));
+        t.y = Math.min(ske.h, Math.max(0, d.sy + (e.clientY - d.y0) / ske.f));
+      }
+      skeDraw();
+    }, { passive: false });
+    ["pointerup", "pointercancel"].forEach((n) => document.addEventListener(n, () => { skeDrag = null; }));
+    el.addEventListener("touchmove", (e) => { if (skeDrag) e.preventDefault(); }, { passive: false });
+  }
+  function skeClose() {
+    const el = document.getElementById("ske");
+    if (el) { el.hidden = true; el.innerHTML = ""; }
+    if (sheet.hidden) document.body.classList.remove("noscroll");
+  }
+  async function skeExport() {
+    const im = await loadImg(ske.url), cv = document.createElement("canvas");
+    cv.width = im.naturalWidth; cv.height = im.naturalHeight;
+    const c = cv.getContext("2d"), fk = im.naturalWidth / 1080;
+    c.drawImage(im, 0, 0);
+    ske.list.forEach((t) => { c.save(); c.translate(t.x * fk, t.y * fk); c.rotate(t.r); c.scale(t.s * fk, t.s * fk); stkDraw(c, t.id); c.restore(); });
+    return await new Promise((res) => cv.toBlob(res, "image/jpeg", 0.92));
+  }
   let logImgUrl = "", logImgFile = null, logImgOpt = { sel: "all", dark: false };
   function logImgMake(sel, dark, btn) {
     logImgOpt = { sel, dark };
     const keep = btn ? btn.innerHTML : "";
     if (btn) { btn.disabled = true; btn.innerHTML = ICON.download + "만드는 중…"; }
     const back = () => { if (btn && btn.isConnected) { btn.disabled = false; btn.innerHTML = keep; } };
-    return logImage(sel, dark).then((b) => { back(); if (b) logImgSheet(b); else toast("아직 기록이 없어요"); }).catch(() => { back(); toast("이미지를 못 만들었어요"); });
+    return logImage(sel, dark).then((b) => { back(); if (b) skeOpen(b); else toast("아직 기록이 없어요"); }).catch(() => { back(); toast("이미지를 못 만들었어요"); });
   }
   function logImgSheet(blob) {
     if (logImgUrl) URL.revokeObjectURL(logImgUrl);
@@ -1637,9 +1744,8 @@
     try { canShare = !!(navigator.canShare && navigator.canShare({ files: [logImgFile] })); } catch (e) {}
     openSheet({
       key: "log-img", title: "기록 이미지",
-      body: '<div class="seg limg-th" role="group" aria-label="이미지 테마">' + [["light", "낮"], ["dark", "밤"]].map((o) => '<button type="button" class="seg-b" data-act="log-img-theme" data-v="' + o[0] + '" aria-pressed="' + ((o[0] === "dark") === logImgOpt.dark) + '">' + (o[0] === "dark" ? ICON.moon : ICON.cloud) + o[1] + "</button>").join("") + "</div>" +
-        '<div class="limg"><img src="' + logImgUrl + '" alt="기록을 모은 이미지"></div><p class="note">' + (canShare ? "저장 · 공유에서 '이미지 저장'을 고르면 사진 앱에 들어가요. " : "") + "이미지를 길게 눌러도 저장돼요</p>",
-      foot: '<span class="grow"></span><button class="btn" type="button" data-act="sh-close">닫기</button>' +
+      body: '<div class="limg"><img src="' + logImgUrl + '" alt="기록을 모은 이미지"></div><p class="note">' + (canShare ? "저장 · 공유에서 '이미지 저장'을 고르면 사진 앱에 들어가요. " : "") + "이미지를 길게 눌러도 저장돼요</p>",
+      foot: '<button class="btn" type="button" data-act="ske-again">' + ICON.pen + '다시 꾸미기</button><span class="grow"></span>' +
         (canShare ? '<button class="btn primary" type="button" data-act="log-img-share">' + ICON.download + "저장 · 공유</button>"
           : '<a class="btn primary" href="' + logImgUrl + '" download="' + esc(name) + '">' + ICON.download + "저장</a>")
     });
@@ -3143,13 +3249,30 @@
       case "go-plan": closeSheet(); go("plan", { day: t.getAttribute("data-day") }); return;
       case "go-log": ui.logDay = t.getAttribute("data-day") || "all"; go("log"); return;
       case "log-img": if (!t.disabled) logImgMake(ui.logDay && logDay(ui.logDay) ? ui.logDay : "all", isDark(), t); return;
-      case "log-img-theme": {
-        const dk = t.getAttribute("data-v") === "dark";
-        if (dk === logImgOpt.dark || t.closest(".limg-th").classList.contains("busy")) return;
-        t.closest(".limg-th").classList.add("busy");
+      case "ske-theme": {
+        const dk = t.getAttribute("data-v") === "dark", g = t.closest(".ske-th");
+        if (dk === logImgOpt.dark || g.classList.contains("busy")) return;
+        g.classList.add("busy");
         logImgMake(logImgOpt.sel, dk, t);
         return;
       }
+      case "ske-close": skeClose(); return;
+      case "stk-add": {
+        if (!ske) return;
+        const sc = $("#ske .ske-scroll"), pg = $("#ske .ske-pg"), id = t.getAttribute("data-id");
+        const yv = (sc.scrollTop + sc.clientHeight * 0.42 - pg.offsetTop) / ske.f, k = "k" + Date.now().toString(36) + Math.floor(Math.random() * 1e4);
+        ske.list.push({ k, id, x: 540 + (Math.random() - 0.5) * 300, y: Math.min(ske.h - 90, Math.max(90, yv)), s: 1, r: (Math.random() - 0.5) * (id.indexOf("tape:") === 0 ? 0.3 : 0.5) });
+        ske.sel = k; skeDraw();
+        return;
+      }
+      case "stk-del": if (ske) { ske.list.splice(0, ske.list.length, ...ske.list.filter((q) => q.k !== ske.sel)); ske.sel = ""; skeDraw(); } return;
+      case "ske-done": {
+        if (!ske || t.disabled) return;
+        t.disabled = true; ske.sel = ""; skeDraw();
+        skeExport().then((b) => { t.disabled = false; if (!b) { toast("이미지를 못 만들었어요"); return; } const el = document.getElementById("ske"); if (el) el.hidden = true; logImgSheet(b); }).catch(() => { t.disabled = false; toast("이미지를 못 만들었어요"); });
+        return;
+      }
+      case "ske-again": { closeSheet(); const el = document.getElementById("ske"); if (el && ske && el.innerHTML) { el.hidden = false; document.body.classList.add("noscroll"); } else if (ske) skeOpen(ske.blob); return; }
       case "log-img-share": if (logImgFile && navigator.share) navigator.share({ files: [logImgFile] }).catch(() => {}); return;
       case "log-day": ui.logDay = t.getAttribute("data-v") || "all"; saveUI(); render(); { const c = $(".lchips"); if (c) window.scrollTo({ top: Math.max(0, c.getBoundingClientRect().top + window.scrollY - 70) }); } return;
       case "post-new": postSheet(null, t.getAttribute("data-day") || null); return;
