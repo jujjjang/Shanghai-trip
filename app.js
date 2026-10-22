@@ -629,7 +629,7 @@
     hotel: { name: "숙소", desc: "체크인 · 체크아웃 시간", icon: "bed", size: "half" },
     flight: { name: "항공편", desc: "가는 편 · 오는 편 탑승권", icon: "plane", size: "wide" },
     todo: { name: "할 일", desc: "출발 전 · 날짜별 할 일", icon: "list", size: "big" },
-    pack: { name: "필수 준비물", desc: "짐 체크리스트", icon: "bag", size: "big" },
+    pack: { name: "준비물", desc: "짐 체크리스트", icon: "bag", size: "big" },
     apps: { name: "필수 앱", desc: "깔아 둘 앱 체크", icon: "phone", size: "half" },
     route: { name: "오늘 동선", desc: "갈 곳을 작은 지도로", icon: "map", size: "half" },
     settle: { name: "가계부", desc: "총 지출 · 오늘 · 정산", icon: "money", size: "half" },
@@ -637,7 +637,7 @@
     photos: { name: "오늘 기록", desc: "최근 기록 · 바로 쓰기", icon: "camera", size: "half" },
     memo: { name: "메모", desc: "나만 보는 메모 한 장", icon: "note", size: "half" }
   };
-  const CK_TITLE = { todo: "출발 전 할 일", pack: "필수 준비물", apps: "필수 앱" };
+  const CK_TITLE = { todo: "출발 전 할 일", pack: "준비물", apps: "필수 앱" };
   /* list keys: todo / pack / apps (preparation), or "tk:<dayId>" / "tk:after" for each day's own 할 일 */
   /* 할 일 can be 같이 (synced) or 나만 (state.mine: stays on this phone, shown with a lock) */
   const canMine = (key) => key === "todo" || String(key).indexOf("tk:") === 0;
@@ -1511,7 +1511,7 @@
       '<button class="row" type="button" data-act="members"><span class="ri">' + ICON.users + '</span><span class="rt"><b>여행 인원</b><span>기록 · 정산 · 연동에 쓰여요</span></span><span class="rv">' + esc((state.settle.members || []).join(" · ")) + "</span></button>" +
       row("share", "users", "친구랑 같이 쓰기", shareSub()) +
       row("backup", "download", "데이터 백업 파일 받기", "일정 · 정산 · 기록 글 (사진 빼고)") +
-      '<button class="row" type="button" data-act="reset"><span class="ri">' + ICON.undo + '</span><span class="rt"><b>초기 세팅으로 되돌리기</b><span>홈 위젯 · 준비물처럼 내 폰 것만 골라서</span></span><span class="rv">' + ICON.chevR + "</span></button>" +
+      '<button class="row" type="button" data-act="reset"><span class="ri">' + ICON.undo + '</span><span class="rt"><b>초기 세팅으로 되돌리기</b><span>홈 위젯 · 준비물 · 필수 앱 · 할 일</span></span><span class="rv">' + ICON.chevR + "</span></button>" +
       "</div>";
     return s;
   }
@@ -1949,31 +1949,31 @@
         '<div class="addline"><input id="memNew" placeholder="이름 추가" autocomplete="off" enterkeyhint="done"><button class="btn primary" type="button" data-act="mem-add">추가</button></div>'
     });
   }
-  /* 초기 세팅으로 되돌리기: only this phone's own things, each one chosen; shared trip content is never touched here */
+  /* 초기 세팅으로 되돌리기: pick what goes back to how the app started — the list as it was, nothing added, nothing ticked */
   function resetSheet() {
-    const opts = [["widgets", "홈 위젯 배치", "날짜별 추천 배치로", true], ["prep", "필수 준비물 · 필수 앱", "처음 목록으로 · 체크도 다 풀기", true],
-      ["ticks", "할 일 체크 다 풀기", "목록은 그대로", false], ["mine", "나만 할 일 지우기", "", false], ["myexp", "나만 쓴 돈 지우기", "가계부에서 자물쇠 붙은 것", false], ["memo", "메모 비우기", "", false]];
+    const opts = [["widgets", "홈 위젯", "모든 날짜를 추천 배치로", true], ["pack", "준비물", "처음 목록으로 · 체크 풀기", false], ["apps", "필수 앱", "처음 목록으로 · 체크 풀기", false],
+      ["todo", "할 일", "나만 할 일 지우기 · 기본 목록 복구 · 체크 풀기", false]];
     openSheet({
       key: "reset", title: "초기 세팅으로 되돌리기",
-      body: '<p class="note">체크한 것만 되돌려요. 일정 · 할 일 목록 · 같이 쓴 돈 · 기록처럼 친구랑 같이 보는 건 건드리지 않아요.</p>' +
-        '<div class="rlist">' + opts.map((o) => '<label class="rrow"><input type="checkbox" name="' + o[0] + '"' + (o[3] ? " checked" : "") + '><span><b>' + o[1] + "</b>" + (o[2] ? "<small>" + o[2] + "</small>" : "") + "</span></label>").join("") + "</div>",
+      body: '<div class="rlist">' + opts.map((o) => '<label class="rrow"><input type="checkbox" name="' + o[0] + '"' + (o[3] ? " checked" : "") + '><span><b>' + o[1] + "</b><small>" + o[2] + "</small></span></label>").join("") + "</div>" +
+        '<p class="note">할 일 목록은 같이 보는 거라, 다시 넣은 기본 할 일은 친구 폰에도 생겨요.</p>',
       foot: '<span class="grow"></span><button class="btn" type="button" data-act="sh-close">취소</button><button class="btn danger" type="button" data-act="sh" data-k="go">되돌리기</button>',
       on(k, v, btn) {
         if (k !== "go") return;
         const picked = opts.filter((o) => v[o[0]]);
         if (!picked.length) { toast("되돌릴 걸 골라주세요"); return; }
         if (!btn.classList.contains("armed")) { btn.classList.add("armed"); btn.textContent = "한 번 더 누르면 되돌려요"; return; }
-        const seed = window.TRIP_SEED;
+        const seed = window.TRIP_SEED, untick = (list) => list.forEach((x) => { delete state.done[x.id]; });
         if (v.widgets) { ui.wsets = {}; editing = false; saveUI(); }
-        if (v.prep) {
-          state.prep.pack.concat(state.prep.apps).forEach((x) => { delete state.done[x.id]; });
-          state.prep.pack = clone(seed.prep.pack || []); state.prep.apps = clone(seed.prep.apps || []);
-          state.prep.pack.concat(state.prep.apps).forEach((x) => { delete state.done[x.id]; });
+        ["pack", "apps"].forEach((key) => {
+          if (!v[key]) return;
+          untick(state.prep[key]); state.prep[key] = clone(seed.prep[key] || []); untick(state.prep[key]);
+        });
+        if (v.todo) {
+          untick(state.mine); state.mine = [];
+          (seed.prep.todo || []).forEach((x) => { if (!state.prep.todo.some((y) => y.id === x.id)) state.prep.todo.push(clone(x)); });
+          untick(state.prep.todo); untick(state.tasks);
         }
-        if (v.ticks) state.prep.todo.concat(state.tasks, state.mine).forEach((x) => { delete state.done[x.id]; });
-        if (v.mine) { state.mine.forEach((x) => { delete state.done[x.id]; }); state.mine = []; }
-        if (v.myexp) state.myExp = [];
-        if (v.memo) state.memos = [];
         save(); closeSheet(); render(); toast(picked.map((o) => o[1]).join(", ") + " 되돌렸어요", null, 3500);
       }
     });
@@ -2255,7 +2255,7 @@
   /* ---------- 친구랑 같이 쓰기 (여행 코드) ----------
      Shared through a tiny Supabase table, reached only via two functions that need the trip code:
        같이: 일정 · 다녀옴/건너뛰기 · 출발 전 할 일 · 정산 · 메모 · 정보 · 링크 · 숙소/항공 · 기록 글
-       각자: 필수 준비물 · 필수 앱 (and their ticks) · 사진 · 화면 설정
+       각자: 준비물 · 필수 앱 (and their ticks) · 사진 · 화면 설정
      Every piece is its own row (one expense, one memo, one tick, one day…), so two people changing
      different things never overwrite each other; the same piece changed twice → the later one stays.
      Offline-first: everything still saves on the phone; changes wait and go out once there's signal. */
