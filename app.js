@@ -235,7 +235,7 @@
   const sync = Object.assign({ code: "", me: "", cursor: null, base: {}, ts: {}, cfg: null, err: "", last: 0 }, lsGet(LS_SYNC) || {});
   sync.base = sync.base || {}; sync.ts = sync.ts || {}; sync.err = "";
   function saveSync() { lsSet(LS_SYNC, sync); }
-  let syncT = 0, pushing = false, pushAgain = false, pulling = false, pullLater = false, lastToast = 0, layoutIn = "";
+  let syncT = 0, pushing = false, pushAgain = false, pulling = false, pullLater = false, lastToast = 0;
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
 
   /* ---------- 낮 / 밤 테마 ---------- */
@@ -695,25 +695,7 @@
   function setEdge(bot) { const r = document.documentElement; if (r.classList.contains("edge-b") !== !!bot) r.classList.toggle("edge-b", !!bot); }
   function edgeByScroll() { const r = document.documentElement, max = r.scrollHeight - window.innerHeight; if (max > 24) setEdge(window.scrollY > max / 2); else if (window.scrollY <= 0) setEdge(false); }
   function setWidgets(list) { ui.wsets = ui.wsets || {}; ui.wsets[wKey()] = list; saveUI(); }
-  /* 친구 첫 배치: my widgets for every home view go out as one shared row. A friend's phone takes them on only the first
-     time it sees one (a fresh install), then says so with a "lay:<name>" row; after that their widgets are theirs. */
-  function sendLayout() {
-    ui.wsets = ui.wsets || {};
-    ["before", "after"].concat(state.days.map((d) => d.id)).forEach((k) => { if (!ui.wsets[k]) ui.wsets[k] = wRec(k); });
-    state.layout = { sets: JSON.parse(JSON.stringify(ui.wsets)), by: sync.me || "", at: Date.now() };
-    saveUI(); save();
-  }
-  function takeLayout(v) {
-    if (!v || !v.sets || (v.by && v.by === sync.me) || ui.layoutGot) return false;
-    ui.wsets = JSON.parse(JSON.stringify(v.sets)); ui.layoutGot = v.at || 1; saveUI();
-    state.layAck[sync.me || "친구"] = true;
-    return true;
-  }
-  /* friends whose phones already started from my layout: once everyone has, the button isn't needed any more */
-  function layoutLeft() {
-    const me = sync.me, others = (state.settle.members || []).filter((n) => n && n !== me);
-    return others.filter((n) => !state.layAck[n]);
-  }
+
   let editing = false;
   const heroIdx = {};
   function homeCtx() {
@@ -947,7 +929,7 @@
     const halves = list.filter((id) => WDEF[id] && WDEF[id].size === "half");
     wSolo = halves.length % 2 ? halves[halves.length - 1] : "";
     s += '<div class="wzone" id="wzone">' + (editing ? '<p class="wnote">' + esc(wSetName()) + " 홈 위젯 편집 중 · 날짜마다 따로 저장돼요</p>" : "") + '<div class="wgrid' + (editing ? " wedit" : "") + '" id="wgrid">' + list.map((id) => widgetHtml(id, ctx)).join("") +
-      (editing ? '<button class="w-add" type="button" data-act="w-addsheet">+ 위젯 추가</button>' + sendBtn() : "") + "</div>" +
+      (editing ? '<button class="w-add" type="button" data-act="w-addsheet">+ 위젯 추가</button>' + wResetBtn() : "") + "</div>" +
       (!list.length && !editing ? '<p class="note" style="text-align:center;margin-top:24px;color:#fff">\'편집\'을 눌러 위젯을 넣어보세요</p>' : "") + "</div>";
     return s;
   }
@@ -989,13 +971,12 @@
       tm = setTimeout(() => { const i = Math.round(hc.scrollLeft / Math.max(1, hc.clientWidth)); heroIdx[dayId] = i; mark(i); }, 60);
     }, { passive: true });
   }
-  function sendBtn() {
-    if (!sync.code || (state.layout && state.layout.by && state.layout.by !== sync.me)) return "";
-    const left = layoutLeft();
-    if (!left.length && Object.keys(state.layAck).length) return '<p class="wnote wsent">' + esc(Object.keys(state.layAck).join(", ")) + " 님 폰은 이미 이 배치로 시작했어요</p>";
-    return '<button class="w-send" type="button" data-act="w-send">' + ICON.users + "<span>" + (state.layout ? "친구 첫 화면 배치 다시 저장" : "친구 첫 화면도 이 배치로") + "</span></button>" +
-      '<p class="wnote wsent">친구가 앱을 처음 연결할 때 한 번만 적용돼요</p>';
+  /* in edit mode: put this one home view back to its 추천 배치 (everything at once lives in 설정) */
+  function wResetBtn() {
+    return '<button class="w-send w-reset" type="button" data-act="w-reset">' + ICON.undo + "<span>위젯 초기 세팅으로 되돌리기</span></button>" +
+      '<p class="wnote wsent">지금 보는 ' + esc(wSetName()) + " 화면만 추천 배치로 돌아가요</p>";
   }
+
   let wSolo = "";
   function wrapW(id, inner, cls, attrs) {
     const def = WDEF[id];
@@ -2356,8 +2337,6 @@
     m.settle = { members: state.settle.members, rate: state.settle.rate };
     state.settle.expenses.forEach((e) => { m["x:" + e.id] = e; });
     Object.keys(state.likes).forEach((k) => { if (state.likes[k]) m["like:" + k] = true; });
-    if (state.layout) m.layout = state.layout;
-    Object.keys(state.layAck).forEach((k) => { if (state.layAck[k]) m["lay:" + k] = true; });
     Object.keys(state.avatars).forEach((k) => { if (state.avatars[k]) m["av:" + k] = state.avatars[k]; });
     /* one row per shared photo, so two people adding or removing photos never overwrite each other */
     Object.keys(state.shared).forEach((o) => (state.shared[o] || []).forEach((pid) => { m["ph:" + o + ":" + pid] = 1; }));
@@ -2395,8 +2374,7 @@
       }
       case "j": { const j = (state.journal[id] = state.journal[id] || {}); if (v) j.text = v; else delete j.text; break; } /* from a phone still on the old app */
       case "like": if (v) state.likes[id] = true; else delete state.likes[id]; break;
-      case "layout": state.layout = v || null; if (takeLayout(v)) layoutIn = v.by || "친구"; break;
-      case "lay": if (v) state.layAck[id] = true; else delete state.layAck[id]; break;
+      case "layout": case "lay": break; /* from the old '친구 첫 화면도 이 배치로': not used any more */
       case "av": if (v) state.avatars[id] = v; else delete state.avatars[id]; break;
       case "ph": {
         const c = id.lastIndexOf(":"), o = id.slice(0, c), pid = id.slice(c + 1);
@@ -2488,8 +2466,7 @@
         state = norm(state);
         if (!lsSet(LS_STATE, state)) toast("폰 저장 공간이 부족해서 저장하지 못했어요");
         redraw();
-        if (layoutIn) { toast(layoutIn + " 님이 맞춰 둔 홈 위젯 배치로 시작해요"); layoutIn = ""; lastToast = Date.now(); onLocalChange(); }
-        else if (who.size && Date.now() - lastToast > 45000) { lastToast = Date.now(); toast(Array.from(who).join(", ") + " 님이 바꾼 내용이 들어왔어요"); }
+        if (who.size && Date.now() - lastToast > 45000) { lastToast = Date.now(); toast(Array.from(who).join(", ") + " 님이 바꾼 내용이 들어왔어요"); }
       }
     } catch (e) { sync.err = String((e && e.message) || e); }
     finally { pulling = false; saveSync(); }
@@ -2604,6 +2581,7 @@
       sync.base[r.k] = s2(r.v); sync.ts[r.k] = ts;
       if (!sync.cursor || ts > sync.cursor) sync.cursor = ts;
     });
+    ui.wsets = {}; saveUI(); /* a phone that joins a trip starts from the 추천 배치 */
     const ticks = Object.assign({}, state.done);
     rows.forEach((r) => applyKey(r.k, r.v));
     Object.keys(LISTS).forEach(orderList);
@@ -2731,7 +2709,7 @@
   document.addEventListener("submit", (e) => e.preventDefault());
   document.addEventListener("click", (e) => {
     /* in edit mode, widgets only move or come out — nothing inside them fires */
-    if (editing && e.target.closest("#wgrid") && !e.target.closest(".w-del, .w-add, .w-send")) { e.preventDefault(); return; }
+    if (editing && e.target.closest("#wgrid") && !e.target.closest(".w-del, .w-add, .w-reset")) { e.preventDefault(); return; }
     /* ticking a box inside a checklist widget shouldn't also open the big list */
     if (e.target.closest(".wck")) return;
     if (swallow) { swallow = false; e.preventDefault(); return; }
@@ -2773,9 +2751,10 @@
       }
       case "w-addsheet": widgetAddSheet(); return;
       case "trip-title": tripTitleSheet(); return;
-      case "w-send": {
-        if (!t.classList.contains("armed")) { t.classList.add("armed"); t.lastChild.textContent = "한 번 더 누르면 저장돼요"; return; }
-        sendLayout(); editing = false; render(); toast("저장했어요 · 친구 폰이 처음 연결될 때 이 배치(모든 날짜)로 시작해요"); return;
+      case "w-reset": {
+        if (!t.classList.contains("armed")) { t.classList.add("armed"); t.lastChild.textContent = "한 번 더 누르면 되돌려요"; return; }
+        ui.wsets = ui.wsets || {}; delete ui.wsets[wKey()]; saveUI(); render(); toast(wSetName() + " 위젯을 추천 배치로 되돌렸어요");
+        return;
       }
       case "members": membersSheet(); return;
       case "av-pick": avSheet(t.getAttribute("data-p"), t.getAttribute("data-back")); return;
