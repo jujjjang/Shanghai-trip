@@ -1454,3 +1454,14 @@ body { background-color: var(--edge) !important; }
 .ske-tray { display: flex; gap: 6px; overflow-x: auto; padding: 10px 12px calc(var(--safe-b) + 10px); background: var(--surface); border-top: 1px solid var(--line); -webkit-overflow-scrolling: touch; }
 .ske-tray button { flex: none; width: 62px; height: 62px; border: 0; border-radius: 14px; background: var(--inner); display: grid; place-items: center; padding: 5px; cursor: pointer; }
 .ske-tray img { max-width: 100%; max-height: 100%; display: block; }
+/* 네컷: 사진 고르기 */
+.fc-note { margin: 0 0 10px; }
+.fcgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.fcpic { position: relative; aspect-ratio: 1; padding: 0; border: 0; border-radius: 12px; overflow: hidden; background: var(--inner); cursor: pointer; }
+.fcpic img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.fcpic.on { box-shadow: 0 0 0 3px var(--accent); }
+.fcpic.on img { opacity: .82; }
+.fcpic b { position: absolute; top: 6px; right: 6px; width: 26px; height: 26px; border-radius: 50%; background: var(--accent); color: #fff; font-family: var(--f-mono); font-size: 14px; display: grid; place-items: center; box-shadow: 0 0 0 2px #fff; }
+.img-pick-g { display: grid; gap: 10px; }
+button.bigopt { width: 100%; text-align: left; font: inherit; cursor: pointer; }
+button.bigopt + button.bigopt { margin-top: 10px; }

@@ -1320,7 +1320,7 @@
   function logHtml() {
     const sel = ui.logDay && logDay(ui.logDay) ? ui.logDay : "all";
     let s = pageHead("기록", "날마다 사진 · 한 줄 기록", true);
-    if (state.posts.length) s = s.replace(/<\/header>$/, '<button class="hedit phact" type="button" data-act="log-img">' + ICON.download + (sel === "all" ? "이미지로 저장" : "이날 이미지로") + "</button></header>");
+    if (state.posts.length) s = s.replace(/<\/header>$/, '<button class="hedit phact" type="button" data-act="img-pick">' + ICON.camera + "이미지 만들기</button></header>");
     s += '<div class="lchips" role="tablist" aria-label="날짜 고르기"><button type="button" class="lchip' + (sel === "all" ? " on" : "") + '" data-act="log-day" data-v="all" aria-pressed="' + (sel === "all") + '">전체</button>' +
       '<button type="button" class="lchip txt' + (sel === PRE ? " on" : "") + '" data-act="log-day" data-v="' + PRE + '" aria-pressed="' + (sel === PRE) + '">여행 전</button>' +
       state.days.map((d) => '<button type="button" class="lchip' + (sel === d.id ? " on" : "") + '" data-act="log-day" data-v="' + d.id + '" aria-pressed="' + (sel === d.id) + '" style="--c:' + dayC(d) + '"><i>' + esc(d.n) + "</i>" + esc(String(d.date).split(" ")[0]) + "</button>").join("") + "</div>";
@@ -1731,9 +1731,83 @@
   function logImgMake(sel, dark, btn) {
     logImgOpt = { sel, dark };
     const keep = btn ? btn.innerHTML : "";
-    if (btn) { btn.disabled = true; btn.innerHTML = ICON.download + "만드는 중…"; }
+    if (btn) { btn.disabled = true; btn.innerHTML = (btn.querySelector("svg") ? btn.querySelector("svg").outerHTML : "") + "만드는 중…"; }
     const back = () => { if (btn && btn.isConnected) { btn.disabled = false; btn.innerHTML = keep; } };
-    return logImage(sel, dark).then((b) => { back(); if (b) skeOpen(b); else toast("아직 기록이 없어요"); }).catch(() => { back(); toast("이미지를 못 만들었어요"); });
+    return (sel === "fc" ? fourCut(fcPick, dark) : logImage(sel, dark)).then((b) => { back(); if (b) skeOpen(b); else toast("아직 기록이 없어요"); }).catch(() => { back(); toast("이미지를 못 만들었어요"); });
+  }
+  /* ---------- 네컷: 사진 4장을 골라 인생네컷 같은 세로 띠로 ---------- */
+  let fcPick = [];
+  const allPostPics = () => {
+    const out = [];
+    [preDay()].concat(state.days).forEach((d) => postsOf(d.id).forEach((p) => postPics(p.id).forEach((pid) => { if (out.indexOf(pid) < 0) out.push(pid); })));
+    return out;
+  };
+  const fcName = () => (state.trip.title || "여행") + " 네컷";
+  function imgPickSheet() {
+    const sel = ui.logDay && logDay(ui.logDay) ? ui.logDay : "all", d = sel !== "all" ? logDay(sel) : null;
+    openSheet({
+      key: "img-pick", center: true, title: "이미지 만들기",
+      body: '<button class="bigopt main" type="button" data-act="fc-open"><span class="ri">' + ICON.camera + '</span><span class="rt"><b>' + esc(fcName()) + "</b><span>사진 4장 골라서 인생네컷처럼</span></span></button>" +
+        '<button class="bigopt" type="button" data-act="log-img"><span class="ri">' + ICON.log + "</span><span class=\"rt\"><b>" + (d ? esc(d.pre ? "여행 전" : (isNum(d.n) ? "Day " + d.n : "귀국날")) + " 기록 한 장" : "기록 전체 한 장") + "</b><span>글이랑 사진을 긴 이미지 하나로</span></span></button>"
+    });
+  }
+  function fcSheet() {
+    const all = allPostPics();
+    if (!all.length) { toast("사진 있는 기록이 아직 없어요"); return; }
+    fcPick = fcPick.filter((x) => all.indexOf(x) >= 0);
+    const need = Math.min(4, all.length);
+    openSheet({
+      key: "fc", title: fcName(),
+      body: '<p class="note fc-note">위에서부터 들어갈 순서대로 ' + need + "장 골라요</p>" +
+        '<div class="fcgrid">' + all.map((pid) => { const i = fcPick.indexOf(pid); return '<button type="button" class="fcpic' + (i >= 0 ? " on" : "") + '" data-act="fc-pick" data-pid="' + esc(pid) + '" aria-pressed="' + (i >= 0) + '"><img data-pid="' + esc(pid) + '" alt="">' + (i >= 0 ? "<b>" + (i + 1) + "</b>" : "") + "</button>"; }).join("") + "</div>",
+      foot: '<span class="grow"></span><button class="btn" type="button" data-act="sh-close">취소</button><button class="btn primary" type="button" data-act="fc-make"' + (fcPick.length < need ? " disabled" : "") + ">" + ICON.camera + "만들기 " + fcPick.length + "/" + need + "</button>"
+    });
+  }
+  async function fourCut(pids, dark) {
+    const list = pids.slice(0, 4);
+    if (!list.length) return null;
+    while (list.length < 4) list.push(list[list.length % pids.length]);
+    const T = themeVars(dark), title = fcName(), dates = String(state.trip.dates || "").split("·")[0].trim();
+    if (document.fonts) {
+      await Promise.race([Promise.all([document.fonts.load("700 10px Hahmlet", title).catch(() => null), document.fonts.load("600 10px 'IBM Plex Mono'", dates).catch(() => null), document.fonts.load("600 10px 'IBM Plex Sans KR'", dates).catch(() => null)]), new Promise((r) => setTimeout(r, 5000))]);
+      try { await document.fonts.ready; } catch (e) {}
+    }
+    const imgs = await Promise.all(list.map((pid) => photoUrl(pid).then((u) => (u ? loadImg(u) : null)).catch(() => null)));
+    const W = 1080, M = 64, G = 28, PW = W - M * 2, PH = Math.round(PW * 0.7), TOP = 80, BOT = 340, H = TOP + PH * 4 + G * 3 + BOT;
+    const cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+    const c = cv.getContext("2d");
+    const g = c.createLinearGradient(0, 0, 0, H);
+    if (dark) { g.addColorStop(0, "#0A0E2E"); g.addColorStop(0.55, "#1B1A55"); g.addColorStop(1, "#3B2D8A"); }
+    else { g.addColorStop(0, "#9FD0F0"); g.addColorStop(0.5, "#CFE6F6"); g.addColorStop(1, "#FBE2EB"); }
+    c.fillStyle = g; c.fillRect(0, 0, W, H);
+    let sd = 5; const rnd = () => { sd = (sd * 9301 + 49297) % 233280; return sd / 233280; };
+    const star = (x, y, r, col) => { c.fillStyle = col; c.beginPath(); c.moveTo(x, y - r); c.quadraticCurveTo(x + r * 0.18, y - r * 0.18, x + r, y); c.quadraticCurveTo(x + r * 0.18, y + r * 0.18, x, y + r); c.quadraticCurveTo(x - r * 0.18, y + r * 0.18, x - r, y); c.quadraticCurveTo(x - r * 0.18, y - r * 0.18, x, y - r); c.fill(); };
+    for (let i = 0; i < 90; i++) { c.globalAlpha = dark ? 0.25 + rnd() * 0.5 : 0.35 + rnd() * 0.4; c.fillStyle = "#FFFFFF"; c.beginPath(); c.arc(rnd() * W, rnd() * H, dark ? 0.8 + rnd() * 2 : 1.5 + rnd() * 3, 0, Math.PI * 2); c.fill(); }
+    c.globalAlpha = 1;
+    imgs.forEach((im, i) => {
+      const x = M, y = TOP + i * (PH + G);
+      c.save(); c.shadowColor = dark ? "rgba(0, 0, 0, .4)" : "rgba(60, 90, 150, .18)"; c.shadowBlur = 26; c.shadowOffsetY = 8; c.fillStyle = "#FFFFFF"; rrect(c, x, y, PW, PH, 20); c.fill(); c.restore();
+      if (!im) return;
+      c.save(); rrect(c, x, y, PW, PH, 20); c.clip();
+      const k = Math.max(PW / im.width, PH / im.height), sw = PW / k, sh = PH / k;
+      c.drawImage(im, (im.width - sw) / 2, (im.height - sh) / 2, sw, sh, x, y, PW, PH);
+      c.restore();
+    });
+    const by = TOP + PH * 4 + G * 3;
+    const sp = dark ? "#FFD36B" : "#FFFFFF";
+    star(W / 2 - 250, by + 96, 18, sp); star(W / 2 + 254, by + 82, 12, sp); star(W / 2 + 222, by + 128, 7, sp);
+    c.textAlign = "center"; c.fillStyle = dark ? "#FFFFFF" : "#1E1B3A"; c.font = "700 86px Hahmlet, 'IBM Plex Sans KR', serif";
+    c.fillText(title, W / 2, by + 140, PW);
+    c.fillStyle = dark ? "rgba(255, 255, 255, .7)" : T.muted; c.font = "600 28px 'IBM Plex Mono', 'IBM Plex Sans KR', monospace";
+    let x = W / 2 - (c.measureText(dates).width + 3 * (dates.length - 1)) / 2; c.textAlign = "left";
+    for (const ch of dates) { c.fillText(ch, x, by + 200); x += c.measureText(ch).width + 3; }
+    /* a little skyline along the bottom edge */
+    c.fillStyle = dark ? "rgba(180, 168, 255, .22)" : "rgba(90, 150, 210, .2)";
+    const base = H;
+    [[300, 34, 30], [334, 56, 24], [362, 42, 34], [400, 70, 22], [626, 48, 30], [660, 86, 26], [690, 60, 34], [728, 38, 30]].forEach((b) => c.fillRect(b[0], base - b[1], b[2], b[1]));
+    c.fillRect(536, base - 120, 8, 120); c.fillRect(538.5, base - 150, 3, 32);
+    [[540, base - 44, 18], [540, base - 92, 12], [540, base - 124, 6]].forEach((q) => { c.beginPath(); c.arc(q[0], q[1], q[2], 0, Math.PI * 2); c.fill(); });
+    return await new Promise((res) => cv.toBlob(res, "image/jpeg", 0.93));
   }
   function logImgSheet(blob) {
     if (logImgUrl) URL.revokeObjectURL(logImgUrl);
@@ -2084,6 +2158,8 @@
   function closeSheet() {
     sheet.hidden = true; sheet.innerHTML = ""; sheetCtx = null;
     document.body.classList.remove("noscroll", "sheet-open");
+    const ed = document.getElementById("ske");
+    if (ed && !ed.hidden) document.body.classList.add("noscroll"); /* the sticker editor is still up */
   }
   function formVals() {
     const f = $("#shForm"), o = {};
@@ -3248,7 +3324,18 @@
       case "tab": closeSheet(); editing = false; go(t.getAttribute("data-tab")); return;
       case "go-plan": closeSheet(); go("plan", { day: t.getAttribute("data-day") }); return;
       case "go-log": ui.logDay = t.getAttribute("data-day") || "all"; go("log"); return;
-      case "log-img": if (!t.disabled) logImgMake(ui.logDay && logDay(ui.logDay) ? ui.logDay : "all", isDark(), t); return;
+      case "img-pick": imgPickSheet(); return;
+      case "log-img": if (!t.disabled) logImgMake(ui.logDay && logDay(ui.logDay) ? ui.logDay : "all", isDark(), t).then(() => { if (sheetCtx && sheetCtx.key === "img-pick") closeSheet(); }); return;
+      case "fc-open": fcSheet(); return;
+      case "fc-pick": {
+        const pid = t.getAttribute("data-pid"), i = fcPick.indexOf(pid);
+        if (i >= 0) fcPick.splice(i, 1);
+        else if (fcPick.length >= 4) { toast("4장까지 골라요 · 빼고 다시 골라주세요"); return; }
+        else fcPick.push(pid);
+        fcSheet();
+        return;
+      }
+      case "fc-make": if (!t.disabled) logImgMake("fc", isDark(), t).then(() => { if (sheetCtx && sheetCtx.key === "fc") closeSheet(); }); return;
       case "ske-theme": {
         const dk = t.getAttribute("data-v") === "dark", g = t.closest(".ske-th");
         if (dk === logImgOpt.dark || g.classList.contains("busy")) return;
