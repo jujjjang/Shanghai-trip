@@ -1362,7 +1362,7 @@
       });
     });
     css += "*{animation:none!important}";
-    const svg = heroArt().replace('<svg class="hero-art"', '<svg xmlns="http://www.w3.org/2000/svg" width="1560" height="3124" class="hero-art"').replace("<defs>", "<style>" + css + "</style><defs>");
+    const svg = heroArt().replace(/<g class="cl[^"]*"[^>]*transform="translate\(([\d.]+) [\d.]+\)[^"]*"[^>]*>.*?<\/g>/g, (m, x) => (+x < 175 ? "" : m)).replace('<svg class="hero-art"', '<svg xmlns="http://www.w3.org/2000/svg" width="1560" height="3124" class="hero-art"').replace("<defs>", "<style>" + css + "</style><defs>");
     return loadImg("data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg));
   }
   function themeVars(dark) {
@@ -1376,8 +1376,16 @@
   async function logImage(sel, dark, noArt) {
     const days = (sel === "all" ? [preDay()].concat(state.days) : [logDay(sel)]).filter((d) => d && postsOf(d.id).length);
     if (!days.length) return null;
-    const F = { t: "Hahmlet, 'Nanum Myeongjo', AppleMyungjo, serif", b: "'IBM Plex Sans KR', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif", m: "'IBM Plex Mono', ui-monospace, Menlo, monospace" };
-    try { if (document.fonts) await Promise.all(["700 120px Hahmlet", "600 50px Hahmlet", "400 38px 'IBM Plex Sans KR'", "600 32px 'IBM Plex Sans KR'", "500 26px 'IBM Plex Mono'", "600 30px 'IBM Plex Mono'"].map((f) => document.fonts.load(f, "상하이 기록 DAY 0123"))); } catch (e) {}
+    const F = { t: "Hahmlet, 'IBM Plex Sans KR', 'Apple SD Gothic Neo', serif", b: "'IBM Plex Sans KR', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif", m: "'IBM Plex Mono', 'IBM Plex Sans KR', 'Apple SD Gothic Neo', monospace", z: "'Noto Serif SC', 'Songti SC', STSong, serif" };
+    /* Korean web fonts come in many small pieces: load the pieces for every letter that will be drawn, or the canvas quietly mixes in the system font */
+    const fi = (p) => (p.place && findItem(p.place) ? findItem(p.place).item : null);
+    const allText = [state.trip.title, state.trip.nights, state.trip.dates, (state.settle.members || []).join(""), "DAY BEFORE 기록 사진 개 장 0123456789 · + “"]
+      .concat(days.map((d) => (d.date || "") + (d.title || "") + postsOf(d.id).map((p) => [p.text, p.by, meName(), "나", likeNames(p.id).join(""), fi(p) ? fi(p).label || fi(p).ko : ""].join("")).join(""))).join("");
+    if (document.fonts) {
+      const want = ["700 10px Hahmlet", "600 10px Hahmlet", "400 10px 'IBM Plex Sans KR'", "500 10px 'IBM Plex Sans KR'", "600 10px 'IBM Plex Sans KR'", "500 10px 'IBM Plex Mono'", "600 10px 'IBM Plex Mono'"];
+      await Promise.race([Promise.all(want.map((f) => document.fonts.load(f, allText).catch(() => null)).concat([document.fonts.load("900 10px 'Noto Serif SC'", "上海").catch(() => null)])), new Promise((r) => setTimeout(r, 6000))]);
+      try { await document.fonts.ready; } catch (e) {}
+    }
     const imgs = {}, pids = [];
     days.forEach((d) => postsOf(d.id).forEach((p) => postPics(p.id).forEach((x) => { if (pids.indexOf(x) < 0) pids.push(x); })));
     const art = noArt ? null : await heroArtImage(dark).catch(() => null);
@@ -1439,6 +1447,46 @@
       c.quadraticCurveTo(x + r * 0.18, y - r * 0.18, x + r, y); c.quadraticCurveTo(x + r * 0.18, y + r * 0.18, x, y + r);
       c.quadraticCurveTo(x - r * 0.18, y + r * 0.18, x - r, y); c.quadraticCurveTo(x - r * 0.18, y - r * 0.18, x, y - r); c.fill();
     }
+    /* stickers: white die-cut edge + soft shadow, a little tilted */
+    const STK = [["camera", "sky"], ["boba", "pink"], ["dumpling", "lemon"], ["cherry", "peach"], ["flower", "lilac"], ["plane", "mint"], ["icecream", "pink"], ["teapot", "leaf"]];
+    const TAPE = dark ? ["#F4C0D1", "#9FE1CB", "#FAC775", "#B5D4F4", "#CECBF6"] : ["#F7C9D9", "#A9E3CF", "#FAD48E", "#BBD9F5", "#D5D1F7"];
+    let si = 0;
+    function tilt(c, x, y, rot, fn) { c.save(); c.translate(x, y); c.rotate(rot); fn(); c.restore(); }
+    function cut(c, fn) { c.save(); c.shadowColor = dark ? "rgba(0, 0, 0, .45)" : "rgba(40, 30, 110, .22)"; c.shadowBlur = 18; c.shadowOffsetY = 6; c.fillStyle = "#FFFFFF"; fn(); c.fill(); c.restore(); }
+    function badge(c, x, y, r, rot, fill, inner) {
+      tilt(c, x, y, rot, () => {
+        cut(c, () => { c.beginPath(); c.arc(0, 0, r + 8, 0, Math.PI * 2); });
+        c.fillStyle = fill; c.beginPath(); c.arc(0, 0, r, 0, Math.PI * 2); c.fill();
+        inner();
+      });
+    }
+    function iconSticker(c, x, y, r) {
+      const s = STK[si++ % STK.length], col = AVC[s[1]];
+      badge(c, x, y, r, (si % 2 ? 1 : -1) * 0.16, col[0], () => icon(c, svgPaths(AVI[s[0]]), -r * 0.6, -r * 0.6, r * 1.2, col[1]));
+    }
+    function tape(c, cx, cy, w, h, rot, col) {
+      tilt(c, cx, cy, rot, () => {
+        c.globalAlpha = 0.82; c.fillStyle = col; c.beginPath();
+        const n = 6, zz = h / n;
+        c.moveTo(-w / 2, -h / 2); c.lineTo(w / 2, -h / 2);
+        for (let i = 1; i <= n; i++) c.lineTo(w / 2 - (i % 2 ? 7 : 0), -h / 2 + zz * i);
+        c.lineTo(-w / 2, h / 2);
+        for (let i = n - 1; i >= 0; i--) c.lineTo(-w / 2 + (i % 2 ? 7 : 0), -h / 2 + zz * i);
+        c.closePath(); c.fill();
+        c.globalAlpha = 0.22; c.fillStyle = "#FFFFFF";
+        for (let sx = -w / 2 + 12; sx < w / 2 - 10; sx += 30) c.fillRect(sx, -h / 2, 12, h);
+        c.globalAlpha = 1;
+      });
+    }
+    function seal(c, x, y, sz, rot) {
+      tilt(c, x, y, rot, () => {
+        cut(c, () => rrect(c, -sz / 2 - 8, -sz / 2 - 8, sz + 16, sz + 16, 24));
+        c.fillStyle = "#D9483B"; rrect(c, -sz / 2, -sz / 2, sz, sz, 16); c.fill();
+        c.strokeStyle = "rgba(255, 255, 255, .85)"; c.lineWidth = 3; rrect(c, -sz / 2 + 9, -sz / 2 + 9, sz - 18, sz - 18, 9); c.stroke();
+        c.fillStyle = "#FFFFFF"; c.font = "900 " + Math.round(sz * 0.34) + "px " + F.z; c.textAlign = "center";
+        c.fillText("上", 0, -sz * 0.04); c.fillText("海", 0, sz * 0.31); c.textAlign = "left";
+      });
+    }
     function puff(c, x, y, k, col) {
       c.fillStyle = col; c.beginPath();
       [[0, 0, 26], [30, -16, 34], [64, 0, 28], [32, 8, 26]].forEach((q) => { c.moveTo(x + (q[0] + q[2]) * k, y + q[1] * k); c.arc(x + q[0] * k, y + q[1] * k, q[2] * k, 0, Math.PI * 2); });
@@ -1458,15 +1506,20 @@
       }
       y += 58 + 30;
       if (gr) {
-        if (on) gr.c.forEach((g) => {
-          photo(c, imgs[g[0]], M + g[1], y + g[2], g[3], g[4], 30);
-          if (g[5]) { c.fillStyle = "rgba(14, 12, 40, .5)"; rrect(c, M + g[1], y + g[2], g[3], g[4], 30); c.fill(); c.fillStyle = "#FFFFFF"; c.font = "600 58px " + F.m; c.textAlign = "center"; c.fillText("+" + g[5], M + g[1] + g[3] / 2, y + g[2] + g[4] / 2 + 20); c.textAlign = "left"; }
-        });
+        if (on) {
+          gr.c.forEach((g) => {
+            photo(c, imgs[g[0]], M + g[1], y + g[2], g[3], g[4], 30);
+            if (g[5]) { c.fillStyle = "rgba(14, 12, 40, .5)"; rrect(c, M + g[1], y + g[2], g[3], g[4], 30); c.fill(); c.fillStyle = "#FFFFFF"; c.font = "600 58px " + F.m; c.textAlign = "center"; c.fillText("+" + g[5], M + g[1] + g[3] / 2, y + g[2] + g[4] / 2 + 20); c.textAlign = "left"; }
+          });
+          const g0 = gr.c[0], left = si % 2 === 0;
+          tape(c, M + g0[1] + g0[3] * (left ? 0.24 : 0.76), y + g0[2] + 4, 200, 54, left ? -0.12 : 0.1, TAPE[si % TAPE.length]);
+          iconSticker(c, M + CW - 26, y + gr.h - 20, 54);
+        }
         y += gr.h + 34;
       }
       if (lines.length) {
         if (quote) {
-          if (on) { c.fillStyle = T.accent; c.globalAlpha = 0.45; c.font = "700 150px " + F.t; c.fillText("“", M - 6, y + 104); c.globalAlpha = 1; }
+          if (on) { c.fillStyle = T.accent; c.globalAlpha = 0.45; c.font = "700 150px " + F.t; c.fillText("“", M - 6, y + 104); c.globalAlpha = 1; iconSticker(c, W - M - 64, y + 40, 54); }
           y += 70;
         }
         if (on) { c.fillStyle = T.ink; c.font = quote ? "600 50px " + F.t : "400 38px " + F.b; lines.forEach((l, i) => c.fillText(l, M, y + (quote ? 52 : 40) + i * lh)); }
@@ -1480,7 +1533,7 @@
       return y;
     }
     function paint(c, on, total) {
-      const AH = Math.round(600 * W / 390);
+      const SY = 180, SH = 310, AH = Math.round(SH * W / 390); /* the band of the home drawing from the tower's tip to the river */
       c.textBaseline = "alphabetic"; c.textAlign = "left";
       if (on) {
         c.fillStyle = T.bg; c.fillRect(0, 0, W, total);
@@ -1489,48 +1542,56 @@
           for (let i = 0; i < Math.round(total / 26); i++) { c.globalAlpha = 0.12 + r() * 0.3; c.fillStyle = "#FFFFFF"; c.beginPath(); c.arc(r() * W, AH + r() * (total - AH), 0.8 + r() * 1.8, 0, Math.PI * 2); c.fill(); }
           c.globalAlpha = 1;
         }
-        if (art) c.drawImage(art, 0, 0, 1560, 600 * 4, 0, 0, W, AH);
+        if (art) c.drawImage(art, 0, SY * 4, 1560, SH * 4, 0, 0, W, AH);
         else { const g0 = c.createLinearGradient(0, 0, 0, AH); g0.addColorStop(0, dark ? "#060A24" : "#5AA9DE"); g0.addColorStop(1, dark ? "#2D2270" : "#BADDF5"); c.fillStyle = g0; c.fillRect(0, 0, W, AH); }
-        const fd = c.createLinearGradient(0, AH - 460, 0, AH);
-        fd.addColorStop(0, T.bg + "00"); fd.addColorStop(0.7, T.bg + "CC"); fd.addColorStop(1, T.bg);
-        c.fillStyle = fd; c.fillRect(0, AH - 460, W, 460);
+        const fd = c.createLinearGradient(0, AH - 200, 0, AH);
+        fd.addColorStop(0, T.bg + "00"); fd.addColorStop(0.65, T.bg + "BB"); fd.addColorStop(1, T.bg);
+        c.fillStyle = fd; c.fillRect(0, AH - 200, W, 200);
       }
       const shadow = dark ? "rgba(10, 8, 40, .55)" : "rgba(50, 120, 190, .5)";
       const white = (fn) => { c.save(); c.shadowColor = shadow; c.shadowBlur = 22; c.fillStyle = "#FFFFFF"; fn(); c.restore(); };
-      let y = 150;
+      let y = 104;
       if (dates) {
         c.font = "600 28px " + F.m;
         const tw = c.measureText(dates).width + 44;
         if (on) { c.fillStyle = dark ? "rgba(255, 255, 255, .12)" : "rgba(70, 140, 200, .24)"; rrect(c, M, y - 40, tw, 56, 28); c.fill(); c.strokeStyle = "rgba(255, 255, 255, .55)"; c.lineWidth = 2; c.stroke(); c.fillStyle = "#FFFFFF"; c.fillText(dates, M + 22, y - 2); }
       }
-      y += 140;
-      c.font = "700 124px " + F.t;
-      wrap(c, title, CW).forEach((l) => { if (on) white(() => { c.font = "700 124px " + F.t; c.fillText(l, M, y); }); y += 138; });
-      if (one) { if (on) white(() => { c.font = "600 40px " + F.b; c.fillText([dayTag(one), one.date, one.title].filter(Boolean).join(" · "), M, y - 52, CW); }); y += 20; }
+      y += 128;
+      c.font = "700 112px " + F.t;
+      const tls = wrap(c, title, 450);
+      tls.forEach((l, i) => {
+        if (on) white(() => { c.font = "700 112px " + F.t; c.fillText(l, M, y); });
+        y += 124;
+      });
+      if (one) { if (on) white(() => { c.font = "600 36px " + F.b; c.fillText([dayTag(one), one.date, one.title].filter(Boolean).join(" · "), M, y - 56, CW); }); y += 10; }
       if (ppl.length) {
         let x = M;
         ppl.forEach((nm) => {
           c.font = "600 32px " + F.b;
-          if (on) { av(c, nm, x, y - 40, 64, "rgba(255, 255, 255, .85)"); white(() => { c.font = "600 32px " + F.b; c.fillText(nm, x + 78, y + 2); }); }
-          x += 78 + c.measureText(nm).width + 40;
+          if (on) { av(c, nm, x, y - 44, 60, "rgba(255, 255, 255, .85)"); white(() => { c.font = "600 32px " + F.b; c.fillText(nm, x + 74, y - 2); }); }
+          x += 74 + c.measureText(nm).width + 36;
         });
-        y += 72;
+        y += 58;
       }
       if (on) white(() => { c.font = "500 27px " + F.m; c.fillText("기록 " + nPosts + "개" + (nPics ? " · 사진 " + nPics + "장" : ""), M, y); });
-      y = AH - 40;
+      if (on && /상하이|上海/.test(title)) seal(c, W - M - 66, AH - 170, 112, 0.12); /* like a stamp in the corner of a postcard */
+      y = AH - 30;
       days.forEach((d, di) => {
         const col = dayCol(d);
         if (!one) {
           y += di ? 150 : 20;
           if (on) {
             c.fillStyle = col; c.fillRect(M, y, 72, 5);
-            c.font = "600 30px " + F.m; const ex = spaced(c, dayTag(d), M, y + 60, 6);
-            c.fillStyle = T.muted; c.font = "500 28px " + F.m; c.fillText(String(d.date || ""), ex + 18, y + 60);
-            if (dark) { spark(c, W - M - 30, y + 40, 16, "#FFD36B"); spark(c, W - M - 78, y + 84, 8, "#FFD36B"); }
-            else { puff(c, W - M - 150, y + 60, 1, "rgba(150, 200, 236, .45)"); }
+            c.font = "600 30px " + F.m; spaced(c, d.pre ? "BEFORE" : String(d.date || ""), M, y + 60, d.pre ? 6 : 1);
+            const on2 = dark ? "#0B1030" : "#FFFFFF", rot = (di % 2 ? 1 : -1) * 0.13;
+            badge(c, W - M - 62, y + 88, 58, rot, col, () => {
+              if (d.pre) icon(c, plane, -26, -26, 52, on2);
+              else { c.fillStyle = on2; c.font = "600 21px " + F.m; spaced(c, "DAY", -c.measureText("DAY").width / 2 - 4, -12, 4); c.textAlign = "center"; c.font = "600 50px " + F.m; c.fillText(String(state.days.indexOf(d) + 1), 0, 36); c.textAlign = "left"; }
+            });
+            if (dark) spark(c, W - M - 150, y + 20, 10, "#FFD36B"); else puff(c, W - M - 230, y + 30, 0.7, "rgba(150, 200, 236, .45)");
           }
           c.font = "700 66px " + F.t;
-          const tl = wrap(c, String(d.title || ""), CW - 120);
+          const tl = wrap(c, String(d.title || ""), CW - 170);
           if (on) { c.fillStyle = T.ink; tl.forEach((l, i) => c.fillText(l, M, y + 146 + i * 82)); }
           y += 146 + (tl.length - 1) * 82 + 66;
         }
