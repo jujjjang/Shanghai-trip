@@ -1015,7 +1015,7 @@
       case "settle": {
         const L = ledgerSum(), c = L.c, x = c.xs[0];
         return wrapW(id, '<div class="hd"><span class="lbl">가계부</span>' + ICON.money + "</div>" +
-          '<span class="sub wper">여행 총 지출</span><b class="big wbig">' + amtFmt(L.total, c) + "</b>" + '<span class="sub">오늘 ' + amtFmt(L.today, c) + "</span>" +
+          '<b class="big wbig">' + amtFmt(L.total, c) + "</b>" + '<span class="sub">총 지출 · 오늘 ' + amtFmt(L.today, c) + "</span>" +
           '<span class="sub push wxfer">' + (x ? "<b>" + esc(x.from) + "</b> → <b>" + esc(x.to) + "</b> " + amtFmt(x.v, c) + (c.xs.length > 1 ? " 외 " + (c.xs.length - 1) + "건" : "") : state.settle.expenses.length ? "정산할 돈 없어요" : "아직 같이 쓴 돈 없어요") + "</span>",
           "", ' data-act="tab" data-tab="money"');
       }
