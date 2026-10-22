@@ -66,6 +66,7 @@
     ticket: I('<path d="M15 5v2M15 11v2M15 17v2"/><path d="M5 5h14a2 2 0 0 1 2 2v3a2 2 0 0 0 0 4v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-3a2 2 0 0 0 0-4V7a2 2 0 0 1 2-2"/>'),
     receipt: I('<path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16l-3-2-2 2-2-2-2 2-2-2-3 2"/><path d="M14 8h-2.5a1.5 1.5 0 0 0 0 3h1a1.5 1.5 0 0 1 0 3H10m2 0v1.5m0-9V8"/>'),
     bowl: I('<path d="M4 11h16a1 1 0 0 1 1 1v.5c0 1.5-2.517 5.573-4 6.5v1a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1v-1c-1.687-1.054-4-5-4-6.5V12a1 1 0 0 1 1-1"/><path d="M19 7l-14 1M19 2L5 8"/>'),
+    grip: I('<path d="M5 9h14M5 15h14"/>'),
     lock: I('<rect x="5" y="11" width="14" height="9" rx="2.2"/><path d="M8.2 11V8.2a3.8 3.8 0 0 1 7.6 0V11"/>'),
     note: I('<path d="M6 3.5h9l4 4v13H6z"/><path d="M14.5 3.5v4.5h4.5M9 12h7M9 15.5h5"/>'),
     eye: I('<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.8"/>'),
@@ -644,9 +645,28 @@
   const isMine = (id) => state.mine.some((x) => x.id === id);
   function ckList(key) {
     const mine = canMine(key) ? state.mine.filter((x) => x.list === key) : [];
-    if (state.prep[key]) return state.prep[key].concat(mine);
-    if (String(key).indexOf("tk:") === 0) { const d = key.slice(3); return state.tasks.filter((x) => x.day === d).concat(mine); }
-    return [];
+    let base = [];
+    if (state.prep[key]) base = state.prep[key].concat(mine);
+    else if (String(key).indexOf("tk:") === 0) { const d = key.slice(3); base = state.tasks.filter((x) => x.day === d).concat(mine); }
+    /* the order this phone dragged them into (같이 and 나만 mixed); new ones go to the end */
+    const ord = (ui.ckOrd || {})[key];
+    if (!ord || !ord.length) return base;
+    const pos = (id) => { const i = ord.indexOf(id); return i < 0 ? 1e6 : i; };
+    return base.map((x, i) => [x, i]).sort((a, b) => pos(a[0].id) - pos(b[0].id) || a[1] - b[1]).map((a) => a[0]);
+  }
+  /* after a drag: remember the order here, and put the shared list in the same order so a friend sees it too */
+  function ckReorder(key, ids) {
+    const rank = (x) => { const i = ids.indexOf(x.id); return i < 0 ? 1e6 : i; };
+    const inPlace = (arr, pick) => {
+      const slots = []; arr.forEach((x, i) => { if (pick(x)) slots.push(i); });
+      const items = slots.map((i) => arr[i]).sort((a, b) => rank(a) - rank(b));
+      slots.forEach((sl, k) => { arr[sl] = items[k]; });
+    };
+    if (state.prep[key]) inPlace(state.prep[key], () => true);
+    else if (String(key).indexOf("tk:") === 0) { const d = key.slice(3); inPlace(state.tasks, (x) => x.day === d); }
+    inPlace(state.mine, (x) => x.list === key);
+    if (canMine(key)) { ui.ckOrd = ui.ckOrd || {}; ui.ckOrd[key] = ids; saveUI(); }
+    save();
   }
   function ckTitle(key) {
     if (CK_TITLE[key]) return CK_TITLE[key];
@@ -1635,9 +1655,13 @@
         '<button class="btn primary" type="button" data-act="li-add" data-list="' + key + '">추가</button></div>' +
         (canMine(key) ? '<p class="note ck-note">자물쇠 = 나만 보는 할 일 · 나머지는 친구 폰에도 떠요 · 체크는 각자</p>' : "") +
         '<div class="ckhead"><div class="wprog" data-prog="' + key + '"><i style="width:' + (list.length ? (doneN / list.length) * 100 : 0) + '%"></i></div><span class="mono" data-count="' + key + '">' + doneN + " / " + list.length + "</span></div>" +
-        (list.length ? '<div class="cklist">' + list.map((x) => '<div class="li">' + ckHtml(x, esc(x.t)) +
+        (list.length ? '<div class="cklist ckedit">' + list.map((x) => '<div class="li" data-id="' + x.id + '">' +
+          '<label class="ck ckbox' + (state.done[x.id] ? " on" : "") + '" aria-label="' + esc(x.t) + ' 체크"><input type="checkbox" data-ck="' + x.id + '"' + (state.done[x.id] ? " checked" : "") + "></label>" +
+          '<button class="ck-t" type="button" data-act="li-edit" data-list="' + key + '" data-id="' + x.id + '" aria-label="' + esc(x.t) + ' 고치기">' + esc(x.t) + (x.list ? '<i class="mine-ic">' + ICON.lock + "</i>" : "") + "</button>" +
           (canMine(key) ? '<button class="icon-btn mine-sw' + (x.list ? " on" : "") + '" type="button" data-act="li-mine" data-list="' + key + '" data-id="' + x.id + '" aria-pressed="' + !!x.list + '" aria-label="' + (x.list ? "친구랑 같이 보기로 바꾸기" : "나만 보기로 바꾸기") + '">' + ICON.lock + "</button>" : "") +
-          '<button class="icon-btn" type="button" data-act="li-del" data-list="' + key + '" data-id="' + x.id + '" aria-label="' + esc(x.t) + ' 지우기">' + ICON.x + "</button></div>").join("") + "</div>" : '<p class="empty">아직 비어 있어요</p>')
+          '<button class="icon-btn" type="button" data-act="li-del" data-list="' + key + '" data-id="' + x.id + '" aria-label="' + esc(x.t) + ' 지우기">' + ICON.x + "</button>" +
+          '<span class="ck-grip" data-grip="' + key + '" aria-label="끌어서 순서 바꾸기">' + ICON.grip + "</span></div>").join("") + "</div>" +
+          '<p class="note ck-tip">글자를 누르면 고치고, ' + ICON.grip + " 를 끌면 순서가 바뀌어요</p>" : '<p class="empty">아직 비어 있어요</p>')
     });
   }
   function papagoSheet() {
@@ -1965,6 +1989,7 @@
         if (!btn.classList.contains("armed")) { btn.classList.add("armed"); btn.textContent = "한 번 더 누르면 되돌려요"; return; }
         const seed = window.TRIP_SEED, untick = (list) => list.forEach((x) => { delete state.done[x.id]; });
         if (v.widgets) { ui.wsets = {}; editing = false; saveUI(); }
+        if (ui.ckOrd && v.todo) { Object.keys(ui.ckOrd).forEach((k2) => { if (k2 === "todo" || k2.indexOf("tk:") === 0) delete ui.ckOrd[k2]; }); saveUI(); }
         ["pack", "apps"].forEach((key) => {
           if (!v[key]) return;
           untick(state.prep[key]); state.prep[key] = clone(seed.prep[key] || []); untick(state.prep[key]);
@@ -2134,6 +2159,39 @@
     over.parentNode.insertBefore(drag.w, after ? over.nextSibling : over);
     soloRefresh(over.parentNode);
   });
+  /* 할 일 · 준비물 sheet: drag a row by its grip */
+  let ckDrag = null;
+  sheet.addEventListener("pointerdown", (e) => {
+    const g = e.target.closest(".ck-grip");
+    if (!g) return;
+    e.preventDefault();
+    const li = g.closest(".li");
+    ckDrag = { li, key: g.getAttribute("data-grip"), id: e.pointerId, list: li.parentNode };
+    li.classList.add("dragging");
+    try { g.setPointerCapture(e.pointerId); } catch (err) {}
+  });
+  document.addEventListener("pointermove", (e) => {
+    if (!ckDrag || e.pointerId !== ckDrag.id) return;
+    e.preventDefault();
+    let before = null;
+    for (const r of Array.from(ckDrag.list.children)) {
+      if (r === ckDrag.li) continue;
+      const b = r.getBoundingClientRect();
+      if (e.clientY < b.top + b.height / 2) { before = r; break; }
+    }
+    if (before !== ckDrag.li.nextSibling || (!before && ckDrag.li !== ckDrag.list.lastElementChild)) ckDrag.list.insertBefore(ckDrag.li, before);
+  }, { passive: false });
+  const ckDrop = () => {
+    if (!ckDrag) return;
+    const d = ckDrag;
+    ckDrag = null;
+    d.li.classList.remove("dragging");
+    ckReorder(d.key, Array.from(d.list.children).map((r) => r.getAttribute("data-id")));
+    render(); ckSheet(d.key);
+  };
+  document.addEventListener("pointerup", ckDrop);
+  document.addEventListener("pointercancel", ckDrop);
+  document.addEventListener("touchmove", (e) => { if (ckDrag) e.preventDefault(); }, { passive: false });
   document.addEventListener("pointerup", endDrag);
   document.addEventListener("pointercancel", endDrag);
   document.addEventListener("touchmove", (e) => { if (drag) e.preventDefault(); }, { passive: false });
@@ -2413,7 +2471,7 @@
   function busy() {
     const ae = document.activeElement;
     if (ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName) && (view.contains(ae) || sheet.contains(ae))) return true;
-    if (rg || drag || press || dotScrub) return true;
+    if (rg || drag || press || dotScrub || ckDrag) return true;
     if (!sheet.hidden && !/^(ck-|dt-|share)/.test(sheetKey()) && sheet.querySelector(".sh-body input, .sh-body textarea, .sh-body select")) return true;
     return false;
   }
@@ -2901,6 +2959,24 @@
       }
       case "ck-mine": ckMineOn = !ckMineOn; { const k = t.getAttribute("data-list"), inp = document.getElementById("add-" + k), v = inp ? inp.value : ""; ckSheet(k); const again = document.getElementById("add-" + k); if (again) { again.value = v; again.focus(); } } return;
       case "li-mine": { const k = t.getAttribute("data-list"), r = ckMove(k, id); save(); render(); ckSheet(k); if (r) toast(r === "나만" ? "이제 내 폰에만 보여요" : "이제 친구 폰에도 보여요"); return; }
+      case "li-edit": { /* the words turn into a box right there; Enter or tapping away saves */
+        const key = t.getAttribute("data-list"), x = ckList(key).find((y) => y.id === id);
+        if (!x) return;
+        const inp = document.createElement("input");
+        inp.className = "ck-edit"; inp.value = x.t; inp.setAttribute("enterkeyhint", "done"); inp.setAttribute("aria-label", "고치기");
+        t.replaceWith(inp); inp.focus(); inp.select();
+        let over = false;
+        const done = (ok) => {
+          if (over) return;
+          over = true;
+          const v = inp.value.trim();
+          if (ok && v && v !== x.t) { x.t = v; save(); render(); }
+          ckSheet(key);
+        };
+        inp.addEventListener("keydown", (ev) => { if (ev.key === "Enter") { ev.preventDefault(); done(true); } else if (ev.key === "Escape") done(false); });
+        inp.addEventListener("blur", () => done(true));
+        return;
+      }
       case "li-del": {
         const key = t.getAttribute("data-list");
         ckDel(key, id);
