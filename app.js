@@ -660,7 +660,7 @@
     pack: { name: "준비물", desc: "짐 체크리스트", icon: "bag", size: "big" },
     apps: { name: "필수 앱", desc: "깔아 둘 앱 체크", icon: "phone", size: "half" },
     route: { name: "오늘 동선", desc: "갈 곳을 작은 지도로", icon: "map", size: "half" },
-    settle: { name: "가계부", desc: "총 지출 · 오늘 · 정산", icon: "money", size: "half" },
+    settle: { name: "가계부", desc: "내 지출 · 오늘 · 정산", icon: "money", size: "half" },
     fx: { name: "환율 계산", desc: "위안 ↔ 원 바로 계산", icon: "swap", size: "half" },
     photos: { name: "오늘 기록", desc: "최근 기록 · 바로 쓰기", icon: "camera", size: "half" },
     memo: { name: "메모", desc: "나만 보는 메모 한 장", icon: "note", size: "half" }
@@ -1067,7 +1067,7 @@
       case "settle": {
         const L = ledgerSum(), c = L.c, x = c.xs[0];
         return wrapW(id, '<div class="hd"><span class="lbl">가계부</span>' + ICON.money + "</div>" +
-          '<b class="big wbig">' + amtFmt(L.total, c) + "</b>" + '<span class="sub">총 지출 · 오늘 ' + amtFmt(L.today, c) + "</span>" +
+          '<b class="big wbig">' + amtFmt(L.total, c) + "</b>" + '<span class="sub">내 지출 · 오늘 ' + amtFmt(L.today, c) + "</span>" +
           '<span class="sub push wxfer">' + (x ? "<b>" + esc(x.from) + "</b> → <b>" + esc(x.to) + "</b> " + amtFmt(x.v, c) + (c.xs.length > 1 ? " 외 " + (c.xs.length - 1) + "건" : "") : state.settle.expenses.length ? "정산할 돈 없어요" : "아직 같이 쓴 돈 없어요") + "</span>",
           "", ' data-act="tab" data-tab="money"');
       }
@@ -1443,15 +1443,16 @@
   }
   function inBase(e, c) { const v = +e.amt || 0; return c.base === "KRW" ? (e.cur === "KRW" ? v : v * c.rate) : e.cur === "KRW" ? 0 : v; }
   const amtFmt = (v, c) => (c.base === "KRW" ? wonFmt(v) : yuanFmt(v));
+  /* 내 지출: my 나만 money in full + my even share of what we spent together (what's left once we've settled up) */
   function ledgerSum() {
-    const c = settleCalc(), all = allExp(), tIso = todayIso(), cats = {};
+    const c = settleCalc(), all = allExp(), tIso = todayIso(), cats = {}, part = (e) => (e.mine ? 1 : 1 / (c.n || 1));
     let total = 0, today = 0;
     all.forEach((e) => {
-      const v = inBase(e, c), d = new Date(e.at || 0), iso = d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+      const v = inBase(e, c) * part(e), d = new Date(e.at || 0), iso = d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
       total += v; if (iso === tIso) today += v;
       const k = catOf(e.cat)[0]; cats[k] = (cats[k] || 0) + v;
     });
-    return { c, all, total, today, cats };
+    return { c, all, total, today, cats, part };
   }
   /* which day an expense belongs to: today, or any trip day (for writing things down later) */
   let expDay = "";
@@ -1511,20 +1512,20 @@
     const S = state.settle, ppl = S.members, L = ledgerSum(), c = L.c;
     if (ppl.indexOf(ui.payer) < 0) ui.payer = ppl[0] || "";
     let s = pageHead("가계부", c.rate ? "1위안 = " + c.rate + "원" : "여행 지출 · 정산", true);
-    s += '<div class="pad"><div class="box"><div class="stiles"><div class="stile"><span>여행 총 지출</span><b>' + amtFmt(L.total, c) + "</b></div>" +
+    s += '<div class="pad"><div class="box"><div class="stiles"><div class="stile"><span>내 지출</span><b>' + amtFmt(L.total, c) + "</b></div>" +
       '<div class="stile"><span>오늘</span><b>' + amtFmt(L.today, c) + "</b></div></div>" +
       (L.all.length ? '<div class="catsum">' + CATS.filter((k) => L.cats[k[0]]).map((k) => '<span class="cs">' + ICON[k[2]] + k[1] + " <b>" + amtFmt(L.cats[k[0]], c) + "</b></span>").join("") + "</div>" : "") + "</div></div>";
     s += settleCard(L);
     if (L.all.length) {
       const list = L.all.slice().sort((a, b) => (b.at || 0) - (a.at || 0)), days = {};
-      list.forEach((e) => { const dl = dayLabel(e.at || 0); days[dl] = (days[dl] || 0) + inBase(e, c); });
+      list.forEach((e) => { const dl = dayLabel(e.at || 0); days[dl] = (days[dl] || 0) + inBase(e, c) * L.part(e); });
       let last = "";
       list.forEach((e) => {
         const dl = dayLabel(e.at || 0);
         if (dl !== last) { s += (last ? "</div></div>" : "") + '<div class="exp-dh"><span>' + dl + "</span><span>" + amtFmt(days[dl], c) + '</span></div><div class="pad"><div class="box exp-box">'; last = dl; }
         const armed = armedExp === e.id;
         s += '<div class="exp">' + catIc(e.cat) + '<button class="exp-open" type="button" data-act="exp-edit" data-id="' + e.id + '" aria-label="' + esc(e.what || "지출") + ' 금액 고치기"><span class="w2"><b>' + esc(e.what || catOf(e.cat)[1]) +
-          (e.mine ? '<i class="mine-ic" title="나만 쓴 돈">' + ICON.lock + "</i>" : "") + "</b><span>" + (e.mine ? "나만 · 정산 안 함" : esc(e.payer) + " 냄") + "</span></span>" +
+          (e.mine ? '<i class="mine-ic" title="나만 쓴 돈">' + ICON.lock + "</i>" : "") + "</b><span>" + (e.mine ? "나만 · 정산 안 함" : esc(e.payer) + " 냄" + (c.n > 1 ? " · 내 몫 " + (e.cur === "KRW" ? wonFmt(e.amt / c.n) : yuanFmt(e.amt / c.n)) : "")) + "</span></span>" +
           '<span class="a">' + (e.cur === "KRW" ? wonFmt(+e.amt) : yuanFmt(+e.amt)) + (e.cur !== "KRW" && c.rate ? "<small>" + wonFmt(e.amt * c.rate) + "</small>" : "") + "</span></button>" +
           '<button class="btn sm ' + (armed ? "danger armed" : "ghost") + '" type="button" data-act="exp-del" data-id="' + e.id + '" aria-label="이 지출 지우기">' + (armed ? "지우기" : ICON.x) + "</button></div>";
       });
