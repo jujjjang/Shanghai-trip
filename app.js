@@ -1378,6 +1378,37 @@
   /* ---------- MONEY ---------- */
   let armedExp = null, armedTimer = null;
   function dayLabel(ts) { const t = new Date(ts); return (t.getMonth() + 1) + "." + t.getDate() + " " + "일월화수목금토"[t.getDay()]; }
+  /* tap a line in 내역 to fix it: amount, ¥/₩, what, who paid, which day */
+  function expSheet(id) {
+    const e = state.settle.expenses.find((x) => x.id === id);
+    if (!e) return;
+    const t = new Date(e.at || Date.now()), pad = (n) => String(n).padStart(2, "0");
+    const ymd = t.getFullYear() + "-" + pad(t.getMonth() + 1) + "-" + pad(t.getDate());
+    const ppl = state.settle.members.indexOf(e.payer) < 0 && e.payer ? state.settle.members.concat(e.payer) : state.settle.members;
+    const radio = (name, val, label, on) => '<label class="rchip"><input type="radio" name="' + name + '" value="' + esc(val) + '"' + (on ? " checked" : "") + "><span>" + label + "</span></label>";
+    openSheet({
+      key: "exp", title: "지출 고치기",
+      body: '<div class="amtrow"><label class="field" style="flex:1"><span>금액</span><input name="amt" inputmode="decimal" value="' + esc(e.amt) + '" autocomplete="off"></label>' +
+          '<div class="field"><span>통화</span><div class="chips">' + radio("cur", "CNY", "¥", e.cur !== "KRW") + radio("cur", "KRW", "₩", e.cur === "KRW") + "</div></div></div>" +
+        field("what", "어디에 썼는지", e.what, { ph: "예: 점심 딤섬" }) +
+        '<div class="field"><span>낸 사람</span><div class="chips">' + ppl.map((p) => radio("payer", p, esc(p), p === e.payer)).join("") + "</div></div>" +
+        field("day", "날짜", ymd, { type: "date" }),
+      foot: footSave(true),
+      on(k, v, btn) {
+        if (k === "del") {
+          if (!armDelete(btn)) return;
+          state.settle.expenses = state.settle.expenses.filter((x) => x !== e);
+          save(); closeSheet(); render(); toast("지웠어요"); return;
+        }
+        if (k !== "save") return;
+        const amt = parseFloat(String(v.amt || "").replace(/[,\s]/g, ""));
+        if (!(amt > 0)) { toast("금액을 넣어주세요"); return; }
+        e.amt = amt; e.cur = v.cur === "KRW" ? "KRW" : "CNY"; e.what = v.what || ""; if (v.payer) e.payer = v.payer;
+        if (v.day && v.day !== ymd) { const m = v.day.match(/^(\d{4})-(\d{2})-(\d{2})$/); if (m) { const n = new Date(e.at || Date.now()); n.setFullYear(+m[1], +m[2] - 1, +m[3]); e.at = n.getTime(); } }
+        save(); closeSheet(); render(); toast("고쳤어요");
+      }
+    });
+  }
   function moneyHtml() {
     const S = state.settle, ppl = S.members, c = settleCalc();
     if (ppl.indexOf(ui.payer) < 0) ui.payer = ppl[0] || "";
@@ -1411,8 +1442,8 @@
         const dl = dayLabel(e.at || 0);
         if (dl !== last) { s += '<div class="exp-day">' + dl + "</div>"; last = dl; }
         const armed = armedExp === e.id;
-        s += '<div class="exp"><span class="w2"><b>' + esc(e.what || "지출") + "</b><span>" + esc(e.payer) + " 냄</span></span>" +
-          '<span class="a">' + (e.cur === "KRW" ? wonFmt(+e.amt) : yuanFmt(+e.amt)) + (e.cur !== "KRW" && c.rate ? "<small>" + wonFmt(e.amt * c.rate) + "</small>" : "") + "</span>" +
+        s += '<div class="exp"><button class="exp-open" type="button" data-act="exp-edit" data-id="' + e.id + '" aria-label="' + esc(e.what || "지출") + ' 고치기"><span class="w2"><b>' + esc(e.what || "지출") + "</b><span>" + esc(e.payer) + " 냄</span></span>" +
+          '<span class="a">' + (e.cur === "KRW" ? wonFmt(+e.amt) : yuanFmt(+e.amt)) + (e.cur !== "KRW" && c.rate ? "<small>" + wonFmt(e.amt * c.rate) + "</small>" : "") + "</span></button>" +
           '<button class="btn sm ' + (armed ? "danger armed" : "ghost") + '" type="button" data-act="exp-del" data-id="' + e.id + '" aria-label="이 지출 지우기">' + (armed ? "지우기" : ICON.x) + "</button></div>";
       });
       s += "</div></div>";
@@ -2759,6 +2790,7 @@
         save(); render(); toast("추가했어요");
         return;
       }
+      case "exp-edit": expSheet(id); return;
       case "exp-del": {
         clearTimeout(armedTimer);
         if (armedExp !== id) { armedExp = id; render(); armedTimer = setTimeout(() => { armedExp = null; render(); }, 3500); return; }
