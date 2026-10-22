@@ -1294,3 +1294,17 @@ body { background-color: var(--edge) !important; }
 .hc-nav .hc-dots { padding: 12px 18px; margin: -12px 0; touch-action: none; cursor: pointer; -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; }
 .hc-nav .hc-dots i { width: 7px; height: 7px; }
 .hc-nav .hc-dots i.on { width: 20px; }
+
+/* 장소 추가: 자동 찾기 / 직접 넣기 */
+.amode { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 14px; background: var(--surface-2); }
+.amode button { min-height: 38px; border: 0; border-radius: 10px; background: transparent; color: var(--ink-2); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+.amode button[aria-pressed="true"] { background: var(--surface); color: var(--accent); box-shadow: var(--shadow-sm); }
+.shprev:empty { display: none; }
+.shprev { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 14px; background: var(--accent-soft); margin-top: -4px; }
+.sp-row { display: flex; gap: 10px; align-items: baseline; }
+.sp-row span { flex: none; width: 64px; font-size: 12px; color: var(--muted); }
+.sp-row b { font-size: 15px; font-weight: 600; color: var(--ink); word-break: keep-all; }
+.sp-ok, .sp-no { margin: 0; font-size: 12.5px; display: flex; align-items: center; gap: 5px; }
+.sp-ok { color: var(--accent); }
+.sp-ok svg { width: 14px; height: 14px; flex: none; }
+.sp-no { color: var(--coral, #C0566B); }

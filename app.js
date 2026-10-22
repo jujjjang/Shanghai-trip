@@ -1594,6 +1594,90 @@
         "</div>").join("") + (f.note ? '<div class="kv2"><span class="k">메모</span><span class="v">' + esc(f.note) + "</span></div>" : "")
     });
   }
+  /* ---------- 자동 찾기: share text from 고덕지도 / 디엔핑 → Chinese name + address; OpenStreetMap → map pin ---------- */
+  const SH_BOX = "120.85,31.9,122.2,30.65", SH_MID = [31.2304, 121.4737];
+  function kmBetween(a, b) {
+    const r = Math.PI / 180, dLa = (b[0] - a[0]) * r, dLo = (b[1] - a[1]) * r;
+    const x = Math.sin(dLa / 2) ** 2 + Math.cos(a[0] * r) * Math.cos(b[0] * r) * Math.sin(dLo / 2) ** 2;
+    return 12742 * Math.asin(Math.sqrt(x));
+  }
+  const hanN = (t) => (String(t).match(/[一-鿿]/g) || []).length;
+  const addrLike = (t) => (/[省市区县镇]/.test(t) && /(路|街|道|号|弄|巷|村|广场|大厦|中心)/.test(t)) || /(路|街)\d+(-\d+)?号/.test(t);
+  function parseShare(text) {
+    let t = String(text || "").replace(/https?:\/\/\S+/g, "\n").replace(/【[^】]*】|\[[^\]]*\]/g, "\n");
+    t = t.replace(/(我分享了一个位置给你|我在高德地图上发现了一个好地方|给你推荐一家店|推荐一家店|推荐给你|分享自\S*|点击(链接)?查看\S*|复制[^\n]*打开[^\n]*|打开(高德地图|大众点评|美团|App)[^\n]*|快来看看吧?|来自(高德地图|大众点评)\S*)/g, "\n");
+    let parts = t.split(/[\n\r]+|[，,；;。]|\s{2,}|\s+[·|]\s+/).map((x) => x.trim()).filter(Boolean);
+    /* "武康大楼 上海市徐汇区…" on one line: split where the address starts */
+    parts = parts.reduce((out, x) => {
+      const w = x.split(/\s+/), k = w.findIndex((y, i) => i > 0 && addrLike(w.slice(i).join("")));
+      if (k > 0) out.push(w.slice(0, k).join(" "), w.slice(k).join(" ")); else out.push(x);
+      return out;
+    }, []);
+    let zh = "", addr = "";
+    parts.forEach((x) => { const m = x.match(/^(地址|位置|address)\s*[:：]?\s*(.+)$/i); if (m && !addr) addr = m[2].trim(); });
+    const junk = (x) => /^(地址|位置|电话|营业|人均|评分|¥|￥)/i.test(x) || (/(人均|¥|￥|条评价|星级)/.test(x) && hanN(x) < 6);
+    parts.forEach((x) => {
+      if (junk(x)) return;
+      if (addrLike(x)) { if (!addr) addr = x; return; }
+      if (!zh && hanN(x) >= 2) zh = x.replace(/^["“'「『:：\s]+|["”'」』:：\s]+$/g, "");
+    });
+    return { zh, addr };
+  }
+  let geoLast = 0;
+  async function nomi(q) {
+    const wait = geoLast + 1100 - Date.now();
+    if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+    geoLast = Date.now();
+    const r = await fetch("https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=cn&bounded=1&viewbox=" + SH_BOX + "&accept-language=zh-CN&q=" + encodeURIComponent(q), { headers: { Accept: "application/json" } });
+    if (!r.ok) throw new Error("http " + r.status);
+    const a = await r.json();
+    return a && a[0] ? [+(+a[0].lat).toFixed(5), +(+a[0].lon).toFixed(5)] : null;
+  }
+  async function geoLookup(zh, addr) {
+    const tries = [];
+    const add = (q) => { q = String(q || "").trim(); if (q && hanN(q) >= 2 && tries.indexOf(q) < 0) tries.push(q); };
+    add(zh); add(String(zh || "").replace(/[（(][^）)]*[）)]/g, "")); add(addr);
+    add(String(addr || "").replace(/^(中国)?(上海市?)?/, "").replace(/\d[\d\-—]*号.*$/, ""));
+    for (const q of tries) { const ll = await nomi(q); if (ll) return ll; }
+    return null;
+  }
+  const locating = {};
+  async function locate(id, quiet) {
+    const f = findItem(id);
+    if (!f || f.kind === "spot" || locating[id]) return;
+    const key = f.item.zh || f.item.addr;
+    if (!key) return;
+    locating[id] = true;
+    try {
+      const ll = await geoLookup(f.item.zh, f.item.addr);
+      const g = findItem(id); /* re-read: a sync may have swapped the object meanwhile */
+      if (!g || (g.item.zh || g.item.addr) !== key) return;
+      const it = g.item;
+      if (ll) {
+        it.ll = ll; delete it.llMiss;
+        if (kmBetween(SH_MID, ll) > 12) it.far = true; else delete it.far;
+        save(); render(); if (!quiet) toast((it.ko || it.zh) + " 위치를 찾아서 지도에 꽂았어요");
+      } else {
+        it.llMiss = key; save();
+        if (!quiet) toast((it.ko || it.zh) + " 위치는 못 찾았어요 · 지도 핀만 빠지고 나머진 다 돼요", null, 3500);
+      }
+    } catch (e) { /* offline: tried again next time the app opens */ }
+    finally { delete locating[id]; }
+  }
+  function locateMissing() {
+    if (navigator.onLine === false) return;
+    const ids = [];
+    state.days.forEach((d) => d.stops.forEach((st) => { const k = st.zh || st.addr; if (!st.ll && k && st.llMiss !== k) ids.push(st.id); }));
+    ids.slice(0, 8).reduce((pr, id) => pr.then(() => locate(id, true)), Promise.resolve());
+  }
+  function sharePreview() {
+    const ta = sheet.querySelector('textarea[name="share"]'), out = document.getElementById("shPrev");
+    if (!ta || !out) return;
+    const p = parseShare(ta.value);
+    out.innerHTML = !ta.value.trim() ? "" : p.zh
+      ? '<div class="sp-row"><span>중국어 이름</span><b class="zh">' + esc(p.zh) + "</b></div>" + (p.addr ? '<div class="sp-row"><span>주소</span><b class="zh">' + esc(p.addr) + "</b></div>" : "") + '<p class="sp-ok">' + ICON.pin + "저장하면 지도 위치도 알아서 찾아요</p>"
+      : '<p class="sp-no">중국어 이름을 못 찾았어요 · 고덕지도나 디엔핑에서 공유 → 복사한 걸 붙여넣어 주세요</p>';
+  }
   function itemSheet(id, opt) {
     opt = opt || {};
     const f = id ? findItem(id) : null;
@@ -1602,18 +1686,54 @@
     const isNew = !f;
     const it = f ? f.item : { id: newId(isSpot ? "p" : "s"), ko: "", zh: "" };
     const dayId = f ? f.day.id : opt.parent ? findItem(opt.parent).day.id : opt.day;
-    let body = '<div class="two">' + field("ko", isSpot ? "가게 이름" : "장소 이름", it.ko) + priSelect(it.pri) + "</div>" +
-      field("zh", "중국어 이름 (택시·지도용)", it.zh, { zh: 1 }) +
+    const keep = opt.keep || {}, mode = opt.mode || (isNew ? "auto" : "manual");
+    const daySel = (sel) => '<label class="field"><span>날짜</span><select name="day">' + state.days.map((d) => '<option value="' + d.id + '"' + (d.id === sel ? " selected" : "") + ">" +
+      esc((isNum(d.n) ? "Day " + d.n : "귀국") + " · " + d.date + " · " + d.title) + "</option>").join("") + "</select></label>";
+    const modeSeg = '<div class="amode" role="group" aria-label="넣는 방법">' +
+      [["auto", "자동 찾기"], ["manual", "직접 넣기"]].map((m) => '<button type="button" data-act="sh" data-k="mode-' + m[0] + '" aria-pressed="' + (mode === m[0]) + '">' + m[1] + "</button>").join("") + "</div>";
+    if (mode === "auto") {
+      const autoBody = modeSeg +
+        '<label class="field"><span>고덕지도 · 디엔핑에서 공유 → 복사한 걸 붙여넣기</span><textarea name="share" class="zhin" style="min-height:96px" placeholder="예: 武康大楼 上海市徐汇区淮海中路1842号 https://surl.amap.com/…&#10;중국어 이름만 붙여넣어도 돼요">' + esc(keep.share || "") + "</textarea></label>" +
+        '<div class="shprev" id="shPrev" aria-live="polite"></div>' +
+        '<div class="two">' + field("ko", (isSpot ? "가게" : "장소") + " 한국어 이름 · 안 써도 돼요", keep.ko != null ? keep.ko : it.ko) + priSelect(keep.pri != null ? keep.pri : it.pri) + "</div>" +
+        (isSpot ? "" : daySel(keep.day || dayId));
+      openSheet({
+        key: "item", title: isNew ? (isSpot ? "가게 추가" : "장소 추가") : (it.ko || it.zh || "장소") + " 다시 찾기",
+        body: autoBody, foot: footSave(false),
+        on(k, v) {
+          if (k === "mode-manual") { const p = parseShare(v.share); itemSheet(id, Object.assign({}, opt, { mode: "manual", keep: { ko: v.ko || "", zh: p.zh || "", pri: v.pri, day: v.day } })); return; }
+          if (k !== "save") return;
+          const p = parseShare(v.share);
+          if (!p.zh) { toast("중국어 이름을 못 찾았어요 · 공유 → 복사한 걸 붙여넣어 주세요", null, 3500); return; }
+          const changed = it.zh !== p.zh;
+          it.zh = p.zh; it.ko = v.ko || (isNew ? p.zh : it.ko || p.zh);
+          if (p.addr) it.addr = p.addr; else if (changed) delete it.addr;
+          if (v.pri) it.pri = v.pri; else delete it.pri;
+          if (changed) { delete it.ll; delete it.llMiss; delete it.far; }
+          if (isNew) {
+            if (isSpot) (parent.spots = parent.spots || []).push(it);
+            else findDay(v.day || dayId).stops.push(it);
+          } else if (!isSpot && v.day && v.day !== f.day.id && findDay(v.day)) {
+            f.list.splice(f.list.indexOf(it), 1); findDay(v.day).stops.push(it); ui.day = v.day; saveUI();
+          }
+          save(); render(); detailSheet(it.id);
+          if (!isSpot && !it.ll) { toast("저장했어요 · 지도 위치 찾는 중…"); locate(it.id); } else toast("저장했어요");
+        }
+      });
+      const ta = sheet.querySelector('textarea[name="share"]');
+      if (ta) { ta.addEventListener("input", sharePreview); sharePreview(); }
+      return;
+    }
+    let body = modeSeg + '<div class="two">' + field("ko", isSpot ? "가게 이름" : "장소 이름", keep.ko != null ? keep.ko : it.ko) + priSelect(keep.pri != null ? keep.pri : it.pri) + "</div>" +
+      field("zh", "중국어 이름 (택시·지도용)", keep.zh != null && !it.zh ? keep.zh : it.zh, { zh: 1 }) +
       field("desc", "한 줄 설명", it.desc, { ph: "예: 신천지 근처 딤섬집" }) +
       field("tags", "태그 (쉼표로 구분)", (it.tags || []).join(", "), { ph: "예: 예약 필수, 현금만" }) +
       field("hours", "영업시간", it.hours, { ph: "예: 10:00–22:00, 월요일 휴무" }) +
       field("memo", "가서 할 일 · 메모", it.memo, { area: 1, ph: "예: 홍미창펀 꼭 먹기" });
-    if (!isSpot) {
-      body += '<label class="field"><span>날짜</span><select name="day">' + state.days.map((d) => '<option value="' + d.id + '"' + (d.id === dayId ? " selected" : "") + ">" +
-          esc((isNum(d.n) ? "Day " + d.n : "귀국") + " · " + d.date + " · " + d.title) + "</option>").join("") + "</select></label>";
-    }
+    if (!isSpot) body += daySel(keep.day || dayId);
     const apply = (v) => {
       it.ko = v.ko || it.ko || "";
+      if ((v.zh || "") !== (it.zh || "")) { delete it.ll; delete it.llMiss; delete it.far; } /* a new Chinese name means a new place on the map */
       it.zh = v.zh || "";
       ["desc", "hours", "memo", "pri"].forEach((k) => { if (v[k]) it[k] = v[k]; else delete it[k]; });
       const tags = String(v.tags || "").split(/[,，]/).map((x) => x.trim()).filter(Boolean);
@@ -1628,13 +1748,15 @@
       }
     };
     openSheet({
-      title: isNew ? (isSpot ? "가게 추가" : "장소 추가") : (it.ko || "장소") + " 수정",
+      key: "item", title: isNew ? (isSpot ? "가게 추가" : "장소 추가") : (it.ko || "장소") + " 수정",
       body,
       foot: footSave(!isNew),
       on(k, v, btn) {
+        if (k === "mode-auto") { itemSheet(id, Object.assign({}, opt, { mode: "auto", keep: { ko: v.ko || "", share: v.zh || "", pri: v.pri, day: v.day } })); return; }
         if (k === "save") {
           if (!v.ko) { toast("이름을 적어주세요"); return; }
-          apply(v); save(); render(); detailSheet(it.id); toast("저장했어요");
+          apply(v); save(); render(); detailSheet(it.id);
+          if (!isSpot && it.zh && !it.ll) { toast("저장했어요 · 지도 위치 찾는 중…"); locate(it.id); } else toast("저장했어요");
         } else if (k === "del") {
           if (!armDelete(btn)) return;
           const g = findItem(it.id);
@@ -2734,6 +2856,7 @@
   render();
   takeInviteFromUrl();
   if (sync.code) setTimeout(syncNow, 400);
+  setTimeout(locateMissing, 5000); /* places added without a pin (or by a friend whose phone was offline) get one */
   try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (ui.tab === "plan") { fitPlan(); drawMap(); } }); } catch (e) {}
   setInterval(applyTheme, 60000);
   document.addEventListener("visibilitychange", () => { if (!document.hidden) { applyTheme(); if (ui.tab === "home" && !editing) render(); } });
