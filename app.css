@@ -1349,3 +1349,5 @@ body { background-color: var(--edge) !important; }
 
 .viewer-foot { display: flex; justify-content: center; gap: 8px; padding: 10px 12px calc(var(--safe-b) + 12px); }
 .viewer-foot .btn { background: #1d1d22; color: #fff; border-color: #33333a; }
+.wper { margin-top: 6px; font-size: 12px; }
+.wper + .wbig { margin-top: 0; }

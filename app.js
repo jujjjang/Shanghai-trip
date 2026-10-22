@@ -615,7 +615,7 @@
     pack: { name: "필수 준비물", desc: "짐 체크리스트", icon: "bag", size: "big" },
     apps: { name: "필수 앱", desc: "깔아 둘 앱 체크", icon: "phone", size: "half" },
     route: { name: "오늘 동선", desc: "갈 곳을 작은 지도로", icon: "map", size: "half" },
-    settle: { name: "N빵 정산", desc: "총 지출 · 보낼 돈", icon: "money", size: "half" },
+    settle: { name: "지출 내역", desc: "1인당 · 총 지출 · 보낼 돈", icon: "money", size: "half" },
     fx: { name: "환율 계산", desc: "위안 ↔ 원 바로 계산", icon: "swap", size: "half" },
     photos: { name: "오늘 기록", desc: "최근 기록 · 바로 쓰기", icon: "camera", size: "half" },
     memo: { name: "메모", desc: "나만 보는 메모 한 장", icon: "note", size: "half" }
@@ -1011,8 +1011,10 @@
       }
       case "settle": {
         const c = settleCalc(), x = c.xs[0];
-        return wrapW(id, '<div class="hd"><span class="lbl">N빵 정산</span>' + ICON.money + "</div>" +
-          '<b class="big wbig">' + totalFmt(c) + "</b>" + '<span class="sub">' + (state.settle.members.length ? c.n + "명 · 1인당 " + (c.base === "KRW" ? wonFmt(c.share) : yuanFmt(c.share)) : "인원을 먼저 넣어주세요") + "</span>" +
+        return wrapW(id, '<div class="hd"><span class="lbl">지출 내역</span>' + ICON.money + "</div>" +
+          (state.settle.members.length
+            ? '<span class="sub wper">1인당 · ' + c.n + '명</span><b class="big wbig">' + (c.base === "KRW" ? wonFmt(c.share) : yuanFmt(c.share)) + "</b>" + '<span class="sub">총 ' + totalFmt(c) + "</span>"
+            : '<span class="sub">인원을 먼저 넣어주세요</span>') +
           '<span class="sub push wxfer">' + (x ? "<b>" + esc(x.from) + "</b> → <b>" + esc(x.to) + "</b> " + (c.base === "KRW" ? wonFmt(x.v) : yuanFmt(x.v)) + (c.xs.length > 1 ? " 외 " + (c.xs.length - 1) + "건" : "") : state.settle.expenses.length ? "보낼 돈 없어요" : "아직 지출이 없어요") + "</span>",
           "", ' data-act="tab" data-tab="money"');
       }
