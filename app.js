@@ -1378,26 +1378,6 @@
   /* ---------- MONEY ---------- */
   let armedExp = null, armedTimer = null;
   function dayLabel(ts) { const t = new Date(ts); return (t.getMonth() + 1) + "." + t.getDate() + " " + "일월화수목금토"[t.getDay()]; }
-  /* tap a line in 내역 to fix its amount */
-  function expSheet(id) {
-    const e = state.settle.expenses.find((x) => x.id === id);
-    if (!e) return;
-    openSheet({
-      key: "exp", center: true, title: (e.what || "지출") + " 금액",
-      body: '<div class="amtrow"><label class="field" style="flex:1"><span class="vh">금액</span><input name="amt" inputmode="decimal" value="' + esc(e.amt) + '" autocomplete="off"></label>' +
-        '<span class="exp-cur">' + (e.cur === "KRW" ? "₩" : "¥") + "</span></div>" +
-        '<p class="note">' + esc(e.payer || "") + " 냄 · " + dayLabel(e.at || 0) + "</p>",
-      foot: '<span class="grow"></span><button class="btn" type="button" data-act="sh-close">취소</button><button class="btn primary" type="button" data-act="sh" data-k="save">저장</button>',
-      on(k, v) {
-        if (k !== "save") return;
-        const amt = parseFloat(String(v.amt || "").replace(/[,\s]/g, ""));
-        if (!(amt > 0)) { toast("금액을 넣어주세요"); return; }
-        e.amt = amt; save(); closeSheet(); render(); toast("고쳤어요");
-      }
-    });
-    const inp = sheet.querySelector('input[name="amt"]');
-    if (inp) { inp.focus(); inp.select(); }
-  }
   function moneyHtml() {
     const S = state.settle, ppl = S.members, c = settleCalc();
     if (ppl.indexOf(ui.payer) < 0) ui.payer = ppl[0] || "";
@@ -2779,7 +2759,27 @@
         save(); render(); toast("추가했어요");
         return;
       }
-      case "exp-edit": expSheet(id); return;
+      case "exp-edit": { /* the amount turns into a box right there; Enter or tapping away saves it */
+        const e = state.settle.expenses.find((x) => x.id === id);
+        if (!e) return;
+        const box = document.createElement("div");
+        box.className = "exp-open editing";
+        box.innerHTML = t.querySelector(".w2").outerHTML + '<span class="a"><label class="exp-edit"><span>' + (e.cur === "KRW" ? "₩" : "¥") + '</span><input inputmode="decimal" value="' + esc(e.amt) + '" aria-label="금액" autocomplete="off"></label></span>';
+        t.replaceWith(box);
+        const inp = box.querySelector("input");
+        inp.focus(); inp.select();
+        let over = false;
+        const done = (ok) => {
+          if (over) return;
+          over = true;
+          const v = parseFloat(String(inp.value).replace(/[,\s]/g, ""));
+          if (ok && v > 0 && v !== +e.amt) { e.amt = v; save(); toast("고쳤어요"); }
+          render();
+        };
+        inp.addEventListener("keydown", (ev) => { if (ev.key === "Enter") { ev.preventDefault(); done(true); } else if (ev.key === "Escape") done(false); });
+        inp.addEventListener("blur", () => done(true));
+        return;
+      }
       case "exp-del": {
         clearTimeout(armedTimer);
         if (armedExp !== id) { armedExp = id; render(); armedTimer = setTimeout(() => { armedExp = null; render(); }, 3500); return; }
