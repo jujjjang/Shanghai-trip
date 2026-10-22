@@ -203,9 +203,23 @@
       d.applied.push("routes-1022");
       notesAdded = true;
     }
+    /* 출발 전 할 일 got a new starting list: swap the old starter items for it once (my own added ones stay) */
+    if (d.applied.indexOf("todo-1022") < 0) {
+      const fresh = clone(window.TRIP_SEED.prep.todo), newIds = fresh.map((x) => x.id), oldIds = ["t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8"];
+      if (!d.prep.todo.some((x) => newIds.indexOf(x.id) >= 0 && oldIds.indexOf(x.id) < 0)) {
+        const covered = /보험|환전|트래블|디즈니|데이터|eSIM|로밍|앱 설치|알리페이|위챗|입국|임시정부|헌지우|체크인|보조배터리|여권 유효|숙소 예약|고덕|Amap/i;
+        const extra = d.prep.todo.filter((x) => oldIds.indexOf(x.id) < 0 && !covered.test(x.t || ""));
+        d.mine = d.mine.filter((x) => !(x.list === "todo" && /보험|환전/.test(x.t || "")));
+        ["t1", "t3", "t4", "t5", "t6"].forEach((id) => { delete d.done[id]; });
+        d.prep.todo = fresh.concat(extra);
+        todoRenewed = true;
+      }
+      d.applied.push("todo-1022");
+      notesAdded = true;
+    }
     return d;
   }
-  let notesAdded = false;
+  let notesAdded = false, todoRenewed = false;
   let state = norm(lsGet(LS_STATE) || clone(window.TRIP_SEED));
   if (notesAdded) lsSet(LS_STATE, state); /* keep the added notes (and let them go out to a friend on the next sync) */
   const W_DEFAULT = ["weather", "hotel", "flight", "todo", "pack", "apps", "route"];
@@ -231,6 +245,7 @@
     onLocalChange();
   }
   function saveUI() { lsSet(LS_UI, ui); }
+  if (todoRenewed && ui.ckOrd && ui.ckOrd.todo) { delete ui.ckOrd.todo; saveUI(); } /* the new starting list shows in its own order */
   /* 친구랑 같이 쓰기: which trip this phone follows + what it last agreed on with the server (stays on this phone) */
   const LS_SYNC = "sht.sync.v1";
   const sync = Object.assign({ code: "", me: "", cursor: null, base: {}, ts: {}, cfg: null, err: "", last: 0 }, lsGet(LS_SYNC) || {});
@@ -685,7 +700,13 @@
     else state.tasks = state.tasks.filter((x) => x.id !== id);
   }
   /* move one 할 일 between 같이 and 나만, keeping its tick */
+  let ptrDown = false;
+  document.addEventListener("pointerdown", () => { ptrDown = true; }, true);
+  ["pointerup", "pointercancel"].forEach((n) => document.addEventListener(n, () => { setTimeout(() => { ptrDown = false; }, 0); }, true));
+  const ckWords = (key, x) => '<button class="ck-t" type="button" data-act="li-edit" data-list="' + key + '" data-id="' + x.id + '" aria-label="' + esc(x.t) + ' 고치기">' + esc(x.t) + (x.list ? '<i class="mine-ic">' + ICON.lock + "</i>" : "") + "</button>";
   function ckMove(key, id) {
+    /* it stays where it was in the list on this phone */
+    if (canMine(key)) { ui.ckOrd = ui.ckOrd || {}; ui.ckOrd[key] = ckList(key).map((y) => y.id); saveUI(); }
     const m = state.mine.find((x) => x.id === id);
     if (m) {
       state.mine = state.mine.filter((x) => x !== m);
@@ -1653,15 +1674,13 @@
       body: '<div class="addline"><input id="add-' + key + '" data-addkey="' + key + '" placeholder="' + (key === "apps" ? "앱 이름 추가" : "추가할 것") + '" autocomplete="off" enterkeyhint="done" aria-label="' + esc(title) + ' 추가">' +
         (canMine(key) ? '<button class="btn minebtn" type="button" data-act="ck-mine" data-list="' + key + '" aria-pressed="' + ckMineOn + '" title="켜면 내 폰에만 저장돼요">' + ICON.lock + "나만</button>" : "") +
         '<button class="btn primary" type="button" data-act="li-add" data-list="' + key + '">추가</button></div>' +
-        (canMine(key) ? '<p class="note ck-note">자물쇠 = 나만 보는 할 일 · 나머지는 친구 폰에도 떠요 · 체크는 각자</p>' : "") +
+        (canMine(key) ? '<p class="note ck-note">' + ICON.lock + ' 나만 보는 할 일 · 나머지는 같이 봐요 · 체크는 각자</p>' : "") +
         '<div class="ckhead"><div class="wprog" data-prog="' + key + '"><i style="width:' + (list.length ? (doneN / list.length) * 100 : 0) + '%"></i></div><span class="mono" data-count="' + key + '">' + doneN + " / " + list.length + "</span></div>" +
         (list.length ? '<div class="cklist ckedit">' + list.map((x) => '<div class="li" data-id="' + x.id + '">' +
           '<label class="ck ckbox' + (state.done[x.id] ? " on" : "") + '" aria-label="' + esc(x.t) + ' 체크"><input type="checkbox" data-ck="' + x.id + '"' + (state.done[x.id] ? " checked" : "") + "></label>" +
-          '<button class="ck-t" type="button" data-act="li-edit" data-list="' + key + '" data-id="' + x.id + '" aria-label="' + esc(x.t) + ' 고치기">' + esc(x.t) + (x.list ? '<i class="mine-ic">' + ICON.lock + "</i>" : "") + "</button>" +
-          (canMine(key) ? '<button class="icon-btn mine-sw' + (x.list ? " on" : "") + '" type="button" data-act="li-mine" data-list="' + key + '" data-id="' + x.id + '" aria-pressed="' + !!x.list + '" aria-label="' + (x.list ? "친구랑 같이 보기로 바꾸기" : "나만 보기로 바꾸기") + '">' + ICON.lock + "</button>" : "") +
-          '<button class="icon-btn" type="button" data-act="li-del" data-list="' + key + '" data-id="' + x.id + '" aria-label="' + esc(x.t) + ' 지우기">' + ICON.x + "</button>" +
+          ckWords(key, x) +
           '<span class="ck-grip" data-grip="' + key + '" aria-label="끌어서 순서 바꾸기">' + ICON.grip + "</span></div>").join("") + "</div>" +
-          '<p class="note ck-tip">글자를 누르면 고치고, ' + ICON.grip + " 를 끌면 순서가 바뀌어요</p>" : '<p class="empty">아직 비어 있어요</p>')
+          '<p class="note ck-tip"><span>글자 누르면 고치기' + (canMine(key) ? " · 나만 보기" : "") + " · 지우기</span><span>" + ICON.grip + " 끌면 순서 바꾸기</span></p>" : '<p class="empty">아직 비어 있어요</p>')
     });
   }
   function papagoSheet() {
@@ -2964,15 +2983,44 @@
         if (!x) return;
         const inp = document.createElement("input");
         inp.className = "ck-edit"; inp.value = x.t; inp.setAttribute("enterkeyhint", "done"); inp.setAttribute("aria-label", "고치기");
-        t.replaceWith(inp); inp.focus(); inp.select();
+        t.replaceWith(inp);
+        const row = inp.closest(".li"), bar = document.createElement("div");
+        bar.className = "ck-bar";
+        bar.innerHTML = (canMine(key) ? '<button type="button" data-b="mine">' + (x.list ? ICON.users + "같이 보기로" : ICON.lock + "나만 보기") + "</button>" : "") +
+          '<button type="button" data-b="del" class="del">' + ICON.trash + "지우기</button>";
+        row.classList.add("open"); row.after(bar);
+        inp.focus(); inp.select();
         let over = false;
+        const keepText = () => { const v = inp.value.trim(); if (v && v !== x.t) x.t = v; };
+        /* close just this row (not the whole sheet), so a tap that ended the editing still lands where it was aimed */
         const done = (ok) => {
           if (over) return;
           over = true;
           const v = inp.value.trim();
           if (ok && v && v !== x.t) { x.t = v; save(); render(); }
-          ckSheet(key);
+          const close = () => {
+            const tmp = document.createElement("div"); tmp.innerHTML = ckWords(key, x);
+            if (inp.isConnected) inp.replaceWith(tmp.firstChild);
+            bar.remove(); row.classList.remove("open");
+          };
+          /* tapped somewhere else: wait for that tap to finish, or the rows below would jump up under the finger */
+          if (ptrDown) { let gone = false; const go = () => { if (!gone) { gone = true; setTimeout(close, 0); } }; document.addEventListener("click", go, { once: true, capture: true }); setTimeout(go, 450); } else close();
         };
+        ["pointerdown", "mousedown"].forEach((n) => bar.addEventListener(n, (ev) => ev.preventDefault())); /* keep the box focused while tapping these */
+        bar.addEventListener("click", (ev) => {
+          const b = ev.target.closest("button[data-b]");
+          if (!b) return;
+          ev.stopPropagation();
+          if (b.getAttribute("data-b") === "mine") {
+            over = true; keepText();
+            const r = ckMove(key, id); save(); render(); ckSheet(key);
+            if (r) toast(r === "나만" ? "이제 내 폰에만 보여요" : "이제 친구 폰에도 보여요");
+            return;
+          }
+          if (!b.classList.contains("armed")) { b.classList.add("armed"); b.lastChild.textContent = "정말 지우기"; return; }
+          over = true;
+          ckDel(key, id); delete state.done[id]; save(); render(); ckSheet(key); toast("지웠어요");
+        });
         inp.addEventListener("keydown", (ev) => { if (ev.key === "Enter") { ev.preventDefault(); done(true); } else if (ev.key === "Escape") done(false); });
         inp.addEventListener("blur", () => done(true));
         return;

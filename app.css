@@ -1412,3 +1412,13 @@ body { background-color: var(--edge) !important; }
 .cklist .li.dragging { background: var(--surface); box-shadow: var(--shadow-sm); border-radius: 12px; position: relative; z-index: 2; }
 .ck-tip { margin: 2px 2px 0; font-size: 12px; display: flex; align-items: center; gap: 3px; flex-wrap: wrap; }
 .ck-tip svg { width: 13px; height: 13px; }
+.cklist .li.open { background: var(--inner); border-radius: 12px 12px 0 0; margin: 0 -6px 0 -8px; padding: 0 6px 0 8px; }
+.ck-bar { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 -6px 0 -8px; padding: 0 6px 10px 48px; background: var(--inner); border-radius: 0 0 12px 12px; }
+.ck-tip { column-gap: 12px; }
+.ck-tip span { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
+.cklist .ck-bar + .li { border-top: 1px solid var(--line-2); }
+.ck-bar button { display: inline-flex; align-items: center; gap: 4px; min-height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+.ck-bar button svg { width: 14px; height: 14px; }
+.ck-bar button.del { color: var(--coral-ink, #B83A0E); }
+.ck-bar button.del.armed { background: var(--coral-soft, #FFE9E2); border-color: transparent; }
+.ck-note svg { width: 13px; height: 13px; vertical-align: -2px; }
