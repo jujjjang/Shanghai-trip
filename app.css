@@ -1422,3 +1422,9 @@ body { background-color: var(--edge) !important; }
 .ck-bar button.del { color: var(--coral-ink, #B83A0E); }
 .ck-bar button.del.armed { background: var(--coral-soft, #FFE9E2); border-color: transparent; }
 .ck-note svg { width: 13px; height: 13px; vertical-align: -2px; }
+/* 기록 → 이미지로 저장 */
+.phact { position: absolute; right: 16px; top: calc(var(--safe-t) + 28px); display: inline-flex; align-items: center; gap: 5px; margin: 0; font-size: 13px; }
+.phact svg { width: 15px; height: 15px; }
+.phact:disabled { opacity: .75; }
+.limg { max-height: 62vh; overflow: auto; border-radius: 14px; border: 1px solid var(--line); background: var(--inner); }
+.limg img { display: block; width: 100%; height: auto; }
