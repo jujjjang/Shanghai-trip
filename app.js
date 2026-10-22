@@ -203,6 +203,17 @@
       d.applied.push("routes-1022");
       notesAdded = true;
     }
+    /* 준비물 is shared now: the starter items go to both phones, the ones I added myself stay 나만 (same place in my list) */
+    if (d.applied.indexOf("pack-share-1022") < 0) {
+      const starters = (window.TRIP_SEED.prep.pack || []).map((x) => x.id), own = d.prep.pack.filter((x) => starters.indexOf(x.id) < 0);
+      if (own.length) {
+        packOrder = d.prep.pack.map((x) => x.id);
+        d.prep.pack = d.prep.pack.filter((x) => starters.indexOf(x.id) >= 0);
+        own.forEach((x) => { if (!d.mine.some((m) => m.id === x.id)) d.mine.push({ id: x.id, t: x.t, list: "pack" }); });
+      }
+      d.applied.push("pack-share-1022");
+      notesAdded = true;
+    }
     /* 출발 전 할 일 got a new starting list: swap the old starter items for it once (my own added ones stay) */
     if (d.applied.indexOf("todo-1022") < 0) {
       const fresh = clone(window.TRIP_SEED.prep.todo), newIds = fresh.map((x) => x.id), oldIds = ["t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8"];
@@ -219,7 +230,7 @@
     }
     return d;
   }
-  let notesAdded = false, todoRenewed = false;
+  let notesAdded = false, todoRenewed = false, packOrder = null;
   let state = norm(lsGet(LS_STATE) || clone(window.TRIP_SEED));
   if (notesAdded) lsSet(LS_STATE, state); /* keep the added notes (and let them go out to a friend on the next sync) */
   const W_DEFAULT = ["weather", "hotel", "flight", "todo", "pack", "apps", "route"];
@@ -246,6 +257,7 @@
   }
   function saveUI() { lsSet(LS_UI, ui); }
   if (todoRenewed && ui.ckOrd && ui.ckOrd.todo) { delete ui.ckOrd.todo; saveUI(); } /* the new starting list shows in its own order */
+  if (packOrder) { ui.ckOrd = ui.ckOrd || {}; if (!ui.ckOrd.pack) { ui.ckOrd.pack = packOrder; saveUI(); } }
   /* 친구랑 같이 쓰기: which trip this phone follows + what it last agreed on with the server (stays on this phone) */
   const LS_SYNC = "sht.sync.v1";
   const sync = Object.assign({ code: "", me: "", cursor: null, base: {}, ts: {}, cfg: null, err: "", last: 0 }, lsGet(LS_SYNC) || {});
@@ -421,7 +433,7 @@
   const tagsHtml = (it) => (it.tags || []).map((t) => '<span class="tag">' + esc(t) + "</span>").join("");
   function ckHtml(x, label, cls) {
     return '<label class="' + (cls || "ck") + (state.done[x.id] ? " on" : "") + '"><input type="checkbox" data-ck="' + x.id + '"' + (state.done[x.id] ? " checked" : "") + "><span>" + (label || esc(x.t)) +
-      (x.list ? '<i class="mine-ic" title="나만 보는 할 일">' + ICON.lock + "</i>" : "") + "</span></label>";
+      (x.list ? '<i class="mine-ic" title="나만 보기">' + ICON.lock + "</i>" : "") + "</span></label>";
   }
   function field(name, label, value, o) {
     o = o || {};
@@ -656,7 +668,7 @@
   const CK_TITLE = { todo: "출발 전 할 일", pack: "준비물", apps: "필수 앱" };
   /* list keys: todo / pack / apps (preparation), or "tk:<dayId>" / "tk:after" for each day's own 할 일 */
   /* 할 일 can be 같이 (synced) or 나만 (state.mine: stays on this phone, shown with a lock) */
-  const canMine = (key) => key === "todo" || String(key).indexOf("tk:") === 0;
+  const canMine = (key) => key === "todo" || key === "pack" || String(key).indexOf("tk:") === 0;
   const isMine = (id) => state.mine.some((x) => x.id === id);
   function ckList(key) {
     const mine = canMine(key) ? state.mine.filter((x) => x.list === key) : [];
@@ -699,7 +711,7 @@
     if (state.prep[key]) state.prep[key] = state.prep[key].filter((x) => x.id !== id);
     else state.tasks = state.tasks.filter((x) => x.id !== id);
   }
-  /* move one 할 일 between 같이 and 나만, keeping its tick */
+  /* move one 할 일 / 준비물 between 같이 and 나만, keeping its tick */
   let ptrDown = false;
   document.addEventListener("pointerdown", () => { ptrDown = true; }, true);
   ["pointerup", "pointercancel"].forEach((n) => document.addEventListener(n, () => { setTimeout(() => { ptrDown = false; }, 0); }, true));
@@ -710,12 +722,12 @@
     const m = state.mine.find((x) => x.id === id);
     if (m) {
       state.mine = state.mine.filter((x) => x !== m);
-      if (key === "todo") state.prep.todo.push({ id: m.id, t: m.t }); else state.tasks.push({ id: m.id, t: m.t, day: key.slice(3) });
+      if (state.prep[key]) state.prep[key].push({ id: m.id, t: m.t }); else state.tasks.push({ id: m.id, t: m.t, day: key.slice(3) });
       return "같이";
     }
-    const src = key === "todo" ? state.prep.todo : state.tasks, x = src.find((y) => y.id === id);
+    const src = state.prep[key] || state.tasks, x = src.find((y) => y.id === id);
     if (!x) return "";
-    if (key === "todo") state.prep.todo = state.prep.todo.filter((y) => y !== x); else state.tasks = state.tasks.filter((y) => y !== x);
+    if (state.prep[key]) state.prep[key] = state.prep[key].filter((y) => y !== x); else state.tasks = state.tasks.filter((y) => y !== x);
     state.mine.push({ id: x.id, t: x.t, list: key });
     return "나만";
   }
@@ -1674,7 +1686,7 @@
       body: '<div class="addline"><input id="add-' + key + '" data-addkey="' + key + '" placeholder="' + (key === "apps" ? "앱 이름 추가" : "추가할 것") + '" autocomplete="off" enterkeyhint="done" aria-label="' + esc(title) + ' 추가">' +
         (canMine(key) ? '<button class="btn minebtn" type="button" data-act="ck-mine" data-list="' + key + '" aria-pressed="' + ckMineOn + '" title="켜면 내 폰에만 저장돼요">' + ICON.lock + "나만</button>" : "") +
         '<button class="btn primary" type="button" data-act="li-add" data-list="' + key + '">추가</button></div>' +
-        (canMine(key) ? '<p class="note ck-note">' + ICON.lock + ' 나만 보는 할 일 · 나머지는 같이 봐요 · 체크는 각자</p>' : "") +
+        (canMine(key) ? '<p class="note ck-note">' + ICON.lock + " 나만 보는 " + (key === "pack" ? "준비물" : "할 일") + " · 나머지는 같이 봐요 · 체크는 각자</p>" : "") +
         '<div class="ckhead"><div class="wprog" data-prog="' + key + '"><i style="width:' + (list.length ? (doneN / list.length) * 100 : 0) + '%"></i></div><span class="mono" data-count="' + key + '">' + doneN + " / " + list.length + "</span></div>" +
         (list.length ? '<div class="cklist ckedit">' + list.map((x) => '<div class="li" data-id="' + x.id + '">' +
           '<label class="ck ckbox' + (state.done[x.id] ? " on" : "") + '" aria-label="' + esc(x.t) + ' 체크"><input type="checkbox" data-ck="' + x.id + '"' + (state.done[x.id] ? " checked" : "") + "></label>" +
@@ -1994,12 +2006,12 @@
   }
   /* 초기 세팅으로 되돌리기: pick what goes back to how the app started — the list as it was, nothing added, nothing ticked */
   function resetSheet() {
-    const opts = [["widgets", "홈 위젯", "모든 날짜를 추천 배치로", true], ["pack", "준비물", "처음 목록으로 · 체크 풀기", false], ["apps", "필수 앱", "처음 목록으로 · 체크 풀기", false],
+    const opts = [["widgets", "홈 위젯", "모든 날짜를 추천 배치로", true], ["pack", "준비물", "나만 준비물 지우기 · 기본 목록 복구 · 체크 풀기", false], ["apps", "필수 앱", "처음 목록으로 · 체크 풀기", false],
       ["todo", "할 일", "나만 할 일 지우기 · 기본 목록 복구 · 체크 풀기", false]];
     openSheet({
       key: "reset", title: "초기 세팅으로 되돌리기",
       body: '<div class="rlist">' + opts.map((o) => '<label class="rrow"><input type="checkbox" name="' + o[0] + '"' + (o[3] ? " checked" : "") + '><span><b>' + o[1] + "</b><small>" + o[2] + "</small></span></label>").join("") + "</div>" +
-        '<p class="note">할 일 목록은 같이 보는 거라, 다시 넣은 기본 할 일은 친구 폰에도 생겨요.</p>',
+        '<p class="note">할 일 · 준비물은 같이 보는 거라, 다시 넣은 기본 항목은 친구 폰에도 생겨요.</p>',
       foot: '<span class="grow"></span><button class="btn" type="button" data-act="sh-close">취소</button><button class="btn danger" type="button" data-act="sh" data-k="go">되돌리기</button>',
       on(k, v, btn) {
         if (k !== "go") return;
@@ -2008,16 +2020,23 @@
         if (!btn.classList.contains("armed")) { btn.classList.add("armed"); btn.textContent = "한 번 더 누르면 되돌려요"; return; }
         const seed = window.TRIP_SEED, untick = (list) => list.forEach((x) => { delete state.done[x.id]; });
         if (v.widgets) { ui.wsets = {}; editing = false; saveUI(); }
-        if (ui.ckOrd && v.todo) { Object.keys(ui.ckOrd).forEach((k2) => { if (k2 === "todo" || k2.indexOf("tk:") === 0) delete ui.ckOrd[k2]; }); saveUI(); }
-        ["pack", "apps"].forEach((key) => {
-          if (!v[key]) return;
-          untick(state.prep[key]); state.prep[key] = clone(seed.prep[key] || []); untick(state.prep[key]);
-        });
-        if (v.todo) {
-          untick(state.mine); state.mine = [];
-          (seed.prep.todo || []).forEach((x) => { if (!state.prep.todo.some((y) => y.id === x.id)) state.prep.todo.push(clone(x)); });
-          untick(state.prep.todo); untick(state.tasks);
-        }
+        const isTodo = (k2) => k2 === "todo" || String(k2).indexOf("tk:") === 0;
+        if (ui.ckOrd) { Object.keys(ui.ckOrd).forEach((k2) => { if ((v.todo && isTodo(k2)) || (v.pack && k2 === "pack")) delete ui.ckOrd[k2]; }); saveUI(); }
+        if (v.apps) { untick(state.prep.apps); state.prep.apps = clone(seed.prep.apps || []); untick(state.prep.apps); }
+        /* shared lists: my 나만 ones go, deleted starters come back, ticks off (a friend's added ones stay) */
+        const back = (key, also) => {
+          const mineHere = state.mine.filter((x) => (key === "todo" ? isTodo(x.list) : x.list === key));
+          untick(mineHere); state.mine = state.mine.filter((x) => mineHere.indexOf(x) < 0);
+          const sd = seed.prep[key] || [], L = state.prep[key];
+          sd.forEach((x, i) => { /* back in its starting place: just before the next starter item that's still there */
+            if (L.some((y) => y.id === x.id)) return;
+            const nx = sd.slice(i + 1).map((z) => L.findIndex((y) => y.id === z.id)).find((j) => j >= 0);
+            if (nx == null) L.push(clone(x)); else L.splice(nx, 0, clone(x));
+          });
+          untick(state.prep[key]); if (also) untick(also);
+        };
+        if (v.pack) back("pack");
+        if (v.todo) back("todo", state.tasks);
         save(); closeSheet(); render(); toast(picked.map((o) => o[1]).join(", ") + " 되돌렸어요", null, 3500);
       }
     });
@@ -2396,6 +2415,7 @@
   const LISTS = {
     day: [() => state.days, (a) => { state.days = a; }],
     todo: [() => state.prep.todo, (a) => { state.prep.todo = a; }],
+    pack: [() => state.prep.pack, (a) => { state.prep.pack = a; }],
     link: [() => state.prep.links, (a) => { state.prep.links = a; }],
     info: [() => state.infos, (a) => { state.infos = a; }],
     post: [() => state.posts, (a) => { state.posts = a; }],
@@ -2645,9 +2665,10 @@
   async function joinTrip(code) {
     const rows = await rpc("trip_pull", { p_code: code, p_since: null });
     if (!(rows || []).some((r) => r.v !== null)) throw new Error("nocode");
-    /* the shared half comes from the trip; my own packing list, apps and photos stay as they are */
+    /* the shared half comes from the trip; my 나만 items, apps and photos stay as they are */
     const per = personalIds();
     if (rows.some((r) => r.k.indexOf("day:") === 0 && r.v)) state.days = [];
+    if (rows.some((r) => r.k.indexOf("pack:") === 0 && r.v)) state.prep.pack = [];
     state.prep.todo = []; state.prep.links = []; state.infos = []; state.settle.expenses = []; state.posts = []; state.likes = {}; state.shared = {}; state.tasks = []; state.layout = null; state.layAck = {}; state.avatars = {};
     Object.keys(state.journal).forEach((d) => { if (state.journal[d]) delete state.journal[d].text; });
     Object.keys(state.done).forEach((id) => { if (!per.has(id)) delete state.done[id]; });
