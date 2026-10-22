@@ -1035,8 +1035,8 @@
   /* every row can be swiped left to show 삭제; long-press a place row to drag it (its shops move with it) */
   const swipeWrap = (id, inner) => '<div class="swipe" data-sw="' + id + '"><button class="sw-del" type="button" data-act="row-del" data-id="' + id + '" tabindex="-1" aria-label="삭제"><span class="sw-ic">' + ICON.trash + "</span></button>" + inner + "</div>";
   function prowHtml(st, n, nextId, afterNext, c) {
-    const done = isDone(st.id), sk = isSkip(st.id), nx = st.id === nextId, has = !!placeOf(st);
-    const num = done ? ICON.check : sk ? ICON.skip : has ? n : "·";
+    const done = isDone(st.id), sk = isSkip(st.id), nx = st.id === nextId;
+    const num = done ? ICON.check : sk ? ICON.skip : n; /* every place gets its number, Chinese name or not */
     const sub = sk ? "건너뜀 · 다녀온 걸로 안 쳐요" : st.desc || st.zh || "";
     const th = placeImgs(st)[0];
     const right = nx ? '<span class="pr">다음</span>' : th ? imgHtml(th, "pthumb", "") : '<span class="pr go">' + ICON.chevR + "</span>";
