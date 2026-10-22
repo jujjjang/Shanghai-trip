@@ -1987,6 +1987,7 @@
     if (x.u) img.src = x.u; else photoUrl(x.p).then((u) => { if (u) img.src = u; });
     $("#viewerCount").textContent = list.length > 1 ? vIdx + 1 + " / " + list.length : "";
     const del = $("#viewerDel"); del.classList.remove("armed"); del.textContent = x.u ? "사진 빼기" : "지우기";
+    $("#viewerFoot").hidden = !(x.u && vSrc.kind === "place"); /* internet pictures: copy or change the address */
     viewerEl.hidden = false;
   }
   async function putPhotos(arr, files) {
@@ -2755,6 +2756,8 @@
       case "viewer-prev": vIdx = vIdx > 0 ? vIdx - 1 : vItems().length - 1; showViewer(); return;
       case "viewer-next": vIdx = vIdx + 1 >= vItems().length ? 0 : vIdx + 1; showViewer(); return;
       case "viewer-close": viewerEl.hidden = true; return;
+      case "viewer-copy": { const x = vItems()[vIdx]; if (x && x.u) copyText(x.u, "사진 링크를 복사했어요"); return; }
+      case "viewer-edit": viewerEl.hidden = true; photoSheet(vSrc.id); return;
       case "viewer-del": {
         if (!armDelete(t)) return;
         const x = vItems()[vIdx];
