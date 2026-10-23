@@ -1186,9 +1186,9 @@ body { overflow-x: hidden; }
 
 /* 낮: a plane crosses the sky now and then (still with 동작 줄이기) */
 /* 이스터에그: the plane is only there on the days we fly (가는 날 · 오는 날); a gentle climb along the line 윤주 drew */
-.plane-fly { display: none; opacity: .6; transform: translate(112px, 249px) rotate(-12deg); animation: fly 46s linear infinite; }
+.plane-fly { display: none; opacity: .6; transform: translate(112px, 264px) rotate(-14deg); animation: fly 46s linear infinite; }
 .hero.flyday .plane-fly { display: inline; }
-@keyframes fly { 0% { transform: translate(-80px, 290px) rotate(-12deg); } 55% { transform: translate(480px, 171px) rotate(-12deg); } 100% { transform: translate(480px, 171px) rotate(-12deg); } }
+@keyframes fly { 0% { transform: translate(-80px, 312px) rotate(-14deg); } 55% { transform: translate(480px, 171px) rotate(-14deg); } 100% { transform: translate(480px, 171px) rotate(-14deg); } }
 
 /* 날씨: full width, hour by hour */
 .w.wweather { height: auto; }
@@ -1435,5 +1435,6 @@ body { background-color: var(--edge) !important; }
 .hero-art .bloom.b2 { animation-duration: 11s; animation-delay: -4s; }
 .hero-art .bloom.b3 { animation-duration: 10s; animation-delay: -7s; }
 .hero-art .bloom.b4 { animation-duration: 12s; animation-delay: -2s; }
+.hero-art .bloom.b5 { animation-duration: 9.5s; animation-delay: -6s; }
 @keyframes bloom { 0%, 40%, 100% { opacity: 0; transform: scale(.75); } 65% { opacity: .8; transform: scale(1.05); } }
 @media (prefers-reduced-motion: reduce) { .hero-art .shoot { display: none; } .hero-art .bloom { animation: none; opacity: .35; transform: none; } }
