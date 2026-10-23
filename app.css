@@ -1186,9 +1186,9 @@ body { overflow-x: hidden; }
 
 /* 낮: a plane crosses the sky now and then (still with 동작 줄이기) */
 /* 이스터에그: the plane is only there on the days we fly (가는 날 · 오는 날); level flight along the line 윤주 drew, a short faint trail */
-.plane-fly { display: none; opacity: .6; transform: translate(112px, 270px); animation: fly 46s linear infinite; }
+.plane-fly { display: none; opacity: .6; transform: translate(112px, 252px); animation: fly 46s linear infinite; }
 .hero.flyday .plane-fly { display: inline; }
-@keyframes fly { 0% { transform: translate(-60px, 270px); } 55% { transform: translate(460px, 270px); } 100% { transform: translate(460px, 270px); } }
+@keyframes fly { 0% { transform: translate(-60px, 252px); } 55% { transform: translate(460px, 252px); } 100% { transform: translate(460px, 252px); } }
 
 /* 날씨: full width, hour by hour */
 .w.wweather { height: auto; }
@@ -1437,3 +1437,14 @@ body { background-color: var(--edge) !important; }
 .hero-art .bloom.b4 { animation-duration: 12s; animation-delay: -2s; }
 @keyframes bloom { 0%, 40%, 100% { opacity: 0; transform: scale(.75); } 65% { opacity: .8; transform: scale(1.05); } }
 @media (prefers-reduced-motion: reduce) { .hero-art .shoot { display: none; } .hero-art .bloom { animation: none; opacity: .35; transform: none; } }
+
+/* 일정 시간: a small tag in the day's colour before the place name; the time chip in the edit sheet opens the iOS wheel */
+.ptm { display: inline-block; margin-right: 6px; padding: 2px 6px; border-radius: 6px; font-size: 11.5px; font-weight: 700; line-height: 1.3; vertical-align: 1.5px; letter-spacing: 0; color: var(--c, var(--accent)); background: color-mix(in srgb, var(--c, var(--accent)) 13%, transparent); }
+.srow .ptm { font-size: 11px; padding: 1px 5px; }
+.prow.ok .ptm, .prow.sk .ptm, .srow.ok .ptm, .srow.sk .ptm { opacity: .6; }
+.pc-l { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.pc-l .ptm { margin: 0; vertical-align: 0; }
+.whenrow .chipbtn { position: relative; }
+.whenclk { display: inline-flex; align-items: center; gap: 5px; overflow: hidden; cursor: pointer; }
+.whenclk svg { width: 14px; height: 14px; }
+.field .whenclk input { position: absolute; inset: 0; width: 100%; height: 100%; min-width: 0; padding: 0; margin: 0; border: 0; opacity: 0; font-size: 16px; -webkit-appearance: none; appearance: none; cursor: pointer; }
