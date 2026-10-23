@@ -1756,12 +1756,142 @@
         '<button class="btn primary" type="button" data-act="li-add" data-list="' + key + '">추가</button></div>' +
         (canMine(key) ? '<p class="note ck-note">' + ICON.lock + " 나만 보는 " + (key === "pack" ? "준비물" : "할 일") + " · 나머지는 같이 봐요 · 체크는 각자</p>" : "") +
         '<div class="ckhead"><div class="wprog" data-prog="' + key + '"><i style="width:' + (list.length ? (doneN / list.length) * 100 : 0) + '%"></i></div><span class="mono" data-count="' + key + '">' + doneN + " / " + list.length + "</span></div>" +
+        (key === "pack" && list.length ? '<button class="btn wide pk-open" type="button" data-act="pk-open">' + ICON.bag + "캐리어로 보기 · 짐 싸기</button>" : "") +
         (list.length ? '<div class="cklist ckedit">' + list.map((x) => '<div class="li" data-id="' + x.id + '">' +
           '<label class="ck ckbox' + (state.done[x.id] ? " on" : "") + '" aria-label="' + esc(x.t) + ' 체크"><input type="checkbox" data-ck="' + x.id + '"' + (state.done[x.id] ? " checked" : "") + "></label>" +
           ckWords(key, x) +
           '<span class="ck-grip" data-grip="' + key + '" aria-label="끌어서 순서 바꾸기">' + ICON.grip + "</span></div>").join("") + "</div>" +
           '<p class="note ck-tip"><span>글자 누르면 고치기' + (canMine(key) ? " · 나만 보기" : "") + " · 지우기</span><span>" + ICON.grip + " 끌면 순서 바꾸기</span></p>" : '<p class="empty">아직 비어 있어요</p>')
     });
+  }
+  /* ---------- 짐 싸기: the 준비물 list drawn as an open suitcase ----------
+     Tick something and its little icon hops from the floor into its pocket (서류 · 옷 · 세면 · 전자);
+     a power bank won't go in the suitcase and bounces over to the carry-on backpack. Everything packed → the lid shuts and zips.
+     Ticks are each person's own, same as the list. */
+  const PK_O = 'stroke="#3A3550" stroke-width="1.6" stroke-linejoin="round"';
+  const PK_IC = {
+    passport: '<rect x="10" y="5" width="20" height="30" rx="3" fill="#4F72B8" ' + PK_O + '/><circle cx="20" cy="18" r="5.5" fill="none" stroke="#F3D27A" stroke-width="1.4"/><path d="M14.5 18h11M20 12.5v11" stroke="#F3D27A" stroke-width="1"/><rect x="15" y="27" width="10" height="2" rx="1" fill="#F3D27A"/>',
+    card: '<rect x="5" y="11" width="30" height="19" rx="3.5" fill="#F4A9C2" ' + PK_O + '/><rect x="5.8" y="15" width="28.4" height="3.6" fill="#3A3550" opacity=".75"/><rect x="9" y="22" width="6" height="4.5" rx="1" fill="#F3D27A"/><rect x="19" y="23.5" width="11" height="1.8" rx=".9" fill="#fff" opacity=".85"/>',
+    bank: '<rect x="11" y="6" width="18" height="28" rx="4" fill="#8FD9BC" ' + PK_O + '/><path d="M21.5 11 16.5 20.5h4L18.5 29 24 18.5h-4z" fill="#FFF3A6" stroke="#3A3550" stroke-width="1.2" stroke-linejoin="round"/>',
+    plug: '<path d="M16 5v6M24 5v6" stroke="#3A3550" stroke-width="2.2" stroke-linecap="round"/><rect x="11" y="10" width="18" height="15" rx="4" fill="#FFFFFF" ' + PK_O + '/><path d="M20 25v3q0 6-6 6h-4" fill="none" stroke="#3A3550" stroke-width="1.8" stroke-linecap="round"/>',
+    adapter: '<rect x="8" y="9" width="24" height="22" rx="5" fill="#CDBDF5" ' + PK_O + '/><circle cx="16" cy="19" r="2.4" fill="#3A3550"/><circle cx="24" cy="19" r="2.4" fill="#3A3550"/><path d="M14 27h12" stroke="#fff" stroke-width="1.4" stroke-linecap="round" opacity=".85"/>',
+    shirt: '<path d="M14 7 8 10 5 17l5 2 1-3v17h18V16l1 3 5-2-3-7-6-3q-6 4-12 0z" fill="#FFD47E" ' + PK_O + '/><path d="M15 7.5q5 4 10 0" fill="none" stroke="#3A3550" stroke-width="1.2"/>',
+    shoe: '<path d="M6 25q0-9 6-10h5q2 5 9 6 8 1 8 6v2H6z" fill="#FFFFFF" ' + PK_O + '/><path d="M6 29h28v2q0 2-2 2H8q-2 0-2-2z" fill="#7FB8F0" ' + PK_O + '/><path d="M14 18l3 3M17 16.5l3 3" stroke="#7FB8F0" stroke-width="1.6" stroke-linecap="round"/>',
+    umbrella: '<path d="M5 20Q20 2 35 20q-3.7-3-7.5 0-3.7-3-7.5 0-3.7-3-7.5 0-3.7-3-7.5 0z" fill="#F59393" ' + PK_O + '/><path d="M20 20v11q0 4-3.5 4-2.5 0-2.5-2.5" fill="none" stroke="#3A3550" stroke-width="1.8" stroke-linecap="round"/><path d="M20 6V4" stroke="#3A3550" stroke-width="1.8" stroke-linecap="round"/>',
+    pill: '<g transform="rotate(-40 20 20)"><rect x="8" y="14" width="24" height="12" rx="6" fill="#FFFFFF" ' + PK_O + '/><path d="M20 14h6a6 6 0 0 1 0 12h-6z" fill="#8EC2F2" ' + PK_O + "/></g>",
+    tissue: '<rect x="7" y="16" width="26" height="17" rx="3" fill="#BFE4F6" ' + PK_O + '/><path d="M14 16q0-8 6-7 6-1 6 7" fill="#FFFFFF" ' + PK_O + '/><path d="M11 25h18" stroke="#fff" stroke-width="1.4" stroke-linecap="round" opacity=".85"/>',
+    bottle: '<rect x="13" y="13" width="14" height="21" rx="4" fill="#F7C6D9" ' + PK_O + '/><rect x="16" y="7" width="8" height="6" rx="1.5" fill="#FFFFFF" ' + PK_O + '/><path d="M17 20h6" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>',
+    tag: '<path d="M8 12q0-4 4-4h10l11 11q1 1 0 2L21 33q-1 1-2 0L8 22z" fill="#E6DFF5" ' + PK_O + '/><circle cx="14" cy="14" r="2.2" fill="#fff" stroke="#3A3550" stroke-width="1.4"/>'
+  };
+  /* which icon, and which pocket: the first rule that matches the words wins */
+  const PK_RULES = [
+    [/보조\s*배터리|배터리|전자\s*담배|라이터/, "bank", "carry"],
+    [/여권/, "passport", "doc"],
+    [/카드|지갑|현금|환전|달러|위안/, "card", "doc"],
+    [/항공권|티켓|바우처|예약|확인서|보험|서류/, "tag", "doc"],
+    [/충전|케이블|이어폰|에어팟/, "plug", "tech"],
+    [/어댑터|돼지코|멀티탭/, "adapter", "tech"],
+    [/약|밴드|파스/, "pill", "wash"],
+    [/휴지|티슈/, "tissue", "wash"],
+    [/칫솔|치약|세면|화장|선크림|렌즈|샴푸|로션|스킨/, "bottle", "wash"],
+    [/우산|우비/, "umbrella", "wear"],
+    [/신발|운동화|슬리퍼|샌들/, "shoe", "wear"],
+    [/옷|외투|자켓|재킷|패딩|속옷|양말|잠옷|바지|셔츠|니트|후드|모자/, "shirt", "wear"]
+  ];
+  function pkInfo(t) {
+    for (let i = 0; i < PK_RULES.length; i++) if (PK_RULES[i][0].test(t || "")) return { ic: PK_RULES[i][1], zone: PK_RULES[i][2] };
+    return { ic: "tag", zone: "wear" };
+  }
+  /* pocket spots, in a 360-wide drawing (the suitcase art is 360 × 290) */
+  const PK_SLOTS = {
+    doc: [[62, 66], [108, 66], [154, 66], [200, 66], [62, 102], [108, 102], [154, 102], [200, 102]],
+    wear: [[52, 176], [92, 176], [132, 176], [52, 214], [92, 214], [132, 214], [52, 250], [92, 250], [132, 250]],
+    wash: [[178, 180], [216, 180], [197, 194]],
+    tech: [[178, 240], [216, 240], [197, 254]],
+    carry: [[289, 196], [321, 196], [289, 234], [321, 234], [305, 262]]
+  };
+  const PK_ART = '<svg class="pk-art" viewBox="0 0 360 290" aria-hidden="true"><defs><pattern id="pkmesh" width="7" height="7" patternUnits="userSpaceOnUse"><path d="M0 0 7 7M7 0 0 7" stroke="#C9DCF0" stroke-width=".8"/></pattern></defs>' +
+    /* base: lining, crossed straps over the clothes, two pouches */
+    '<rect x="10" y="140" width="240" height="132" rx="20" fill="#8DBDE6"/><rect x="18" y="148" width="224" height="116" rx="14" fill="#FBF7F0"/>' +
+    '<path d="M30 156 148 258M148 156 30 258" stroke="#EADFCB" stroke-width="6" stroke-linecap="round"/>' +
+    '<rect x="158" y="154" width="76" height="50" rx="11" fill="#FCE4EC"/><rect x="158" y="212" width="76" height="50" rx="11" fill="#E8E2F8"/>' +
+    '<text class="pk-zl" x="30" y="162">옷</text><text class="pk-zl" x="166" y="166">세면</text><text class="pk-zl" x="166" y="224">전자</text>' +
+    '<rect x="112" y="272" width="36" height="6" rx="3" fill="#7AA9D8"/>' +
+    /* carry-on backpack */
+    '<path d="M281 140q0-14 23-14t23 14" fill="none" stroke="#D9958A" stroke-width="5" stroke-linecap="round"/>' +
+    '<rect x="262" y="138" width="84" height="138" rx="28" fill="#F6B9A8"/><ellipse cx="304" cy="152" rx="30" ry="7" fill="#D9958A"/>' +
+    '<rect x="274" y="244" width="60" height="26" rx="10" fill="#F9CDBF"/><text class="pk-zl" x="304" y="288" text-anchor="middle">기내</text>' +
+    /* hinge */
+    '<rect x="30" y="132" width="200" height="8" rx="3" fill="#7AA9D8"/>' +
+    /* lid: open inside (mesh pocket for 서류) or, flipped shut, the outer shell; then the zip that draws itself round it */
+    '<g class="pk-lid"><g class="lid-in"><rect x="10" y="4" width="240" height="128" rx="20" fill="#8DBDE6"/><rect x="18" y="12" width="224" height="112" rx="14" fill="#FBF7F0"/>' +
+    '<rect x="30" y="26" width="200" height="90" rx="10" fill="#E5EFFA"/><rect x="30" y="26" width="200" height="90" rx="10" fill="url(#pkmesh)"/><path d="M30 34h200" stroke="#B8D0EC" stroke-width="2"/><text class="pk-zl" x="38" y="47">서류</text></g>' +
+    '<g class="lid-out"><rect x="10" y="4" width="240" height="128" rx="20" fill="#8DBDE6"/><rect x="66" y="10" width="16" height="116" rx="8" fill="#A9CEEE"/><rect x="178" y="10" width="16" height="116" rx="8" fill="#A9CEEE"/></g></g>' +
+    '<rect class="pk-zip" x="16" y="146" width="228" height="120" rx="16" fill="none" stroke="#4F86C6" stroke-width="2.4" pathLength="100"/>' +
+    '<g class="pk-sticker"><circle cx="130" cy="206" r="40" fill="#FFF3B0" stroke="#fff" stroke-width="5"/><text x="130" y="201" text-anchor="middle" class="pk-st1">짐 싸기</text><text x="130" y="221" text-anchor="middle" class="pk-st2">완료!</text></g></svg>';
+  function packSheet() {
+    const list = ckList("pack");
+    const icons = list.map((x) => { const f = pkInfo(x.t); return '<button class="pk-it" type="button" data-act="pk-tap" data-id="' + x.id + '" data-zone="' + f.zone + '" aria-label="' + esc(x.t) + '"><svg viewBox="0 0 40 40" aria-hidden="true">' + PK_IC[f.ic] + "</svg><span>" + esc(x.t.split(/[·(]/)[0].trim()) + "</span></button>"; }).join("");
+    openSheet({
+      key: "pack-view",
+      title: "짐 싸기",
+      body: '<p class="note pk-tip">안 챙긴 건 바닥에 있어요 · 누르면 가방에 쏙 · 체크는 각자</p>' +
+        '<div class="pk-stage noanim" id="pkStage">' + PK_ART + '<div class="pk-floor"><span>아직 안 챙긴 것</span></div>' + icons + "</div>" +
+        '<div class="cklist pk-list">' + list.map((x) => ckHtml(x, esc(x.t))).join("") + "</div>" +
+        '<button class="btn wide pk-edit" type="button" data-act="ck-sheet" data-list="pack">' + ICON.pen + "준비물 고치기</button>"
+    });
+    pkPlace(null);
+    requestAnimationFrame(() => { const st = $("#pkStage"); if (st) st.classList.remove("noanim"); });
+  }
+  function pkPlace(changedId) {
+    const st = $("#pkStage");
+    if (!st) return;
+    const list = ckList("pack"), s = st.clientWidth / 360, sz = 36 * s;
+    const used = {}, floor = [];
+    let all = list.length > 0;
+    list.forEach((x) => {
+      const el = st.querySelector('.pk-it[data-id="' + x.id + '"]');
+      if (!el) return;
+      const z = el.getAttribute("data-zone"), on = !!state.done[x.id];
+      let p;
+      if (on) {
+        const sl = PK_SLOTS[z], k = used[z] = (used[z] || 0) + 1, lap = Math.floor((k - 1) / sl.length);
+        p = sl[(k - 1) % sl.length]; p = [p[0] + lap * 7, p[1] - lap * 6];
+      } else { all = false; floor.push(el); return; }
+      pkMove(el, p, s, sz, x, changedId);
+    });
+    const rows = Math.ceil(floor.length / 5), fy = 300;
+    floor.forEach((el, i) => pkMove(el, [40 + (i % 5) * 70, fy + 40 + Math.floor(i / 5) * 58], s, sz, null, changedId));
+    const fl = st.querySelector(".pk-floor");
+    fl.style.top = fy * s + "px"; fl.style.height = (rows ? 20 + rows * 58 : 34) * s + "px";
+    fl.classList.toggle("empty", !rows);
+    st.style.setProperty("--sz", sz + "px");
+    st.style.height = (rows ? fy + 26 + rows * 58 : fy - 4) * s + "px";
+    st.classList.toggle("done", all);
+  }
+  function pkMove(el, p, s, sz, x, changedId) {
+    const tx = p[0] * s - sz / 2, ty = p[1] * s - sz / 2, on = !!x;
+    const was = el._pk, id = el.getAttribute("data-id");
+    el.classList.toggle("in", on);
+    el.setAttribute("aria-label", el.getAttribute("aria-label").replace(/ (챙기기|빼기)$/, "") + (on ? " 빼기" : " 챙기기"));
+    if (id === changedId && on && was) {
+      el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop");
+      if (el.getAttribute("data-zone") === "carry") {
+        /* tries the suitcase first, gets bounced to the backpack */
+        const mx = 140 * s - sz / 2, my = 196 * s - sz / 2;
+        el.style.transition = "none";
+        el.animate([
+          { transform: "translate(" + was[0] + "px," + was[1] + "px)" },
+          { transform: "translate(" + mx + "px," + my + "px)", offset: 0.42, easing: "ease-in" },
+          { transform: "translate(" + mx + "px," + (my - 14 * s) + "px) rotate(-14deg)", offset: 0.55 },
+          { transform: "translate(" + tx + "px," + ty + "px)" }
+        ], { duration: 950, easing: "ease-out" });
+        setTimeout(() => { el.style.transition = ""; }, 960);
+        toast(/배터리/.test(x.t) ? "보조배터리는 기내로!" : "이건 기내로 들고 타요");
+      }
+    }
+    el.style.transform = "translate(" + tx + "px," + ty + "px)";
+    el._pk = [tx, ty];
   }
   function papagoSheet() {
     openSheet({
@@ -2962,6 +3092,15 @@
         return;
       }
       case "ck-sheet": ckSheet(t.getAttribute("data-list")); return;
+      case "pk-open": packSheet(); return;
+      case "pk-tap": {
+        const on = !state.done[id];
+        if (on) state.done[id] = true; else delete state.done[id];
+        save();
+        document.querySelectorAll('[data-ck="' + id + '"]').forEach((el) => { el.checked = on; const l = el.closest("label"); if (l) l.classList.toggle("on", on); });
+        pkPlace(id);
+        return;
+      }
       case "row-del": deleteRow(id); return;
       case "photo-sheet": photoSheet(id); return;
       case "to-widgets": { const z = $("#wzone"); if (z) window.scrollTo({ top: z.getBoundingClientRect().top + window.scrollY - 8, behavior: "smooth" }); return; }
@@ -3158,6 +3297,7 @@
       if (on) state.done[id] = true; else delete state.done[id];
       save();
       document.querySelectorAll('[data-ck="' + id + '"]').forEach((el) => { el.checked = on; const l = el.closest("label"); if (l) l.classList.toggle("on", on); });
+      if (sheetKey() === "pack-view") pkPlace(id);
       const key = ckKeyOf(id);
       if (key) {
         const list = ckList(key), n = list.filter((x) => state.done[x.id]).length;
@@ -3248,6 +3388,7 @@
   const setAppH = () => { document.documentElement.style.setProperty("--app-h", window.innerHeight + "px"); };
   setAppH();
   window.addEventListener("resize", setAppH);
+  window.addEventListener("resize", () => { if (sheetKey() === "pack-view") pkPlace(null); });
   document.querySelectorAll("[data-icon]").forEach((el) => { el.innerHTML = ICON[el.getAttribute("data-icon")] || ""; });
   applyTheme();
   render();

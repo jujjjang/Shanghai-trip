@@ -1468,3 +1468,39 @@ body { background-color: var(--edge) !important; }
 .prows > li.pgh + li { border-top-color: transparent; }
 .prows > li.pgh.empty { display: none; }
 .prows.drag-on > li.pgh.empty { display: flex; opacity: .55; padding-bottom: 14px; }
+
+/* 짐 싸기: the 준비물 as an open suitcase — icons hop from the floor into their pockets */
+.pk-open { margin: 2px 0 12px; gap: 8px; }
+.pk-open svg, .pk-edit svg { width: 17px; height: 17px; }
+.pk-tip { margin: 0 0 8px; }
+.pk-stage { position: relative; flex: none; width: 100%; margin: 0 0 14px; }
+.pk-art { position: absolute; left: 0; top: 0; width: 100%; height: auto; overflow: visible; }
+.pk-zl { font-size: 10px; font-weight: 700; fill: #B6ACC6; letter-spacing: .08em; }
+.pk-floor { position: absolute; left: 0; right: 0; border: 1.5px dashed var(--line); border-radius: 18px; background: color-mix(in srgb, var(--surface-2) 60%, transparent); transition: height .4s ease; }
+.pk-floor span { position: absolute; left: 12px; top: 6px; font-size: 11px; color: var(--muted); }
+.pk-floor.empty { opacity: 0; }
+.pk-it { position: absolute; left: 0; top: 0; width: var(--sz, 36px); padding: 0; border: 0; background: none; cursor: pointer; z-index: 2; transition: transform .55s cubic-bezier(.34, 1.56, .64, 1), opacity .25s ease; -webkit-tap-highlight-color: transparent; }
+.pk-it svg { display: block; width: var(--sz, 36px); height: var(--sz, 36px); filter: drop-shadow(0 2px 2px rgba(40, 30, 80, .18)); }
+.pk-it span { display: block; width: 64px; margin-left: calc((var(--sz, 36px) - 64px) / 2); font-size: 10px; line-height: 1.2; text-align: center; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: opacity .2s ease; }
+.pk-it.in span { opacity: 0; }
+.pk-it.pop svg { animation: pkpop .5s ease .35s; }
+@keyframes pkpop { 0% { transform: scale(1); } 35% { transform: scale(1.25, .85); } 65% { transform: scale(.92, 1.08); } 100% { transform: scale(1); } }
+.pk-stage.noanim .pk-it, .pk-stage.noanim .pk-floor, .pk-stage.noanim .pk-lid, .pk-stage.noanim .pk-zip { transition: none !important; }
+/* everything packed: the lid flips shut over the base, the zip runs round it, a sticker lands */
+.pk-lid { transform-box: view-box; transform-origin: 50% 136px; transition: transform .5s ease-in-out; }
+.pk-lid .lid-in { transition: opacity 0s linear .25s; }
+.pk-lid .lid-out { opacity: 0; transition: opacity 0s linear .25s; }
+.pk-stage.done .pk-lid { transform: scaleY(-1); }
+.pk-stage.done .pk-lid .lid-in { opacity: 0; }
+.pk-stage.done .pk-lid .lid-out { opacity: 1; }
+.pk-stage.done .pk-it.in:not([data-zone="carry"]) { opacity: 0; pointer-events: none; }
+.pk-zip { stroke-dasharray: 100; stroke-dashoffset: 100; opacity: 0; }
+.pk-stage.done .pk-zip { opacity: 1; stroke-dashoffset: 0; transition: stroke-dashoffset .8s ease .55s, opacity 0s .55s; }
+.pk-sticker { opacity: 0; transform-box: fill-box; transform-origin: center; }
+.pk-stage.done .pk-sticker { animation: pkst .55s cubic-bezier(.34, 1.56, .64, 1) 1.2s forwards; }
+@keyframes pkst { from { opacity: 0; transform: scale(.3) rotate(-30deg); } to { opacity: 1; transform: scale(1) rotate(-8deg); } }
+.pk-st1 { font-size: 15px; font-weight: 800; fill: #4A3F6B; }
+.pk-st2 { font-size: 17px; font-weight: 800; fill: #E0735A; }
+.pk-list { margin-bottom: 12px; }
+.pk-edit { gap: 8px; }
+@media (prefers-reduced-motion: reduce) { .pk-it, .pk-lid, .pk-zip { transition: none !important; } .pk-it.pop svg { animation: none; } .pk-stage.done .pk-sticker { animation: none; opacity: 1; transform: rotate(-8deg); } }
