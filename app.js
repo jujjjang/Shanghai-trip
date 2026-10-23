@@ -441,31 +441,6 @@
     const ctl = o.area ? "<textarea" + a + ">" + esc(value) + "</textarea>" : '<input type="' + (o.type || "text") + '"' + a + ' value="' + esc(value) + '">';
     return '<label class="field"><span>' + label + "</span>" + ctl + (o.hint ? '<span class="hint">' + o.hint + "</span>" : "") + "</label>";
   }
-  /* 시간: a rough part of the day or an exact clock time, one field per place; the order of the list stays as you set it */
-  const WHEN = ["오전", "점심", "오후", "저녁", "밤"];
-  const isClock = (w) => /^\d{1,2}:\d{2}$/.test(w || "");
-  const whenTag = (it) => (it && it.when ? '<span class="ptm' + (isClock(it.when) ? " mono" : "") + '">' + esc(it.when) + "</span>" : "");
-  function whenField(cur) {
-    cur = cur || "";
-    const clock = isClock(cur);
-    return '<div class="field"><span>시간 · 안 정해도 돼요</span><div class="chips whenrow"><input type="hidden" name="when" value="' + esc(cur) + '">' +
-      [["", "없음"]].concat(WHEN.map((w) => [w, w])).map((o) => '<button class="btn sm chipbtn" type="button" data-when="' + o[0] + '" aria-pressed="' + (!clock && cur === o[0]) + '">' + o[1] + "</button>").join("") +
-      '<label class="btn sm chipbtn whenclk" aria-pressed="' + clock + '">' + ICON.clock + "<span>" + (clock ? esc(cur) : "시간 정하기") + '</span><input type="time" value="' + (clock ? esc(cur) : "") + '" aria-label="시간 정하기"></label></div></div>';
-  }
-  function wireWhen() {
-    const row = sheet.querySelector(".whenrow");
-    if (!row) return;
-    const hid = row.querySelector('input[name="when"]'), clk = row.querySelector(".whenclk"), ti = clk.querySelector("input");
-    const paint = () => {
-      const v = hid.value, c = isClock(v);
-      row.querySelectorAll("button[data-when]").forEach((b) => b.setAttribute("aria-pressed", String(!c && b.getAttribute("data-when") === v)));
-      clk.setAttribute("aria-pressed", String(c));
-      clk.querySelector("span").textContent = c ? v : "시간 정하기";
-    };
-    row.addEventListener("click", (e) => { const b = e.target.closest("button[data-when]"); if (!b) return; hid.value = b.getAttribute("data-when"); ti.value = ""; paint(); });
-    const pick = () => { if (ti.value) hid.value = ti.value.slice(0, 5); else if (isClock(hid.value)) hid.value = ""; paint(); };
-    ti.addEventListener("change", pick); ti.addEventListener("input", pick);
-  }
   function priSelect(v) {
     return '<label class="field"><span>우선순위</span><select name="pri">' +
       [["", "없음"], ["must", "★★★ 꼭 가기"], ["nice", "★★ 가면 좋음"], ["maybe", "★ 여유 있으면"]].map((o) => '<option value="' + o[0] + '"' + ((v || "") === o[0] ? " selected" : "") + ">" + o[1] + "</option>").join("") +
@@ -889,7 +864,7 @@
     /* same slots on every card: picture (or drawn stand-in), name + zh, one note line, buttons */
     return '<div class="hc-slide"><article class="pc' + (done || sk ? " dim" : "") + '" data-act="detail" data-id="' + st.id + '" style="--c:' + dayC(day) + '">' +
       '<div class="pc-ph"><div class="pc-ph0" aria-hidden="true"><i></i><i></i><b>' + n + "</b></div>" + (th ? imgHtml(th, "", st.ko, "this.remove()") : "") + "</div>" +
-      '<div class="pc-b"><div class="pc-top"><span class="pc-l">' + lbl + whenTag(st) + '</span><span class="pc-r">' + starsHtml(st.pri) + '<span class="mono pc-n">' + (i + 1) + " / " + list.length + "</span></span></div>" +
+      '<div class="pc-b"><div class="pc-top">' + lbl + '<span class="pc-r">' + starsHtml(st.pri) + '<span class="mono pc-n">' + (i + 1) + " / " + list.length + "</span></span></div>" +
       '<div class="pc-row"><span class="numdot">' + (done ? ICON.check : n) + '</span><div class="pc-t">' +
       '<a class="wn-name" href="' + google(st.ko) + '"' + EXT + "><span>" + esc(st.ko) + '</span><span class="ext" aria-label="구글 검색">↗</span></a>' +
       '<span class="zhs">' + esc(st.zh || " ") + "</span></div></div>" +
@@ -1192,7 +1167,7 @@
     const right = nx ? '<span class="pr">다음</span>' : th ? imgHtml(th, "pthumb", "") : '<span class="pr go">' + ICON.chevR + "</span>";
     return '<li data-id="' + st.id + '" class="' + (afterNext ? "after-next" : "") + (nx ? " is-next" : "") + '">' +
       swipeWrap(st.id, '<button class="prow' + (nx ? " next" : "") + (done ? " ok" : "") + (sk ? " sk" : "") + '" type="button" id="row-' + st.id + '" data-act="detail" data-id="' + st.id + '" data-drag="1">' +
-        '<span class="pnum">' + num + '</span><span class="pt"><b>' + whenTag(st) + esc(st.ko) + starsHtml(st.pri) + "</b>" + (sub ? "<small>" + esc(sub) + "</small>" : "") + "</span>" + right + "</button>") +
+        '<span class="pnum">' + num + '</span><span class="pt"><b>' + esc(st.ko) + starsHtml(st.pri) + "</b>" + (sub ? "<small>" + esc(sub) + "</small>" : "") + "</span>" + right + "</button>") +
       subrowsHtml(st, c) + "</li>";
   }
   /* shops inside a place, listed right under it */
@@ -1203,7 +1178,7 @@
       const done = isDone(p.id), sk = isSkip(p.id);
       const sub = sk ? "건너뜀" : [p.desc, p.hours].filter(Boolean).join(" · ") || p.zh || "";
       return "<li>" + swipeWrap(p.id, '<button class="srow' + (done ? " ok" : "") + (sk ? " sk" : "") + (p.pri === "maybe" ? " maybe" : "") + '" type="button" data-act="detail" data-id="' + p.id + '">' +
-        '<span class="sic">' + (done ? ICON.check : sk ? ICON.skip : ICON.store) + '</span><span class="pt"><b>' + whenTag(p) + esc(p.ko) + starsHtml(p.pri) + "</b>" + (sub ? "<small>" + esc(sub) + "</small>" : "") + "</span>" +
+        '<span class="sic">' + (done ? ICON.check : sk ? ICON.skip : ICON.store) + '</span><span class="pt"><b>' + esc(p.ko) + starsHtml(p.pri) + "</b>" + (sub ? "<small>" + esc(sub) + "</small>" : "") + "</span>" +
         '<span class="pr go">' + ICON.chevR + "</span></button>") + "</li>";
     }).join("") + "</ul>";
   }
@@ -1214,7 +1189,7 @@
     return '<details class="maybe-fold" data-fold="' + key + '"' + (ui.open[key] ? " open" : "") + '><summary><span class="stars">★</span><span class="ft">여유 있으면 · ' +
       items.length + '곳</span><span class="chev" aria-hidden="true"></span></summary><ul class="prows" data-maybe="1">' +
       items.map((it) => '<li data-id="' + it.id + '">' + swipeWrap(it.id, '<button class="prow' + (isDone(it.id) ? " ok" : "") + (isSkip(it.id) ? " sk" : "") + '" type="button" data-act="detail" data-id="' + it.id + '" data-drag="1"><span class="pnum">' +
-        (isDone(it.id) ? ICON.check : "★") + '</span><span class="pt"><b>' + whenTag(it) + esc(it.ko) + "</b><small>" + esc(it.desc || it.zh || "") + '</small></span><span class="pr go">' + ICON.chevR + "</span></button>") + subrowsHtml(it, dayC(day)) + "</li>").join("") +
+        (isDone(it.id) ? ICON.check : "★") + '</span><span class="pt"><b>' + esc(it.ko) + "</b><small>" + esc(it.desc || it.zh || "") + '</small></span><span class="pr go">' + ICON.chevR + "</span></button>") + subrowsHtml(it, dayC(day)) + "</li>").join("") +
       "</ul></details>";
   }
 
@@ -1253,7 +1228,6 @@
         '<button class="btn" type="button" data-act="taxi" data-id="' + id + '"><span class="ic">' + ICON.taxi + "</span>택시 카드</button></div>";
     }
     const rows = [];
-    if (it.when) rows.push('<div class="r">' + ICON.clock + '<span class="k">시간</span><span class="v' + (isClock(it.when) ? " mono" : "") + '">' + esc(it.when) + "</span></div>");
     if (it.hours) rows.push('<div class="r">' + ICON.clock + '<span class="k">영업</span><span class="v mono">' + esc(it.hours) + "</span></div>");
     if (it.addr) rows.push('<button class="r" type="button" data-act="copy" data-v="' + esc(it.addr) + '">' + ICON.pin + '<span class="k">주소</span><span class="v zh">' + esc(it.addr) + '</span><span class="cp">복사</span></button>');
     if (it.memo) rows.push('<div class="r">' + ICON.note + '<span class="k">할 일</span><span class="v">' + esc(it.memo) + "</span></div>");
@@ -1914,13 +1888,12 @@
         '<label class="field"><span>고덕지도 · 디엔핑에서 공유 → 복사한 걸 붙여넣기</span><textarea name="share" class="zhin" style="min-height:96px" placeholder="예: 武康大楼 上海市徐汇区淮海中路1842号 https://surl.amap.com/…&#10;중국어 이름만 붙여넣어도 돼요">' + esc(keep.share || "") + "</textarea></label>" +
         '<div class="shprev" id="shPrev" aria-live="polite"></div>' +
         '<div class="two">' + field("ko", (isSpot ? "가게" : "장소") + " 한국어 이름 · 안 써도 돼요", keep.ko != null ? keep.ko : it.ko) + priSelect(keep.pri != null ? keep.pri : it.pri) + "</div>" +
-        whenField(keep.when != null ? keep.when : it.when) +
         (isSpot ? "" : daySel(keep.day || dayId));
       openSheet({
         key: "item", title: isNew ? (isSpot ? "가게 추가" : "장소 추가") : (it.ko || it.zh || "장소") + " 다시 찾기",
         body: autoBody, foot: footSave(false),
         on(k, v) {
-          if (k === "mode-manual") { const p = parseShare(v.share); itemSheet(id, Object.assign({}, opt, { mode: "manual", keep: { ko: v.ko || "", zh: p.zh || "", pri: v.pri, day: v.day, when: v.when || "" } })); return; }
+          if (k === "mode-manual") { const p = parseShare(v.share); itemSheet(id, Object.assign({}, opt, { mode: "manual", keep: { ko: v.ko || "", zh: p.zh || "", pri: v.pri, day: v.day } })); return; }
           if (k !== "save") return;
           const p = parseShare(v.share);
           if (!p.zh) { toast("중국어 이름을 못 찾았어요 · 공유 → 복사한 걸 붙여넣어 주세요", null, 3500); return; }
@@ -1928,7 +1901,6 @@
           it.zh = p.zh; it.ko = v.ko || (isNew ? p.zh : it.ko || p.zh);
           if (p.addr) it.addr = p.addr; else if (changed) delete it.addr;
           if (v.pri) it.pri = v.pri; else delete it.pri;
-          if (v.when) it.when = v.when; else delete it.when;
           if (changed) { delete it.ll; delete it.llMiss; delete it.far; }
           if (isNew) {
             if (isSpot) (parent.spots = parent.spots || []).push(it);
@@ -1942,11 +1914,9 @@
       });
       const ta = sheet.querySelector('textarea[name="share"]');
       if (ta) { ta.addEventListener("input", sharePreview); sharePreview(); }
-      wireWhen();
       return;
     }
     let body = modeSeg + '<div class="two">' + field("ko", isSpot ? "가게 이름" : "장소 이름", keep.ko != null ? keep.ko : it.ko) + priSelect(keep.pri != null ? keep.pri : it.pri) + "</div>" +
-      whenField(keep.when != null ? keep.when : it.when) +
       field("zh", "중국어 이름 (택시·지도용)", keep.zh != null && !it.zh ? keep.zh : it.zh, { zh: 1 }) +
       field("desc", "한 줄 설명", it.desc, { ph: "예: 신천지 근처 딤섬집" }) +
       field("tags", "태그 (쉼표로 구분)", (it.tags || []).join(", "), { ph: "예: 예약 필수, 현금만" }) +
@@ -1958,7 +1928,7 @@
       it.ko = v.ko || it.ko || "";
       if ((v.zh || "") !== (it.zh || "")) { delete it.ll; delete it.llMiss; delete it.far; } /* a new Chinese name means a new place on the map */
       it.zh = v.zh || "";
-      ["desc", "hours", "memo", "pri", "how", "when"].forEach((k) => { if (v[k]) it[k] = v[k]; else delete it[k]; });
+      ["desc", "hours", "memo", "pri", "how"].forEach((k) => { if (v[k]) it[k] = v[k]; else delete it[k]; });
       const tags = String(v.tags || "").split(/[,，]/).map((x) => x.trim()).filter(Boolean);
       if (tags.length) it.tags = tags; else delete it.tags;
       if (isNew) {
@@ -1975,7 +1945,7 @@
       body,
       foot: footSave(!isNew),
       on(k, v, btn) {
-        if (k === "mode-auto") { itemSheet(id, Object.assign({}, opt, { mode: "auto", keep: { ko: v.ko || "", share: v.zh || "", pri: v.pri, day: v.day, when: v.when || "" } })); return; }
+        if (k === "mode-auto") { itemSheet(id, Object.assign({}, opt, { mode: "auto", keep: { ko: v.ko || "", share: v.zh || "", pri: v.pri, day: v.day } })); return; }
         if (k === "save") {
           if (!v.ko) { toast("이름을 적어주세요"); return; }
           apply(v); save(); render(); detailSheet(it.id);
@@ -1998,7 +1968,6 @@
         }
       }
     });
-    wireWhen();
   }
   function daySheet(dayId) {
     const d = findDay(dayId);
