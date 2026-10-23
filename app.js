@@ -1193,6 +1193,7 @@
       '<div class="plist-h"><h2>' + (isNum(day.n) ? "Day " + esc(day.n) : "귀국날") + ' 일정</h2><span class="cnt">' + (pr.n ? pr.done + "/" + pr.n + " 다녀옴" + (pr.sk ? " · " + pr.sk + " 건너뜀" : "") : "") + "</span>" +
       '<button class="icon-btn" type="button" data-act="edit-day" data-day="' + day.id + '" aria-label="이 날 제목·날씨 수정">' + ICON.pen + "</button></div>";
     if (hasPri(day)) s += '<p class="starkey"><span class="stars">★★★</span> 꼭 가기 · <span class="stars">★★</span> 가면 좋음 · <span class="stars">★</span> 여유 있으면</p>';
+    if (vis.length > 1) s += '<p class="dragkey">' + (isSplit(day) ? "길게 눌러 끌면 순서를 바꾸거나 다른 시간대로 옮길 수 있어요" : "길게 눌러 끌면 순서를 바꿀 수 있어요") + "</p>";
     const row = (st) => { const i = vis.indexOf(st); return prowHtml(st, i + 1, nextId, vis[i - 1] && vis[i - 1].id === nextId, c); };
     s += isSplit(day)
       ? '<ul class="prows" data-split="1">' + PARTS.map((p) => { const its = vis.filter((x) => PARTS[partRank(x)] === p); return '<li class="pgh' + (its.length ? "" : " empty") + '" data-part="' + p + '"><span>' + p + "</span></li>" + its.map(row).join(""); }).join("") + "</ul>"
