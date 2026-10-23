@@ -826,20 +826,26 @@
       '<linearGradient id="trailg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0"/><stop offset="1" stop-color="#FFFFFF" stop-opacity=".5"/></linearGradient>' +
       '<radialGradient id="hhaze" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFF6F0" stop-opacity=".7"/><stop offset=".35" stop-color="#FFF3EE" stop-opacity=".38"/><stop offset=".7" stop-color="#FFF1EE" stop-opacity=".12"/><stop offset="1" stop-color="#FFF1EE" stop-opacity="0"/></radialGradient>' +
       '<radialGradient id="hsun" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".55"/><stop offset=".4" stop-color="#FFFFFF" stop-opacity=".18"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>' +
+      /* 노을: the same sky, the sun low on the right and the pink near the horizon turned to orange */
+      '<linearGradient id="hsk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5C8FD2"/><stop offset=".22" stop-color="#7DA6DD"/><stop offset=".42" stop-color="#A9BCE2"/><stop offset=".56" stop-color="#D9C6D8"/><stop offset=".68" stop-color="#FBCDB0"/><stop offset=".82" stop-color="#FFBE8E"/><stop offset="1" stop-color="#FFCB9C"/></linearGradient>' +
+      '<linearGradient id="hwk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F9CFB2"/><stop offset=".25" stop-color="#CFC4DE"/><stop offset="1" stop-color="#8EB0E0"/></linearGradient>' +
+      '<linearGradient id="clk" x1="0" y1="0" x2="0" y2="1"><stop offset=".4" stop-color="#FFF7EF"/><stop offset="1" stop-color="#FFC99E"/></linearGradient>' +
+      '<radialGradient id="hsunk" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFE3B8" stop-opacity=".85"/><stop offset=".35" stop-color="#FFC07E" stop-opacity=".38"/><stop offset="1" stop-color="#FFB070" stop-opacity="0"/></radialGradient>' +
       '<radialGradient id="hp" cx=".36" cy=".32" r=".75"><stop class="hp0" offset="0"/><stop class="hp1" offset=".38"/><stop class="hp2" offset=".78"/><stop class="hp3" offset="1"/></radialGradient>' +
       '<linearGradient id="hb" x1="0" y1="0" x2="0" y2="1"><stop class="hb0" offset="0"/><stop class="hb1" offset="1"/></linearGradient>' +
       '<linearGradient id="hr" x1="0" y1="0" x2="0" y2="1"><stop class="hr" offset="0" stop-opacity=".5"/><stop class="hr" offset="1" stop-opacity="0"/></linearGradient>' +
       '<mask id="hmm"><rect width="390" height="760" fill="#fff"/><circle cx="321" cy="167" r="12.5" fill="#000"/></mask></defs>' +
-      '<rect width="390" height="480" fill="url(#hs)"/><rect class="dy" width="390" height="480" fill="url(#hsd)"/>' +
+      '<rect width="390" height="480" fill="url(#hs)"/><rect class="dy" width="390" height="480" fill="url(#hsd)"/><rect class="dk" width="390" height="480" fill="url(#hsk)"/>' +
       '<g class="nt">' + stars + gold + bloom + shoot + '<circle cx="314" cy="174" r="44" fill="url(#hm)"/><circle cx="314" cy="174" r="14" fill="#FFE7A8" mask="url(#hmm)"/></g>' +
-      '<g class="dy"><circle class="sunglow" cx="314" cy="174" r="82" fill="url(#hsun)"/><circle cx="314" cy="174" r="13.5" fill="#FFFFFF" opacity=".55"/>' +
+      '<g class="dy"><g class="sun-d"><circle class="sunglow" cx="314" cy="174" r="82" fill="url(#hsun)"/><circle cx="314" cy="174" r="13.5" fill="#FFFFFF" opacity=".55"/></g>' +
+        '<g class="dk"><circle class="sunglow" cx="364" cy="344" r="120" fill="url(#hsunk)"/><circle cx="364" cy="344" r="15" fill="#FFF1D8" opacity=".9"/></g>' +
       '<g class="plane-fly"><rect x="-66" y="-.8" width="54" height="1.6" rx=".8" fill="url(#trailg)"/>' +
         '<g transform="rotate(90) scale(.95) translate(-12 -12)"><path fill="#FFFFFF" d="M21 15.5v-2l-7.5-4.5V4.2a1.5 1.5 0 0 0-3 0V9L3 13.5v2l7.5-2.3v5l-2.2 1.6V21l3.7-1 3.7 1v-1.2l-2.2-1.6v-5z"/></g></g>' +
       cloud(330, 40, .5, .5, 140) + cloud(64, 262, .9, .75, 105) + cloud(206, 236, .5, .55, 125) + cloud(286, 316, .72, .65, 115) + cloud(130, 352, .58, .6, 98) + cloud(40, 304, .45, .5, 132) +
       '<ellipse cx="195" cy="476" rx="350" ry="125" fill="url(#hhaze)"/></g>' +
       '<ellipse cx="200" cy="470" rx="280" ry="110" fill="url(#hglow)"/>' +
       '<g class="far">' + far + "</g>" +
-      '<rect y="470" width="390" height="311" fill="url(#hw)"/><rect class="dy" y="470" width="390" height="311" fill="url(#hwd)"/>' +
+      '<rect y="470" width="390" height="311" fill="url(#hw)"/><rect class="dy" y="470" width="390" height="311" fill="url(#hwd)"/><rect class="dk" y="470" width="390" height="311" fill="url(#hwk)"/>' +
       '<g fill="url(#hb)">' + near +
       '<path d="M284 470 L287 330 Q290 280 302 246 L306 250 Q314 290 316 330 L318 470 Z"/>' +
       '<path fill-rule="evenodd" d="M248 470 L250 296 L272 282 L274 470 Z M254 297 L269 290 L269 306 L254 311 Z"/>' +

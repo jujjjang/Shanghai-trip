@@ -1437,3 +1437,22 @@ body { background-color: var(--edge) !important; }
 .hero-art .bloom.b4 { animation-duration: 12s; animation-delay: -2s; }
 @keyframes bloom { 0%, 40%, 100% { opacity: 0; transform: scale(.75); } 65% { opacity: .8; transform: scale(1.05); } }
 @media (prefers-reduced-motion: reduce) { .hero-art .shoot { display: none; } .hero-art .bloom { animation: none; opacity: .35; transform: none; } }
+
+/* 노을 (data-sky="dusk", on top of 낮): only the home sky changes — the sun sits low on the right, the horizon turns orange,
+   buildings a dusky blue against it; cards and buttons keep the 낮 colours */
+.hero-art .dk { display: none; }
+[data-theme="light"][data-sky="dusk"] .hero-art .dk { display: inline; }
+[data-theme="light"][data-sky="dusk"] .hero-art .sun-d { display: none; }
+[data-theme="light"][data-sky="dusk"] .hero-art .cl path { fill: url(#clk); }
+[data-theme="light"][data-sky="dusk"] .hero-art .hg { stop-color: #FFC48C; }
+[data-theme="light"][data-sky="dusk"] .hero-art ellipse[fill="url(#hglow)"] { opacity: .45; }
+[data-theme="light"][data-sky="dusk"] .hero-art ellipse[fill="url(#hhaze)"] { opacity: .2; }
+[data-theme="light"][data-sky="dusk"] .hero-art .far { fill: #A7B8E2; }
+[data-theme="light"][data-sky="dusk"] .hero-art .hb0 { stop-color: #8AA3D8; }
+[data-theme="light"][data-sky="dusk"] .hero-art .hb1 { stop-color: #7C94CE; }
+[data-theme="light"][data-sky="dusk"] .hero-art .hbs { stroke: #879FD6; }
+[data-theme="light"][data-sky="dusk"] .hero-art .ant { stroke: #8AA3D8; }
+[data-theme="light"][data-sky="dusk"] .hero-art .hp1 { stop-color: #FFE9DA; }
+[data-theme="light"][data-sky="dusk"] .hero-art .hp2 { stop-color: #FFCBAE; }
+[data-theme="light"][data-sky="dusk"] .hero-art .hp3 { stop-color: #F2A88C; }
+[data-theme="light"][data-sky="dusk"] .hero-art .shim rect:nth-child(3n) { fill: #FFD2A6; }
