@@ -1185,10 +1185,10 @@ html { touch-action: pan-x pan-y; }
 body { overflow-x: hidden; }
 
 /* 낮: a plane crosses the sky now and then (still with 동작 줄이기) */
-/* 이스터에그: the plane is only there on the days we fly (가는 날 · 오는 날); straight across, under the title and over the rooftops */
-.plane-fly { display: none; opacity: .6; transform: translate(112px, 230px); animation: fly 46s linear infinite; }
+/* 이스터에그: the plane is only there on the days we fly (가는 날 · 오는 날); a gentle climb along the line 윤주 drew */
+.plane-fly { display: none; opacity: .6; transform: translate(112px, 249px) rotate(-12deg); animation: fly 46s linear infinite; }
 .hero.flyday .plane-fly { display: inline; }
-@keyframes fly { 0% { transform: translate(-80px, 230px); } 55% { transform: translate(480px, 230px); } 100% { transform: translate(480px, 230px); } }
+@keyframes fly { 0% { transform: translate(-80px, 290px) rotate(-12deg); } 55% { transform: translate(480px, 171px) rotate(-12deg); } 100% { transform: translate(480px, 171px) rotate(-12deg); } }
 
 /* 날씨: full width, hour by hour */
 .w.wweather { height: auto; }
