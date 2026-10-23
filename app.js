@@ -773,22 +773,15 @@
     if (heroSvg) return heroSvg;
     let seed = 7;
     const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
-    /* 밤 하늘 별: the original scatter (it already looked right), with stars beside the tower kept small and still,
-       and a few faint ones around the title */
-    const nearTower = (x, y) => Math.abs(x - 196) < 46 && y > 140;
     let stars = "";
     for (let i = 0; i < 46; i++) {
       const x = f1(rnd() * 390), y = f1(rnd() * 400), r = f1(0.5 + rnd() * 1.1), o = f1(0.35 + rnd() * 0.55);
       const clear = y > 88 && y < 340 && !(x < 250 && y > 90 && y < 230) && !(x > 296 && y < 142) && !(Math.abs(x - 317) < 24 && Math.abs(y - 171) < 24);
-      const nt = nearTower(+x, +y);
-      if (clear && i % 6 !== 5 && [13, 16, 43].indexOf(i) < 0 && !(Math.abs(x - 105.4) < 1 && Math.abs(y - 306.7) < 1)) stars += '<circle class="' + (i % 3 || nt ? "" : "tw") + '" cx="' + x + '" cy="' + y + '" r="' + f1(Math.min(r, nt ? 0.7 : 1.2)) + '" fill="#fff" opacity="' + f1(Math.max(o, 0.5)) + '"/>';
+      if (clear) stars += '<circle class="' + (i % 3 ? "" : "tw") + '" cx="' + x + '" cy="' + y + '" r="' + f1(Math.min(r, 1.2)) + '" fill="#fff" opacity="' + f1(Math.max(o, 0.5)) + '"/>';
     }
-    [[22, 76, .8], [104, 56, .7], [292, 46, .8], [374, 34, .7], [276, 172, .7]]
+    [[22, 76, .8], [104, 56, .7], [292, 46, .8], [334, 76, .6], [374, 34, .7], [208, 80, .6], [276, 172, .7], [384, 182, .6], [268, 236, .6]]
       .forEach((t, i) => { stars += '<circle class="' + (i % 2 ? "tw" : "") + '" cx="' + t[0] + '" cy="' + t[1] + '" r="' + t[2] + '" fill="#fff" opacity=".6"/>'; });
-    [[118, 104, .85, 0], [238, 150, .9, 1], [26, 212, .75, 0], [172, 230, .8, 1], [166, 110, .65, 0], [204, 131, 1, 1], [126, 146, .8, 1], [170, 168, .6, 0], [104, 176, .55, 1], [244, 212, .8, 0]]
-      .forEach((t) => { stars += '<circle class="' + (t[3] ? "tw" : "") + '" cx="' + t[0] + '" cy="' + t[1] + '" r="' + t[2] + '" fill="#fff" opacity=".6"/>'; });
-    const gold = [[360, 232, 4.4], [84, 262, 3.6], [34, 322, 3], [374, 148, 3.4], [370, 300, 3]].map((g) => spark(g[0], g[1], g[2])).join("");
-    const bloomPts = [[54, 232], [372, 262], [250, 118], [105.4, 306.7]];
+    const gold = [[360, 232, 4.4], [84, 262, 3.6], [34, 322, 3], [148, 334, 2.6], [374, 148, 3.4], [370, 300, 3]].map((g) => spark(g[0], g[1], g[2])).join("");
     let far = "", x = -6;
     while (x < 396) {
       const w = 12 + Math.floor(rnd() * 16), h = 26 + Math.floor(rnd() * 64);
@@ -808,7 +801,7 @@
       shim += '<rect class="' + (i % 4 ? "" : "tw") + '" x="' + f1(cx - w / 2) + '" y="' + f1(y) + '" width="' + f1(w) + '" height="1.6" rx=".8" fill="' + near1 + '" opacity="' + f1(0.18 + rnd() * 0.45) + '"/>';
     }
     /* 밤: a few brighter stars whose light swells and fades, each in its own time */
-    const bloom = bloomPts.map((q, i) =>
+    const bloom = [[54, 232], [150, 300], [372, 262], [250, 118]].map((q, i) =>
       '<g transform="translate(' + q[0] + " " + q[1] + ')"><g class="bloom b' + (i + 1) + '"><circle r="11" fill="url(#blg)"/></g><circle r="1.4" fill="#FFFFFF" opacity=".9"/></g>').join("");
     /* 밤: now and then a shooting star slips down the sky (one at a time, mostly none) */
     const shoot = [[378, 236, 160, 56], [176, 250, 154, 46], [268, 318, 166, 40]].map((q, i) =>
