@@ -773,15 +773,35 @@
     if (heroSvg) return heroSvg;
     let seed = 7;
     const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
-    let stars = "";
-    for (let i = 0; i < 46; i++) {
-      const x = f1(rnd() * 390), y = f1(rnd() * 400), r = f1(0.5 + rnd() * 1.1), o = f1(0.35 + rnd() * 0.55);
-      const clear = y > 88 && y < 340 && !(x < 250 && y > 90 && y < 230) && !(x > 296 && y < 142) && !(Math.abs(x - 317) < 24 && Math.abs(y - 171) < 24);
-      if (clear) stars += '<circle class="' + (i % 3 ? "" : "tw") + '" cx="' + x + '" cy="' + y + '" r="' + f1(Math.min(r, 1.2)) + '" fill="#fff" opacity="' + f1(Math.max(o, 0.5)) + '"/>';
+    for (let i = 0; i < 46; i++) { rnd(); rnd(); rnd(); rnd(); } /* (keeps the skyline's random shapes exactly as they were) */
+    /* 밤 하늘 별: spread evenly over the open sky — never two too close — and kept off the title, the 편집 button, the moon and the towers */
+    let sd = 21;
+    const srnd = () => { sd = (sd * 9301 + 49297) % 233280; return sd / 233280; };
+    const open = (x, y) => y > 34 && y < 372 && !(x < 246 && y > 76 && y < 226) && !(x > 316 && x < 380 && y > 82 && y < 130) && Math.hypot(x - 314, y - 174) > 54 &&
+      !(Math.abs(x - 196) < 18 && y > 146) && !(x > 242 && x < 280 && y > 274) && !(x > 278 && x < 324 && y > 236) && !(x > 322 && x < 352 && y > 290) && !(x > 352 && y > 362);
+    const pts = [];
+    for (let t = 0; t < 6000 && pts.length < 46; t++) {
+      const px = 6 + srnd() * 378, py = 36 + srnd() * 334;
+      if (open(px, py) && !pts.some((q) => Math.hypot(q[0] - px, q[1] - py) < 33)) pts.push([+f1(px), +f1(py)]);
     }
-    [[22, 76, .8], [104, 56, .7], [292, 46, .8], [334, 76, .6], [374, 34, .7], [208, 80, .6], [276, 172, .7], [384, 182, .6], [268, 236, .6]]
-      .forEach((t, i) => { stars += '<circle class="' + (i % 2 ? "tw" : "") + '" cx="' + t[0] + '" cy="' + t[1] + '" r="' + t[2] + '" fill="#fff" opacity=".6"/>'; });
-    const gold = [[262, 116, 4.4], [360, 232, 4.4], [84, 262, 3.6], [34, 322, 3], [148, 334, 2.6], [374, 148, 3.4], [370, 300, 3]].map((g) => spark(g[0], g[1], g[2])).join("");
+    /* the gold sparkles and the glowing stars: each picked as far as possible from the ones already picked, so they spread out too */
+    const pickFar = (from, taken, n) => {
+      const out = [];
+      while (out.length < n && from.length) {
+        let best = 0, bd = -1;
+        from.forEach((q, i) => { const d = Math.min(1e9, ...taken.concat(out).map((t) => Math.hypot(t[0] - q[0], t[1] - q[1]))); if (d > bd) { bd = d; best = i; } });
+        out.push(from.splice(best, 1)[0]);
+      }
+      return out;
+    };
+    const inner = pts.filter((q) => q[0] > 34 && q[0] < 356 && q[1] > 70 && q[1] < 352), goldPts = pickFar(inner, [[300, 180]], 6), bloomPts = pickFar(inner, goldPts.concat([[314, 174]]), 4);
+    const rest = pts.filter((q) => goldPts.indexOf(q) < 0 && bloomPts.indexOf(q) < 0);
+    let stars = "";
+    rest.forEach((q, i) => {
+      const r = 0.6 + srnd() * 0.6, o = 0.45 + srnd() * 0.4;
+      stars += '<circle class="' + (i % 3 ? "" : "tw") + '" cx="' + q[0] + '" cy="' + q[1] + '" r="' + f1(r) + '" fill="#fff" opacity="' + f1(o) + '"/>';
+    });
+    const gold = goldPts.map((g, i) => spark(g[0], g[1], i % 2 ? 3 : 4.2)).join("");
     let far = "", x = -6;
     while (x < 396) {
       const w = 12 + Math.floor(rnd() * 16), h = 26 + Math.floor(rnd() * 64);
@@ -801,7 +821,7 @@
       shim += '<rect class="' + (i % 4 ? "" : "tw") + '" x="' + f1(cx - w / 2) + '" y="' + f1(y) + '" width="' + f1(w) + '" height="1.6" rx=".8" fill="' + near1 + '" opacity="' + f1(0.18 + rnd() * 0.45) + '"/>';
     }
     /* 밤: a few brighter stars whose light swells and fades, each in its own time */
-    const bloom = [[54, 232], [150, 300], [372, 262], [250, 118]].map((q, i) =>
+    const bloom = bloomPts.map((q, i) =>
       '<g transform="translate(' + q[0] + " " + q[1] + ')"><g class="bloom b' + (i + 1) + '"><circle r="11" fill="url(#blg)"/></g><circle r="1.4" fill="#FFFFFF" opacity=".9"/></g>').join("");
     /* 밤: now and then a shooting star slips down the sky (one at a time, mostly none) */
     const shoot = [[378, 236, 160, 56], [176, 250, 154, 46], [268, 318, 166, 40]].map((q, i) =>
