@@ -1423,3 +1423,10 @@ body { background-color: var(--edge) !important; }
 .ck-bar button.del { color: var(--coral-ink, #B83A0E); }
 .ck-bar button.del.armed { background: var(--coral-soft, #FFE9E2); border-color: transparent; }
 .ck-note svg { width: 13px; height: 13px; vertical-align: -2px; }
+/* 밤 하늘 별똥별: 가끔 하나씩, 1초쯤 스윽 */
+.hero-art .shoot { opacity: 0; animation: shoot 30s linear infinite; }
+.hero-art .shoot.s1 { animation-duration: 26s; animation-delay: 3s; }
+.hero-art .shoot.s2 { animation-duration: 32s; animation-delay: 12s; }
+.hero-art .shoot.s3 { animation-duration: 38s; animation-delay: 21s; }
+@keyframes shoot { 0% { transform: translateX(0); opacity: 0; } .8% { opacity: .9; } 4% { transform: translateX(130px); opacity: 0; } 100% { transform: translateX(130px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .hero-art .shoot { display: none; } }
