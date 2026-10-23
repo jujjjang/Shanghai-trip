@@ -776,7 +776,7 @@
     let stars = "";
     for (let i = 0; i < 46; i++) {
       const x = f1(rnd() * 390), y = f1(rnd() * 400), r = f1(0.5 + rnd() * 1.1), o = f1(0.35 + rnd() * 0.55);
-      const clear = y > 88 && y < 340 && !(x < 250 && y > 90 && y < 230) && !(x > 296 && y < 142) && !(Math.abs(x - 309) < 24 && Math.abs(y - 171) < 24);
+      const clear = y > 88 && y < 340 && !(x < 250 && y > 90 && y < 230) && !(x > 296 && y < 142) && !(Math.abs(x - 317) < 24 && Math.abs(y - 171) < 24);
       if (clear) stars += '<circle class="' + (i % 3 ? "" : "tw") + '" cx="' + x + '" cy="' + y + '" r="' + f1(Math.min(r, 1.2)) + '" fill="#fff" opacity="' + f1(Math.max(o, 0.5)) + '"/>';
     }
     [[22, 76, .8], [104, 56, .7], [292, 46, .8], [334, 76, .6], [374, 34, .7], [208, 80, .6], [276, 172, .7], [384, 182, .6], [268, 236, .6]]
@@ -814,10 +814,10 @@
       '<radialGradient id="hp" cx=".36" cy=".32" r=".75"><stop class="hp0" offset="0"/><stop class="hp1" offset=".38"/><stop class="hp2" offset=".78"/><stop class="hp3" offset="1"/></radialGradient>' +
       '<linearGradient id="hb" x1="0" y1="0" x2="0" y2="1"><stop class="hb0" offset="0"/><stop class="hb1" offset="1"/></linearGradient>' +
       '<linearGradient id="hr" x1="0" y1="0" x2="0" y2="1"><stop class="hr" offset="0" stop-opacity=".5"/><stop class="hr" offset="1" stop-opacity="0"/></linearGradient>' +
-      '<mask id="hmm"><rect width="390" height="760" fill="#fff"/><circle cx="313" cy="167" r="12.5" fill="#000"/></mask></defs>' +
+      '<mask id="hmm"><rect width="390" height="760" fill="#fff"/><circle cx="321" cy="167" r="12.5" fill="#000"/></mask></defs>' +
       '<rect width="390" height="480" fill="url(#hs)"/><rect class="dy" width="390" height="480" fill="url(#hsd)"/>' +
-      '<g class="nt">' + stars + gold + '<circle cx="306" cy="174" r="44" fill="url(#hm)"/><circle cx="306" cy="174" r="14" fill="#FFE7A8" mask="url(#hmm)"/></g>' +
-      '<g class="dy"><circle class="sunglow" cx="306" cy="174" r="76" fill="url(#hsun)"/><circle cx="306" cy="174" r="12" fill="#FFFFFF" opacity=".55"/>' +
+      '<g class="nt">' + stars + gold + '<circle cx="314" cy="174" r="44" fill="url(#hm)"/><circle cx="314" cy="174" r="14" fill="#FFE7A8" mask="url(#hmm)"/></g>' +
+      '<g class="dy"><circle class="sunglow" cx="314" cy="174" r="82" fill="url(#hsun)"/><circle cx="314" cy="174" r="13.5" fill="#FFFFFF" opacity=".55"/>' +
       '<g class="plane-fly"><rect x="-150" y="-1.1" width="138" height="2.2" rx="1.1" fill="url(#trailg)"/>' +
         '<g transform="rotate(90) scale(.95) translate(-12 -12)"><path fill="#FFFFFF" d="M21 15.5v-2l-7.5-4.5V4.2a1.5 1.5 0 0 0-3 0V9L3 13.5v2l7.5-2.3v5l-2.2 1.6V21l3.7-1 3.7 1v-1.2l-2.2-1.6v-5z"/></g></g>' +
       cloud(330, 40, .5, .5, 140) + cloud(64, 262, .9, .75, 105) + cloud(206, 236, .5, .55, 125) + cloud(286, 316, .72, .65, 115) + cloud(130, 352, .58, .6, 98) + cloud(40, 304, .45, .5, 132) +
