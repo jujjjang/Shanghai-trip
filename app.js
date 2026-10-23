@@ -774,17 +774,23 @@
     let seed = 7;
     const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
     for (let i = 0; i < 46; i++) { rnd(); rnd(); rnd(); rnd(); } /* (keeps the skyline's random shapes exactly as they were) */
-    /* 밤 하늘 별: spread evenly over the open sky — never two too close — and kept off the title, the 편집 button, the moon and the towers */
+    /* 밤 하늘 별: thick up in the sky, thinning out toward the rooftops, a little uneven like a real sky.
+       Kept off the 편집 button, the moon and the buildings; small and still next to the tower, dimmer behind the title. */
     let sd = 21;
     const srnd = () => { sd = (sd * 9301 + 49297) % 233280; return sd / 233280; };
-    const open = (x, y) => y > 34 && y < 372 && !(x < 246 && y > 76 && y < 226) && !(x > 316 && x < 380 && y > 82 && y < 130) && Math.hypot(x - 314, y - 174) > 54 &&
-      !(Math.abs(x - 196) < 18 && y > 146) && !(x > 242 && x < 280 && y > 274) && !(x > 278 && x < 324 && y > 236) && !(x > 322 && x < 352 && y > 290) && !(x > 352 && y > 362);
+    const open = (x, y) => !(x > 316 && x < 380 && y > 82 && y < 130) && Math.hypot(x - 314, y - 174) > 52 &&
+      !(Math.abs(x - 196) < 9 && y > 150) && !(x > 242 && x < 280 && y > 274) && !(x > 278 && x < 324 && y > 236) && !(x > 322 && x < 352 && y > 290) && !(x > 352 && y > 362) && !(y > 372);
     const pts = [];
-    for (let t = 0; t < 6000 && pts.length < 46; t++) {
-      const px = 6 + srnd() * 378, py = 36 + srnd() * 334;
-      if (open(px, py) && !pts.some((q) => Math.hypot(q[0] - px, q[1] - py) < 33)) pts.push([+f1(px), +f1(py)]);
+    for (let t = 0; t < 9000 && pts.length < 64; t++) {
+      const px = 4 + srnd() * 382, py = 30 + srnd() * 345;
+      if (!open(px, py)) continue;
+      const k = (py - 30) / 345; /* 0 up high → 1 at the rooftops */
+      if (srnd() > 1 - 0.72 * k) continue;
+      if (pts.some((q) => Math.hypot(q[0] - px, q[1] - py) < 15 + 30 * k)) continue;
+      pts.push([+f1(px), +f1(py)]);
     }
-    /* the gold sparkles and the glowing stars: each picked as far as possible from the ones already picked, so they spread out too */
+    const nearTower = (q) => Math.abs(q[0] - 196) < 46 && q[1] > 140, inTitle = (q) => q[0] < 246 && q[1] > 76 && q[1] < 226;
+    /* the gold sparkles and the glowing stars: each picked as far as possible from the ones already picked */
     const pickFar = (from, taken, n) => {
       const out = [];
       while (out.length < n && from.length) {
@@ -794,12 +800,14 @@
       }
       return out;
     };
-    const inner = pts.filter((q) => q[0] > 34 && q[0] < 356 && q[1] > 70 && q[1] < 352), goldPts = pickFar(inner, [[300, 180]], 6), bloomPts = pickFar(inner, goldPts.concat([[314, 174]]), 4);
-    const rest = pts.filter((q) => goldPts.indexOf(q) < 0 && bloomPts.indexOf(q) < 0);
+    const cand = pts.filter((q) => !nearTower(q) && !inTitle(q) && q[0] > 30 && q[0] < 362 && q[1] > 50 && q[1] < 330);
+    const goldPts = pickFar(cand, [[314, 174], [196, 250]], 6), bloomPts = pickFar(cand, goldPts.concat([[314, 174], [196, 250]]), 4);
     let stars = "";
-    rest.forEach((q, i) => {
-      const r = 0.6 + srnd() * 0.6, o = 0.45 + srnd() * 0.4;
-      stars += '<circle class="' + (i % 3 ? "" : "tw") + '" cx="' + q[0] + '" cy="' + q[1] + '" r="' + f1(r) + '" fill="#fff" opacity="' + f1(o) + '"/>';
+    pts.filter((q) => goldPts.indexOf(q) < 0 && bloomPts.indexOf(q) < 0).forEach((q, i) => {
+      const nt = nearTower(q), ti = inTitle(q), big = !nt && !ti && srnd() < 0.16;
+      const r = nt ? 0.45 + srnd() * 0.3 : ti ? 0.5 + srnd() * 0.35 : big ? 1 + srnd() * 0.35 : 0.55 + srnd() * 0.4;
+      const o = nt ? 0.4 + srnd() * 0.25 : ti ? 0.35 + srnd() * 0.25 : 0.5 + srnd() * 0.4;
+      stars += '<circle class="' + (!nt && i % 3 === 0 ? "tw" : "") + '" cx="' + q[0] + '" cy="' + q[1] + '" r="' + f1(r) + '" fill="#fff" opacity="' + f1(o) + '"/>';
     });
     const gold = goldPts.map((g, i) => spark(g[0], g[1], i % 2 ? 3 : 4.2)).join("");
     let far = "", x = -6;
