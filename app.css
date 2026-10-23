@@ -545,7 +545,9 @@ details[open] > summary .chev { margin-top: 4px; transform: rotate(-135deg); }
 .chev2 { color: var(--faint); font-size: 18px; }
 .setrow { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 10px; }
 .setrow .top { display: flex; align-items: center; gap: 12px; }
-.seg4 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.seg4 { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+.seg4 button { grid-column: span 3; }
+.seg4 button:nth-child(n+3) { grid-column: span 2; padding: 0 10px; gap: 6px; }
 .seg4 button { display: flex; align-items: center; gap: 8px; min-height: 46px; padding: 0 12px; border-radius: 13px; border: 1px solid var(--line); background: var(--inner); color: var(--ink); font: inherit; font-size: 13.5px; text-align: left; cursor: pointer; }
 .seg4 button svg { width: 17px; height: 17px; color: var(--accent); flex: none; }
 .seg4 button[aria-pressed="true"] { background: var(--primary-bg); color: var(--primary-ink); border-color: transparent; font-weight: 600; }
@@ -1456,3 +1458,11 @@ body { background-color: var(--edge) !important; }
 [data-theme="light"][data-sky="dusk"] .hero-art .hp2 { stop-color: #FFCBAE; }
 [data-theme="light"][data-sky="dusk"] .hero-art .hp3 { stop-color: #F2A88C; }
 [data-theme="light"][data-sky="dusk"] .hero-art .shim rect:nth-child(3n) { fill: #FFD2A6; }
+
+/* 일정 아침 · 낮 · 저녁: a quiet heading in the day's colour with a hairline; empty parts only show up while dragging, as places to drop */
+.prows > li.pgh { display: flex; align-items: center; gap: 10px; padding: 16px 8px 4px; border-top: 0; font-size: 12.5px; font-weight: 700; letter-spacing: .12em; color: var(--c, var(--accent)); }
+.prows > li.pgh::after { content: ""; flex: 1; height: 1px; background: var(--line-2); }
+.prows > li.pgh:first-child, .prows > li.pgh.empty:first-child + li.pgh { padding-top: 6px; }
+.prows > li.pgh + li { border-top-color: transparent; }
+.prows > li.pgh.empty { display: none; }
+.prows.drag-on > li.pgh.empty { display: flex; opacity: .55; padding-bottom: 14px; }

@@ -71,6 +71,7 @@
     note: I('<path d="M6 3.5h9l4 4v13H6z"/><path d="M14.5 3.5v4.5h4.5M9 12h7M9 15.5h5"/>'),
     eye: I('<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.8"/>'),
     moon: I('<path d="M19.5 14.5A8 8 0 0 1 9.5 4.5a8 8 0 1 0 10 10z"/>'),
+    dusk: I('<path d="M3 16.5h18"/><path d="M7.5 16.5a4.5 4.5 0 0 1 9 0"/><path d="M6.5 20h11"/>'),
     grid: I('<rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/>'),
     users: I('<circle cx="9" cy="8.5" r="3"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M16 5.8a3 3 0 0 1 0 5.4M17.5 14a5 5 0 0 1 3 5"/>'),
     download: I('<path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14"/>'),
@@ -228,6 +229,22 @@
       d.applied.push("todo-1022");
       notesAdded = true;
     }
+    /* 아침 · 낮 · 저녁: Day 1 and Day 2 split once by what the notes say; places added later follow the one before them */
+    if (d.applied.indexOf("parts-1023") < 0) {
+      const P = { s01: "낮", s13: "낮", s07: "저녁", s08: "저녁", s16: "저녁", s17: "저녁", s15: "저녁", s06: "아침", s05: "아침", s04: "낮", s02: "낮", s03: "저녁", s18: "저녁" };
+      ["day1", "day2"].forEach((id) => {
+        const day = d.days.find((x) => x.id === id);
+        if (!day) return;
+        const vis = day.stops.filter((x) => x.pri !== "maybe");
+        if (vis.length < 3 || vis.some((x) => x.part) || !vis.some((x) => P[x.id])) return;
+        let prev = "";
+        vis.forEach((x) => { x.part = P[x.id] || prev || (vis.find((y) => P[y.id]) ? P[vis.find((y) => P[y.id]).id] : "낮"); prev = x.part; });
+        const rank = (x) => Math.max(0, ["아침", "낮", "저녁"].indexOf(x.part || "낮"));
+        day.stops = day.stops.slice().sort((a, b) => rank(a) - rank(b));
+      });
+      d.applied.push("parts-1023");
+      notesAdded = true;
+    }
     return d;
   }
   let notesAdded = false, todoRenewed = false, packOrder = null;
@@ -268,11 +285,11 @@
 
   /* ---------- 낮 / 밤 테마 ---------- */
   const mqDark = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
-  const THEMES = [["time", "clock", "시간 따라"], ["system", "phone", "폰 설정 따라"], ["light", "sun", "항상 낮"], ["dark", "moon", "항상 밤"]];
+  const THEMES = [["time", "clock", "시간 따라"], ["system", "phone", "폰 설정 따라"], ["light", "sun", "항상 낮"], ["dusk", "dusk", "항상 노을"], ["dark", "moon", "항상 밤"]];
   function wantDark() {
     const m = ui.theme || "time";
     if (m === "dark") return true;
-    if (m === "light") return false;
+    if (m === "light" || m === "dusk") return false;
     if (m === "system") return !!(mqDark && mqDark.matches);
     const h = new Date().getHours();
     return h >= 18 || h < 6;
@@ -281,8 +298,11 @@
   function applyTheme() {
     const t = wantDark() ? "dark" : "light", root = document.documentElement;
     if (root.getAttribute("data-theme") !== t) root.setAttribute("data-theme", t);
+    /* 노을: the 낮 screen with the home sky at sunset */
+    const dusk = t === "light" && ui.theme === "dusk";
+    if (dusk) root.setAttribute("data-sky", "dusk"); else root.removeAttribute("data-sky");
     const m = document.getElementById("themeColor");
-    if (m) m.setAttribute("content", t === "dark" ? "#0A0E2E" : "#5AA9DE");
+    if (m) m.setAttribute("content", t === "dark" ? "#0A0E2E" : dusk ? "#5C8FD2" : "#5AA9DE");
   }
 
   /* photos live in IndexedDB as shrunk JPEG blobs, keyed by id */
@@ -355,6 +375,21 @@
   }
   const placeOf = (it) => it && (it.q || it.zh);
   const visible = (day) => day.stops.filter((s) => s.pri !== "maybe");
+  /* 아침 · 낮 · 저녁: a day can be split into three parts; the list keeps them in that order and numbers run straight through
+     (so the map pins still match). Long-press a place and drag it under another heading to move it there */
+  const PARTS = ["아침", "낮", "저녁"];
+  const partRank = (s) => { const i = PARTS.indexOf(s.part); return i < 0 ? 1 : i; };
+  const isSplit = (day, but) => day.stops.some((s) => s !== but && s.pri !== "maybe" && s.part);
+  function partSort(day) {
+    if (!isSplit(day)) return;
+    for (let i = 1; i < day.stops.length; i++) if (partRank(day.stops[i]) < partRank(day.stops[i - 1])) { day.stops = day.stops.slice().sort((a, b) => partRank(a) - partRank(b)); return; }
+  }
+  /* a place joining a day (new, or moved from another day) goes to the end: in a split day that's the last part in use */
+  function joinPart(day, it) {
+    if (!isSplit(day, it)) { delete it.part; return; }
+    const v = visible(day).filter((x) => x !== it);
+    it.part = (v.length && v[v.length - 1].part) || "낮";
+  }
   const countable = (st) => !!placeOf(st) && st.pri !== "maybe";
   const isDone = (id) => !!state.done[id];
   const isSkip = (id) => !state.done[id] && !!state.skip[id];
@@ -1158,7 +1193,10 @@
       '<div class="plist-h"><h2>' + (isNum(day.n) ? "Day " + esc(day.n) : "귀국날") + ' 일정</h2><span class="cnt">' + (pr.n ? pr.done + "/" + pr.n + " 다녀옴" + (pr.sk ? " · " + pr.sk + " 건너뜀" : "") : "") + "</span>" +
       '<button class="icon-btn" type="button" data-act="edit-day" data-day="' + day.id + '" aria-label="이 날 제목·날씨 수정">' + ICON.pen + "</button></div>";
     if (hasPri(day)) s += '<p class="starkey"><span class="stars">★★★</span> 꼭 가기 · <span class="stars">★★</span> 가면 좋음 · <span class="stars">★</span> 여유 있으면</p>';
-    s += '<ul class="prows">' + vis.map((st, i) => prowHtml(st, i + 1, nextId, vis[i - 1] && vis[i - 1].id === nextId, c)).join("") + "</ul>";
+    const row = (st) => { const i = vis.indexOf(st); return prowHtml(st, i + 1, nextId, vis[i - 1] && vis[i - 1].id === nextId, c); };
+    s += isSplit(day)
+      ? '<ul class="prows" data-split="1">' + PARTS.map((p) => { const its = vis.filter((x) => PARTS[partRank(x)] === p); return '<li class="pgh' + (its.length ? "" : " empty") + '" data-part="' + p + '"><span>' + p + "</span></li>" + its.map(row).join(""); }).join("") + "</ul>"
+      : '<ul class="prows">' + vis.map(row).join("") + "</ul>";
     s += maybeDrawer(day);
     s += '<div class="addrow"><button class="btn dashed wide" type="button" data-act="add-stop" data-day="' + day.id + '">+ 장소 추가</button></div></section></div>';
     return s;
@@ -1585,7 +1623,7 @@
       row("link-add", "plus", "링크 추가", "") + "</div>";
     const cur = ui.theme || "time";
     s += '<div class="group-h">설정</div><div class="group">' +
-      '<div class="setrow"><div class="top"><span class="ri">' + ICON.moon + '</span><span class="rt"><b>화면 테마</b><span>' + (isDark() ? "지금은 밤 테마 · 화면 전체가 남색" : "지금은 낮 테마 · 위는 파란 하늘, 아래는 밝게") + "</span></span></div>" +
+      '<div class="setrow"><div class="top"><span class="ri">' + ICON.moon + '</span><span class="rt"><b>화면 테마</b><span>' + (isDark() ? "지금은 밤 테마 · 화면 전체가 남색" : document.documentElement.getAttribute("data-sky") === "dusk" ? "지금은 노을 테마 · 홈 하늘만 노을빛" : "지금은 낮 테마 · 위는 파란 하늘, 아래는 밝게") + "</span></span></div>" +
       '<div class="seg4" role="group" aria-label="화면 테마">' + THEMES.map((t) => '<button type="button" data-act="theme-set" data-v="' + t[0] + '" aria-pressed="' + (cur === t[0]) + '">' + ICON[t[1]] + "<span>" + t[2] + "</span></button>").join("") + "</div></div>" +
       '<div class="setrow"><div class="top"><span class="ri">' + ICON.pen + '</span><span class="rt"><b>여행 제목</b><span>홈 맨 위에 크게 나와요</span></span></div>' +
         '<input class="tinput" data-change="trip-title" value="' + esc(tripTitle()) + '" placeholder="예: 상하이 3박 4일" autocomplete="off" enterkeyhint="done" aria-label="여행 제목"></div>' +
@@ -1609,6 +1647,7 @@
     });
   }
   function render() {
+    state.days.forEach(partSort);
     const y = window.scrollY, keep = {};
     view.querySelectorAll("[data-keep]").forEach((el) => { if (el.id) keep[el.id] = el.value; });
     const ae = document.activeElement, focusId = ae && view.contains(ae) ? ae.id : "";
@@ -1910,9 +1949,9 @@
           if (changed) { delete it.ll; delete it.llMiss; delete it.far; }
           if (isNew) {
             if (isSpot) (parent.spots = parent.spots || []).push(it);
-            else findDay(v.day || dayId).stops.push(it);
+            else { const dd = findDay(v.day || dayId); joinPart(dd, it); dd.stops.push(it); }
           } else if (!isSpot && v.day && v.day !== f.day.id && findDay(v.day)) {
-            f.list.splice(f.list.indexOf(it), 1); findDay(v.day).stops.push(it); ui.day = v.day; saveUI();
+            f.list.splice(f.list.indexOf(it), 1); joinPart(findDay(v.day), it); findDay(v.day).stops.push(it); ui.day = v.day; saveUI();
           }
           save(); render(); detailSheet(it.id);
           if (!isSpot && !it.ll) { toast("저장했어요 · 지도 위치 찾는 중…"); locate(it.id); } else toast("저장했어요");
@@ -1939,9 +1978,10 @@
       if (tags.length) it.tags = tags; else delete it.tags;
       if (isNew) {
         if (isSpot) (parent.spots = parent.spots || []).push(it);
-        else findDay(dayId).stops.push(it);
+        else { joinPart(findDay(dayId), it); findDay(dayId).stops.push(it); }
       } else if (!isSpot && v.day && v.day !== f.day.id && findDay(v.day)) {
         f.list.splice(f.list.indexOf(it), 1);
+        joinPart(findDay(v.day), it);
         findDay(v.day).stops.push(it);
         ui.day = v.day; saveUI();
       }
@@ -1980,12 +2020,16 @@
     openSheet({
       title: (isNum(d.n) ? "Day " + d.n : "귀국날") + " 수정",
       body: field("title", "제목", d.title) + field("date", "화면에 보이는 날짜", d.date, { ph: "예: 10.31 토" }) + field("iso", "실제 날짜 (홈 화면이 오늘이 며칠째인지 알아보는 데 써요)", d.iso, { type: "date" }) +
-        field("wx", "날씨", d.wx, { ph: "예: 맑음 ☀️ 21°/14°" }),
+        field("wx", "날씨", d.wx, { ph: "예: 맑음 ☀️ 21°/14°" }) +
+        '<label class="field"><span>일정 목록 나누기</span><select name="split"><option value="">안 나누기</option><option value="1"' + (isSplit(d) ? " selected" : "") + '>아침 · 낮 · 저녁으로 나누기</option></select>' +
+        '<span class="hint">나누면 장소를 길게 눌러 다른 시간대 밑으로 끌어 옮길 수 있어요</span></label>',
       foot: footSave(false),
       on(k, v) {
         if (k !== "save") return;
         d.title = v.title || d.title; d.date = v.date || d.date; if (v.iso) d.iso = v.iso;
         if (v.wx) d.wx = v.wx; else delete d.wx;
+        if (v.split && !isSplit(d)) visible(d).forEach((x) => { x.part = "낮"; });
+        else if (!v.split) d.stops.forEach((x) => { delete x.part; });
         save(); closeSheet(); render(); toast("저장했어요");
       }
     });
@@ -2296,6 +2340,7 @@
     closeSwipe();
     rg.mode = "drag"; rg.li = li;
     li.classList.add("dragging");
+    if (li.parentNode.hasAttribute("data-split")) li.parentNode.classList.add("drag-on");
     try { if (navigator.vibrate) navigator.vibrate(8); } catch (e) {}
     const loop = () => {
       if (!rg || rg.mode !== "drag") { edgeRaf = 0; return; }
@@ -2333,7 +2378,7 @@
     }
     if (rg.mode === "drag") {
       const ul = rg.li.parentNode, el = document.elementFromPoint(e.clientX, e.clientY);
-      const over = el && el.closest("li[data-id]");
+      const over = el && el.closest("li[data-id], li.pgh");
       if (!over || over === rg.li || over.parentNode !== ul) return;
       const r = over.getBoundingClientRect();
       ul.insertBefore(rg.li, e.clientY > r.top + r.height / 2 ? over.nextSibling : over);
@@ -2356,6 +2401,10 @@
       const ul = g.li.parentNode, day = planDay();
       const ids = Array.from(ul.children).map((li) => li.getAttribute("data-id"));
       const byId = {}; day.stops.forEach((s) => { byId[s.id] = s; });
+      if (ul.hasAttribute("data-split")) {
+        let cur = PARTS[0];
+        Array.from(ul.children).forEach((li) => { const p = li.getAttribute("data-part"), it = byId[li.getAttribute("data-id")]; if (p) cur = p; else if (it) it.part = cur; });
+      }
       const moved = ids.map((k) => byId[k]).filter(Boolean);
       const isMaybe = ul.hasAttribute("data-maybe");
       const others = day.stops.filter((s) => (isMaybe ? s.pri !== "maybe" : s.pri === "maybe"));
