@@ -786,7 +786,7 @@
       if (!open(px, py)) continue;
       const k = (py - 30) / 345; /* 0 up high → 1 at the rooftops */
       if (srnd() > 1 - 0.72 * k) continue;
-      if (pts.some((q) => Math.hypot(q[0] - px, q[1] - py) < 15 + 30 * k)) continue;
+      if (pts.some((q) => Math.hypot(q[0] - px, q[1] - py) < 28 + 18 * k)) continue;
       pts.push([+f1(px), +f1(py)]);
     }
     const nearTower = (q) => Math.abs(q[0] - 196) < 46 && q[1] > 140, inTitle = (q) => q[0] < 246 && q[1] > 76 && q[1] < 226;
@@ -802,11 +802,13 @@
     };
     const cand = pts.filter((q) => !nearTower(q) && !inTitle(q) && q[0] > 30 && q[0] < 362 && q[1] > 50 && q[1] < 330);
     const goldPts = pickFar(cand, [[314, 174], [196, 250]], 6), bloomPts = pickFar(cand, goldPts.concat([[314, 174], [196, 250]]), 4);
+    /* one or two bigger stars up high so the top doesn't look like dust */
+    const bigPts = pickFar(pts.filter((q) => q[1] < 150 && !inTitle(q) && goldPts.indexOf(q) < 0 && bloomPts.indexOf(q) < 0), goldPts.concat(bloomPts, [[314, 174]]), 2);
     let stars = "";
     pts.filter((q) => goldPts.indexOf(q) < 0 && bloomPts.indexOf(q) < 0).forEach((q, i) => {
-      const nt = nearTower(q), ti = inTitle(q), big = !nt && !ti && srnd() < 0.16;
-      const r = nt ? 0.45 + srnd() * 0.3 : ti ? 0.5 + srnd() * 0.35 : big ? 1 + srnd() * 0.35 : 0.55 + srnd() * 0.4;
-      const o = nt ? 0.4 + srnd() * 0.25 : ti ? 0.35 + srnd() * 0.25 : 0.5 + srnd() * 0.4;
+      const nt = nearTower(q), ti = inTitle(q), hero = bigPts.indexOf(q), big = hero >= 0 || (!nt && !ti && srnd() < 0.14);
+      const r = hero === 0 ? 1.6 : hero === 1 ? 1.35 : nt ? 0.45 + srnd() * 0.3 : ti ? 0.5 + srnd() * 0.35 : big ? 1 + srnd() * 0.35 : 0.55 + srnd() * 0.4;
+      const o = hero >= 0 ? 0.92 : nt ? 0.4 + srnd() * 0.25 : ti ? 0.35 + srnd() * 0.25 : 0.5 + srnd() * 0.4;
       stars += '<circle class="' + (!nt && i % 3 === 0 ? "tw" : "") + '" cx="' + q[0] + '" cy="' + q[1] + '" r="' + f1(r) + '" fill="#fff" opacity="' + f1(o) + '"/>';
     });
     const gold = goldPts.map((g, i) => spark(g[0], g[1], i % 2 ? 3 : 4.2)).join("");
