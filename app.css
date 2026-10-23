@@ -1435,6 +1435,5 @@ body { background-color: var(--edge) !important; }
 .hero-art .bloom.b2 { animation-duration: 11s; animation-delay: -4s; }
 .hero-art .bloom.b3 { animation-duration: 10s; animation-delay: -7s; }
 .hero-art .bloom.b4 { animation-duration: 12s; animation-delay: -2s; }
-.hero-art .bloom.b5 { animation-duration: 9.5s; animation-delay: -6s; }
 @keyframes bloom { 0%, 40%, 100% { opacity: 0; transform: scale(.75); } 65% { opacity: .8; transform: scale(1.05); } }
 @media (prefers-reduced-motion: reduce) { .hero-art .shoot { display: none; } .hero-art .bloom { animation: none; opacity: .35; transform: none; } }
