@@ -800,10 +800,14 @@
       const near1 = Math.abs(cx - 196) < 40 ? "#FFB8E6" : Math.abs(cx - 300) < 30 || Math.abs(cx - 336) < 20 ? "#FFD68A" : "#B7A9FF";
       shim += '<rect class="' + (i % 4 ? "" : "tw") + '" x="' + f1(cx - w / 2) + '" y="' + f1(y) + '" width="' + f1(w) + '" height="1.6" rx=".8" fill="' + near1 + '" opacity="' + f1(0.18 + rnd() * 0.45) + '"/>';
     }
+    /* 밤: a few brighter stars whose light swells and fades, each in its own time */
+    const bloom = [[54, 232], [150, 300], [372, 262], [250, 118]].map((q, i) =>
+      '<g transform="translate(' + q[0] + " " + q[1] + ')"><g class="bloom b' + (i + 1) + '"><circle r="9" fill="url(#blg)"/><path d="M-7 0H7M0 -7V7" stroke="#FFFFFF" stroke-width=".7" stroke-linecap="round" opacity=".8"/></g><circle r="1.5" fill="#FFFFFF"/></g>').join("");
     /* 밤: now and then a shooting star slips down the sky (one at a time, mostly none) */
     const shoot = [[378, 236, 160, 56], [176, 250, 154, 46], [268, 318, 166, 40]].map((q, i) =>
       '<g transform="translate(' + q[0] + " " + q[1] + ") rotate(" + q[2] + ')"><g class="shoot s' + (i + 1) + '"><rect x="-' + q[3] + '" y="-.7" width="' + q[3] + '" height="1.4" rx=".7" fill="url(#shg)"/><circle r="1.25" fill="#FFFFFF"/></g></g>').join("");
     heroSvg = '<svg class="hero-art" viewBox="0 0 390 781" preserveAspectRatio="xMidYMax slice" aria-hidden="true"><defs>' +
+      '<radialGradient id="blg" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".85"/><stop offset=".35" stop-color="#E9E2FF" stop-opacity=".35"/><stop offset="1" stop-color="#E9E2FF" stop-opacity="0"/></radialGradient>' +
       '<linearGradient id="shg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0"/><stop offset="1" stop-color="#FFFFFF" stop-opacity=".9"/></linearGradient>' +
       '<linearGradient id="hs" x1="0" y1="0" x2="0" y2="1"><stop class="hs0" offset="0"/><stop class="hs1" offset=".3"/><stop class="hs2" offset=".5"/><stop class="hs3" offset=".62"/></linearGradient>' +
       '<linearGradient id="hsd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5AA9DE"/><stop offset="0.05" stop-color="#64AFE1"/><stop offset="0.1" stop-color="#6EB5E4"/><stop offset="0.15" stop-color="#77BBE8"/><stop offset="0.2" stop-color="#80C1EB"/><stop offset="0.25" stop-color="#8AC6ED"/><stop offset="0.3" stop-color="#94CBEF"/><stop offset="0.35" stop-color="#9DD0F1"/><stop offset="0.4" stop-color="#A7D5F2"/><stop offset="0.45" stop-color="#B0DAF4"/><stop offset="0.5" stop-color="#BADDF5"/><stop offset="0.55" stop-color="#C4E0F5"/><stop offset="0.6" stop-color="#CEE3F6"/><stop offset="0.65" stop-color="#D7E4F5"/><stop offset="0.7" stop-color="#E0E3F3"/><stop offset="0.75" stop-color="#E8E3F1"/><stop offset="0.8" stop-color="#EFE3EE"/><stop offset="0.85" stop-color="#F5E2EA"/><stop offset="0.9" stop-color="#F9E3E7"/><stop offset="0.95" stop-color="#FCE7E6"/><stop offset="1" stop-color="#FFEAE4"/></linearGradient>' +
@@ -820,7 +824,7 @@
       '<linearGradient id="hr" x1="0" y1="0" x2="0" y2="1"><stop class="hr" offset="0" stop-opacity=".5"/><stop class="hr" offset="1" stop-opacity="0"/></linearGradient>' +
       '<mask id="hmm"><rect width="390" height="760" fill="#fff"/><circle cx="321" cy="167" r="12.5" fill="#000"/></mask></defs>' +
       '<rect width="390" height="480" fill="url(#hs)"/><rect class="dy" width="390" height="480" fill="url(#hsd)"/>' +
-      '<g class="nt">' + stars + gold + shoot + '<circle cx="314" cy="174" r="44" fill="url(#hm)"/><circle cx="314" cy="174" r="14" fill="#FFE7A8" mask="url(#hmm)"/></g>' +
+      '<g class="nt">' + stars + gold + bloom + shoot + '<circle cx="314" cy="174" r="44" fill="url(#hm)"/><circle cx="314" cy="174" r="14" fill="#FFE7A8" mask="url(#hmm)"/></g>' +
       '<g class="dy"><circle class="sunglow" cx="314" cy="174" r="82" fill="url(#hsun)"/><circle cx="314" cy="174" r="13.5" fill="#FFFFFF" opacity=".55"/>' +
       '<g class="plane-fly"><rect x="-150" y="-1.1" width="138" height="2.2" rx="1.1" fill="url(#trailg)"/>' +
         '<g transform="rotate(90) scale(.95) translate(-12 -12)"><path fill="#FFFFFF" d="M21 15.5v-2l-7.5-4.5V4.2a1.5 1.5 0 0 0-3 0V9L3 13.5v2l7.5-2.3v5l-2.2 1.6V21l3.7-1 3.7 1v-1.2l-2.2-1.6v-5z"/></g></g>' +
