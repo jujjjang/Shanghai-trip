@@ -802,12 +802,12 @@
     }
     /* 밤: a few brighter stars whose light swells and fades, each in its own time */
     const bloom = [[54, 232], [150, 300], [372, 262], [250, 118]].map((q, i) =>
-      '<g transform="translate(' + q[0] + " " + q[1] + ')"><g class="bloom b' + (i + 1) + '"><circle r="9" fill="url(#blg)"/><path d="M-7 0H7M0 -7V7" stroke="#FFFFFF" stroke-width=".7" stroke-linecap="round" opacity=".8"/></g><circle r="1.5" fill="#FFFFFF"/></g>').join("");
+      '<g transform="translate(' + q[0] + " " + q[1] + ')"><g class="bloom b' + (i + 1) + '"><circle r="11" fill="url(#blg)"/></g><circle r="1.4" fill="#FFFFFF" opacity=".9"/></g>').join("");
     /* 밤: now and then a shooting star slips down the sky (one at a time, mostly none) */
     const shoot = [[378, 236, 160, 56], [176, 250, 154, 46], [268, 318, 166, 40]].map((q, i) =>
       '<g transform="translate(' + q[0] + " " + q[1] + ") rotate(" + q[2] + ')"><g class="shoot s' + (i + 1) + '"><rect x="-' + q[3] + '" y="-.7" width="' + q[3] + '" height="1.4" rx=".7" fill="url(#shg)"/><circle r="1.25" fill="#FFFFFF"/></g></g>').join("");
     heroSvg = '<svg class="hero-art" viewBox="0 0 390 781" preserveAspectRatio="xMidYMax slice" aria-hidden="true"><defs>' +
-      '<radialGradient id="blg" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".85"/><stop offset=".35" stop-color="#E9E2FF" stop-opacity=".35"/><stop offset="1" stop-color="#E9E2FF" stop-opacity="0"/></radialGradient>' +
+      '<radialGradient id="blg" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFF4D6" stop-opacity=".55"/><stop offset=".45" stop-color="#FFF0CC" stop-opacity=".18"/><stop offset="1" stop-color="#FFF0CC" stop-opacity="0"/></radialGradient>' +
       '<linearGradient id="shg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0"/><stop offset="1" stop-color="#FFFFFF" stop-opacity=".9"/></linearGradient>' +
       '<linearGradient id="hs" x1="0" y1="0" x2="0" y2="1"><stop class="hs0" offset="0"/><stop class="hs1" offset=".3"/><stop class="hs2" offset=".5"/><stop class="hs3" offset=".62"/></linearGradient>' +
       '<linearGradient id="hsd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5AA9DE"/><stop offset="0.05" stop-color="#64AFE1"/><stop offset="0.1" stop-color="#6EB5E4"/><stop offset="0.15" stop-color="#77BBE8"/><stop offset="0.2" stop-color="#80C1EB"/><stop offset="0.25" stop-color="#8AC6ED"/><stop offset="0.3" stop-color="#94CBEF"/><stop offset="0.35" stop-color="#9DD0F1"/><stop offset="0.4" stop-color="#A7D5F2"/><stop offset="0.45" stop-color="#B0DAF4"/><stop offset="0.5" stop-color="#BADDF5"/><stop offset="0.55" stop-color="#C4E0F5"/><stop offset="0.6" stop-color="#CEE3F6"/><stop offset="0.65" stop-color="#D7E4F5"/><stop offset="0.7" stop-color="#E0E3F3"/><stop offset="0.75" stop-color="#E8E3F1"/><stop offset="0.8" stop-color="#EFE3EE"/><stop offset="0.85" stop-color="#F5E2EA"/><stop offset="0.9" stop-color="#F9E3E7"/><stop offset="0.95" stop-color="#FCE7E6"/><stop offset="1" stop-color="#FFEAE4"/></linearGradient>' +
@@ -984,7 +984,8 @@
       title = tripTitle() || "상하이";
       hint = '<span class="mono">' + esc(String(t.dates || "").replace(/\s*·\s*\d+박.*$/, "")) + "</span>";
     }
-    let s = '<section class="hero">' + heroArt() +
+    const flyday = ph.k === "during" && state.days.length && (ph.day === state.days[0] || ph.day === state.days[state.days.length - 1]);
+    let s = '<section class="hero' + (flyday ? " flyday" : "") + '">' + heroArt() + /* the plane only crosses the sky on the days we fly */
       '<div class="hero-top"><div class="hrow"><span class="hz">上海</span><button class="hchip" type="button" data-act="preview-pick" aria-label="홈 화면 미리보기 바꾸기">' + esc(chip) + ICON.chevR + "</button>" +
       '<button class="hedit' + (editing ? " done" : "") + '" type="button" data-act="w-edit">' + (editing ? "완료" : "편집") + "</button></div>" +
       '<h1 class="htitle">' + esc(title) + "</h1>" + (hint ? '<div class="hhint">' + hint + "</div>" : "") + "</div>" +

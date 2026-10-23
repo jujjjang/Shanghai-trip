@@ -1185,9 +1185,10 @@ html { touch-action: pan-x pan-y; }
 body { overflow-x: hidden; }
 
 /* 낮: a plane crosses the sky now and then (still with 동작 줄이기) */
-.plane-fly { opacity: .6; transform: translate(112px, 333px) rotate(-6deg); animation: fly 46s linear infinite; }
-/* low and gentle: in and out of the clouds, behind the towers, well under the sun */
-@keyframes fly { 0% { transform: translate(-80px, 345px) rotate(-6deg); } 55% { transform: translate(480px, 286px) rotate(-6deg); } 100% { transform: translate(480px, 286px) rotate(-6deg); } }
+/* 이스터에그: the plane is only there on the days we fly (가는 날 · 오는 날); straight across, under the title and over the rooftops */
+.plane-fly { display: none; opacity: .6; transform: translate(112px, 230px); animation: fly 46s linear infinite; }
+.hero.flyday .plane-fly { display: inline; }
+@keyframes fly { 0% { transform: translate(-80px, 230px); } 55% { transform: translate(480px, 230px); } 100% { transform: translate(480px, 230px); } }
 
 /* 날씨: full width, hour by hour */
 .w.wweather { height: auto; }
@@ -1430,9 +1431,9 @@ body { background-color: var(--edge) !important; }
 .hero-art .shoot.s3 { animation-duration: 38s; animation-delay: 21s; }
 @keyframes shoot { 0% { transform: translateX(0); opacity: 0; } 1.2% { opacity: .6; } 5.5% { transform: translateX(130px); opacity: 0; } 100% { transform: translateX(130px); opacity: 0; } }
 /* brighter stars: the light swells out and fades away */
-.hero-art .bloom { opacity: 0; transform-box: fill-box; transform-origin: center; animation: bloom 7s ease-in-out infinite; }
-.hero-art .bloom.b2 { animation-duration: 9s; animation-delay: -3s; }
-.hero-art .bloom.b3 { animation-duration: 8s; animation-delay: -5.5s; }
-.hero-art .bloom.b4 { animation-duration: 10s; animation-delay: -1.5s; }
-@keyframes bloom { 0%, 55%, 100% { opacity: 0; transform: scale(.4); } 72% { opacity: 1; transform: scale(1.15); } 88% { opacity: .25; transform: scale(1.5); } }
-@media (prefers-reduced-motion: reduce) { .hero-art .shoot { display: none; } .hero-art .bloom { animation: none; opacity: .5; transform: none; } }
+.hero-art .bloom { opacity: 0; transform-box: fill-box; transform-origin: center; animation: bloom 9s ease-in-out infinite; }
+.hero-art .bloom.b2 { animation-duration: 11s; animation-delay: -4s; }
+.hero-art .bloom.b3 { animation-duration: 10s; animation-delay: -7s; }
+.hero-art .bloom.b4 { animation-duration: 12s; animation-delay: -2s; }
+@keyframes bloom { 0%, 40%, 100% { opacity: 0; transform: scale(.75); } 65% { opacity: .8; transform: scale(1.05); } }
+@media (prefers-reduced-motion: reduce) { .hero-art .shoot { display: none; } .hero-art .bloom { animation: none; opacity: .35; transform: none; } }
