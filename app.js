@@ -785,7 +785,7 @@
     }
     [[22, 76, .8], [104, 56, .7], [292, 46, .8], [374, 34, .7], [276, 172, .7]]
       .forEach((t, i) => { stars += '<circle class="' + (i % 2 ? "tw" : "") + '" cx="' + t[0] + '" cy="' + t[1] + '" r="' + t[2] + '" fill="#fff" opacity=".6"/>'; });
-    [[118, 104, .85], [238, 150, .9], [26, 212, .75], [172, 230, .8], [166, 110, .65], [204, 131, 1], [229, 102, .55]]
+    [[118, 104, .85], [238, 150, .9], [26, 212, .75], [172, 230, .8], [166, 110, .65], [204, 131, 1], [229, 102, .55], [126, 146, .8], [170, 168, .6], [104, 176, .55]]
       .forEach((t, i) => { stars += '<circle class="' + (i % 2 ? "tw" : "") + '" cx="' + t[0] + '" cy="' + t[1] + '" r="' + t[2] + '" fill="#fff" opacity=".6"/>'; });
     stars += '<circle cx="150" cy="300" r=".6" fill="#fff" opacity=".55"/>'; /* by the tower: small and still */
     const gold = [[360, 232, 4.4], [84, 262, 3.6], [34, 322, 3], [374, 148, 3.4], [370, 300, 3]].map((g) => spark(g[0], g[1], g[2])).join("");
@@ -824,7 +824,7 @@
       '<linearGradient id="hw" x1="0" y1="0" x2="0" y2="1"><stop class="hw0" offset="0"/><stop class="hw1" offset=".35"/><stop class="hw2" offset="1"/></linearGradient>' +
       '<radialGradient id="hglow" cx=".5" cy=".5" r=".5"><stop class="hg" offset="0" stop-opacity=".5"/><stop class="hg" offset="1" stop-opacity="0"/></radialGradient>' +
       '<radialGradient id="hm" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFE7A8" stop-opacity=".32"/><stop offset="1" stop-color="#FFE7A8" stop-opacity="0"/></radialGradient>' +
-      '<linearGradient id="trailg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0"/><stop offset="1" stop-color="#FFFFFF" stop-opacity=".85"/></linearGradient>' +
+      '<linearGradient id="trailg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0"/><stop offset="1" stop-color="#FFFFFF" stop-opacity=".5"/></linearGradient>' +
       '<radialGradient id="hhaze" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFF6F0" stop-opacity=".7"/><stop offset=".35" stop-color="#FFF3EE" stop-opacity=".38"/><stop offset=".7" stop-color="#FFF1EE" stop-opacity=".12"/><stop offset="1" stop-color="#FFF1EE" stop-opacity="0"/></radialGradient>' +
       '<radialGradient id="hsun" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".55"/><stop offset=".4" stop-color="#FFFFFF" stop-opacity=".18"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>' +
       '<radialGradient id="hp" cx=".36" cy=".32" r=".75"><stop class="hp0" offset="0"/><stop class="hp1" offset=".38"/><stop class="hp2" offset=".78"/><stop class="hp3" offset="1"/></radialGradient>' +
@@ -834,7 +834,7 @@
       '<rect width="390" height="480" fill="url(#hs)"/><rect class="dy" width="390" height="480" fill="url(#hsd)"/>' +
       '<g class="nt">' + stars + gold + bloom + shoot + '<circle cx="314" cy="174" r="44" fill="url(#hm)"/><circle cx="314" cy="174" r="14" fill="#FFE7A8" mask="url(#hmm)"/></g>' +
       '<g class="dy"><circle class="sunglow" cx="314" cy="174" r="82" fill="url(#hsun)"/><circle cx="314" cy="174" r="13.5" fill="#FFFFFF" opacity=".55"/>' +
-      '<g class="plane-fly"><rect x="-150" y="-1.1" width="138" height="2.2" rx="1.1" fill="url(#trailg)"/>' +
+      '<g class="plane-fly"><rect x="-66" y="-.8" width="54" height="1.6" rx=".8" fill="url(#trailg)"/>' +
         '<g transform="rotate(90) scale(.95) translate(-12 -12)"><path fill="#FFFFFF" d="M21 15.5v-2l-7.5-4.5V4.2a1.5 1.5 0 0 0-3 0V9L3 13.5v2l7.5-2.3v5l-2.2 1.6V21l3.7-1 3.7 1v-1.2l-2.2-1.6v-5z"/></g></g>' +
       cloud(330, 40, .5, .5, 140) + cloud(64, 262, .9, .75, 105) + cloud(206, 236, .5, .55, 125) + cloud(286, 316, .72, .65, 115) + cloud(130, 352, .58, .6, 98) + cloud(40, 304, .45, .5, 132) +
       '<ellipse cx="195" cy="476" rx="350" ry="125" fill="url(#hhaze)"/></g>' +
