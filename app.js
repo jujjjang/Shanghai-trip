@@ -1787,16 +1787,13 @@
         '<button class="btn primary" type="button" data-act="li-add" data-list="' + key + '">추가</button></div>' +
         (canMine(key) ? '<p class="note ck-note">' + ICON.lock + " 나만 보는 " + (key === "pack" ? "준비물" : "할 일") + " · 나머지는 같이 봐요 · 체크는 각자</p>" : "") +
         '<div class="ckhead"><div class="wprog" data-prog="' + key + '"><i style="width:' + (list.length ? (doneN / list.length) * 100 : 0) + '%"></i></div><span class="mono" data-count="' + key + '">' + doneN + " / " + list.length + "</span></div>" +
-        (list.length ? '<div class="cklist ckedit">' + list.map((x) => {
-          const b = (act, cls, ic, label) => '<button class="' + cls + '" type="button" data-act="' + act + '" data-list="' + key + '" data-id="' + x.id + '" aria-label="' + label + '">' + ic + "</button>";
-          return '<div class="li sli" data-id="' + x.id + '"><div class="wsw-acts">' +
-            (canMine(key) ? b("li-mine", "wa-mine", x.list ? ICON.users : ICON.lock, x.list ? "같이 보기로" : "나만 보기") : "") +
-            b("li-edit", "wa-edit", ICON.pen, "고치기") + b("li-del", "wa-del", ICON.trash, "지우기") + '</div><div class="sli-in">' +
+        (list.length ? '<div class="cklist ckedit" data-key="' + key + '">' + list.map((x) => {
+          return '<div class="li sli" data-id="' + x.id + '"><div class="sli-in">' +
             '<label class="ck ckbox' + (state.done[x.id] ? " on" : "") + '" aria-label="' + esc(x.t) + ' 체크"><input type="checkbox" id="ckx-' + x.id + '" data-ck="' + x.id + '"' + (state.done[x.id] ? " checked" : "") + "></label>" +
             ckWords(key, x) +
             '<span class="ck-grip" data-grip="' + key + '" aria-label="끌어서 순서 바꾸기">' + ICON.grip + "</span></div></div>";
         }).join("") + "</div>" +
-          '<p class="note ck-tip"><span>왼쪽으로 밀면 ' + (canMine(key) ? "나만 보기 · " : "") + "고치기 · 지우기</span><span>" + ICON.grip + " 끌면 순서 바꾸기</span></p>" : '<p class="empty">아직 비어 있어요</p>')
+          '<p class="note ck-tip"><span>꾹 누르면 ' + (canMine(key) ? "나만 보기 · " : "") + "고치기 · 지우기</span><span>" + ICON.grip + " 끌면 순서 바꾸기</span></p>" : '<p class="empty">아직 비어 있어요</p>')
     });
   }
   function papagoSheet() {
@@ -2423,21 +2420,46 @@
       ul.insertBefore(rg.li, e.clientY > r.top + r.height / 2 ? over.nextSibling : over);
     }
   });
-  /* 할 일 · 준비물 sheet: slide a row left for 나만/같이 · 고치기 · 지우기 */
+  /* 할 일 · 준비물 sheet: press and hold a row for 나만/같이 · 고치기 · 지우기 (a short tap ticks it) */
+  let lp = null, lpFired = false;
+  function ckMenuClose() {
+    const m = sheet.querySelector(".ckmenu");
+    if (m) m.remove();
+    sheet.querySelectorAll(".sli.lp").forEach((r) => r.classList.remove("lp"));
+  }
+  function ckMenuOpen(li) {
+    ckMenuClose();
+    const list = li.closest(".cklist"), key = list && list.getAttribute("data-key"), id = li.getAttribute("data-id");
+    const x = key && ckList(key).find((y) => y.id === id);
+    if (!x) return;
+    const b = (act, ic, label, cls) => '<button type="button" role="menuitem"' + (cls ? ' class="' + cls + '"' : "") + ' data-act="' + act + '" data-list="' + key + '" data-id="' + id + '">' + ic + "<span>" + label + "</span></button>";
+    const m = document.createElement("div");
+    m.className = "ckmenu"; m.setAttribute("role", "menu");
+    m.innerHTML = (canMine(key) ? b("li-mine", x.list ? ICON.users : ICON.lock, x.list ? "같이 보기로" : "나만 보기") : "") + b("li-edit", ICON.pen, "고치기") + b("li-del", ICON.trash, "지우기", "del");
+    sheet.appendChild(m);
+    li.classList.add("lp");
+    const r = li.getBoundingClientRect(), mh = m.offsetHeight, mw = m.offsetWidth;
+    m.style.top = (r.bottom + 6 + mh < window.innerHeight - 12 ? r.bottom + 6 : Math.max(12, r.top - mh - 6)) + "px";
+    m.style.left = Math.max(12, Math.min(r.left + 36, window.innerWidth - mw - 12)) + "px";
+    try { if (navigator.vibrate) navigator.vibrate(10); } catch (e) {}
+  }
   sheet.addEventListener("pointerdown", (e) => {
-    swallow = false;
+    lpFired = false;
+    /* a tap anywhere else just closes the menu */
+    if (sheet.querySelector(".ckmenu") && !e.target.closest(".ckmenu")) { ckMenuClose(); lpFired = true; return; }
     if (e.button && e.button > 0) return;
-    if (e.target.closest(".wsw-acts, .ck-grip, .ck-edit")) return;
-    const row = e.target.closest(".cklist .sli > .sli-in");
-    if (!row) { closeSwipe(); return; }
-    const w = row.parentNode.querySelector(".wsw-acts").offsetWidth + 10;
-    rg = { row, w, id: e.pointerId, x0: e.clientX, y0: e.clientY, lastY: e.clientY, base: openSw === row ? -w : 0, mode: null, t: 0 };
+    const inn = e.target.closest(".cklist .sli-in");
+    if (!inn || e.target.closest(".ck-grip, .ck-edit")) return;
+    const li = inn.parentNode;
+    lp = { id: e.pointerId, x: e.clientX, y: e.clientY, t: setTimeout(() => { lp = null; lpFired = true; ckMenuOpen(li); }, 420) };
   });
-  document.addEventListener("touchmove", (e) => {
-    if (!rg || !rg.row.classList.contains("sli-in") || !e.touches[0]) return;
-    const dx = e.touches[0].clientX - rg.x0, dy = e.touches[0].clientY - rg.y0;
-    if (rg.mode === "swipe" || (!rg.mode && Math.abs(dx) > Math.abs(dy))) e.preventDefault();
-  }, { passive: false });
+  document.addEventListener("pointermove", (e) => { if (lp && e.pointerId === lp.id && Math.abs(e.clientX - lp.x) + Math.abs(e.clientY - lp.y) > 10) { clearTimeout(lp.t); lp = null; } });
+  ["pointerup", "pointercancel"].forEach((n) => document.addEventListener(n, () => { if (lp) { clearTimeout(lp.t); lp = null; } }));
+  /* the finger lifting after the hold mustn't also tick the box */
+  sheet.addEventListener("touchend", (e) => { if (lpFired && e.cancelable) e.preventDefault(); }, { passive: false });
+  sheet.addEventListener("click", (e) => { if (lpFired) { lpFired = false; e.preventDefault(); e.stopPropagation(); } }, true);
+  sheet.addEventListener("contextmenu", (e) => { const inn = e.target.closest(".cklist .sli-in"); if (inn) { e.preventDefault(); if (!sheet.querySelector(".ckmenu")) ckMenuOpen(inn.parentNode); } });
+  sheet.addEventListener("scroll", () => { if (sheet.querySelector(".ckmenu")) ckMenuClose(); }, true);
   function endRowGesture() {
     if (!rg) return;
     clearTimeout(rg.t);
@@ -2641,7 +2663,7 @@
   function busy() {
     const ae = document.activeElement;
     if (ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName) && (view.contains(ae) || sheet.contains(ae))) return true;
-    if (rg || drag || press || dotScrub || ckDrag || (openSw && openSw.isConnected)) return true;
+    if (rg || drag || press || dotScrub || ckDrag || lp || (openSw && openSw.isConnected) || sheet.querySelector(".ckmenu")) return true;
     if (!sheet.hidden && !/^(ck-|dt-|share)/.test(sheetKey()) && sheet.querySelector(".sh-body input, .sh-body textarea, .sh-body select")) return true;
     return false;
   }
@@ -2940,7 +2962,7 @@
     /* in edit mode, widgets only move or come out — nothing inside them fires */
     if (editing && e.target.closest("#wgrid") && !e.target.closest(".w-del, .w-add, .w-reset")) { e.preventDefault(); return; }
     if (swallow) { swallow = false; e.preventDefault(); return; }
-    if (openSw && !e.target.closest(".sw-del, .wsw-acts")) { const was = openSw; closeSwipe(); if (e.target.closest(".swipe, .sli") && was.contains(e.target)) { e.preventDefault(); return; } }
+    if (openSw && !e.target.closest(".sw-del")) { const was = openSw; closeSwipe(); if (e.target.closest(".swipe") && was.contains(e.target)) { e.preventDefault(); return; } }
     /* ticking a box inside a checklist widget shouldn't also open the big list */
     if (e.target.closest(".wck")) return;
     const lk = e.target.closest("a[href]");
@@ -3129,11 +3151,11 @@
         return;
       }
       case "ck-mine": ckMineOn = !ckMineOn; { const k = t.getAttribute("data-list"), inp = document.getElementById("add-" + k), v = inp ? inp.value : ""; ckSheet(k); const again = document.getElementById("add-" + k); if (again) { again.value = v; again.focus(); } } return;
-      case "li-mine": { const k = t.getAttribute("data-list"), r = ckMove(k, id); openSw = null; save(); render(); ckSheet(k); if (r) toast(r === "나만" ? "이제 내 폰에만 보여요" : "이제 친구 폰에도 보여요"); return; }
+      case "li-mine": { const k = t.getAttribute("data-list"), r = ckMove(k, id); save(); render(); ckSheet(k); if (r) toast(r === "나만" ? "이제 내 폰에만 보여요" : "이제 친구 폰에도 보여요"); return; }
       case "li-edit": { /* the words turn into a box right there; Enter or tapping away saves */
         const key = t.getAttribute("data-list"), x = ckList(key).find((y) => y.id === id);
-        const row = t.closest(".sli"), words = row && row.querySelector(".ck-t");
-        closeSwipe(); openSw = null;
+        const row = sheet.querySelector('.cklist .sli[data-id="' + id + '"]'), words = row && row.querySelector(".ck-t");
+        ckMenuClose();
         if (!x || !words) return;
         const inp = document.createElement("input");
         inp.className = "ck-edit"; inp.value = x.t; inp.setAttribute("enterkeyhint", "done"); inp.setAttribute("aria-label", "고치기");
