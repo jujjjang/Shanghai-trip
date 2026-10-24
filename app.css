@@ -929,7 +929,6 @@ body[data-tab="home"] { background: linear-gradient(var(--bg), var(--bg)) top ce
 [data-theme="light"] .hero-art .hw1 { stop-color: #9CCFEE; }
 [data-theme="light"] .hero-art .hw2 { stop-color: #8EC5EA; }
 [data-theme="light"] .hero-art .hr { stop-color: #FFFFFF; }
-[data-theme="light"] .hero-art .hrf { display: none; } /* 낮: no pale column under the tower (it read as the legs carrying on under the water) */
 [data-theme="light"] .hero-art .hzl { stroke: #FFFFFF; stroke-opacity: .75; }
 [data-theme="light"] .hero-art .shim rect { fill: #FFFFFF; }
 [data-theme="light"] .hero-art .shim { opacity: .7; }

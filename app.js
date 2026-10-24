@@ -869,6 +869,7 @@
       '<radialGradient id="hp" cx=".36" cy=".32" r=".75"><stop class="hp0" offset="0"/><stop class="hp1" offset=".38"/><stop class="hp2" offset=".78"/><stop class="hp3" offset="1"/></radialGradient>' +
       '<linearGradient id="hb" x1="0" y1="0" x2="0" y2="1"><stop class="hb0" offset="0"/><stop class="hb1" offset="1"/></linearGradient>' +
       '<linearGradient id="hr" x1="0" y1="0" x2="0" y2="1"><stop class="hr" offset="0" stop-opacity=".5"/><stop class="hr" offset="1" stop-opacity="0"/></linearGradient>' +
+      '<clipPath id="hcut"><rect x="0" y="0" width="390" height="474"/></clipPath>' + /* the legs stop dead level at the water line */
       '<mask id="hmm"><rect width="390" height="760" fill="#fff"/><circle cx="321" cy="167" r="12.5" fill="#000"/></mask></defs>' +
       '<rect width="390" height="480" fill="url(#hs)"/><rect class="dy" width="390" height="480" fill="url(#hsd)"/><rect class="dk" width="390" height="480" fill="url(#hsk)"/>' +
       '<g class="nt">' + stars + gold + bloom + shoot + '<circle cx="314" cy="174" r="44" fill="url(#hm)"/><circle cx="314" cy="174" r="14" fill="#FFE7A8" mask="url(#hmm)"/></g>' +
@@ -886,7 +887,7 @@
       '<path fill-rule="evenodd" d="M248 474 L250 296 L272 282 L274 474 Z M254 297 L269 290 L269 306 L254 311 Z"/>' +
       '<polygon points="326,474 326,370 329,370 329,350 332,350 332,334 335,334 337,300 339,334 342,334 342,350 345,350 345,370 348,370 348,474"/>' +
       /* the three legs run on down behind the river: cut flat at the water line, so the tower stands beyond the water, not on it */
-      '<path class="hbs" d="M172.5 474 L190 426 M219.5 474 L202 426 M196 474 L196 426" stroke-width="7" stroke-linecap="butt"/>' +
+      '<path class="hbs" clip-path="url(#hcut)" d="M170.3 480 L190 426 M221.7 480 L202 426 M196 480 L196 426" stroke-width="7" stroke-linecap="butt"/>' +
       '<rect x="191" y="300" width="10" height="122"/><rect x="193" y="228" width="6" height="74"/></g>' +
       '<path class="ant" d="M196 226 L196 158" stroke-width="2.4"/><circle class="tip" cx="196" cy="156" r="2.4" fill="#FFD36B"/>' +
       '<g class="win">' + wins + '<rect x="300" y="300" width="2" height="2.6"/><rect x="305" y="340" width="2" height="2.6"/><rect x="298" y="380" width="2" height="2.6"/><rect x="309" y="410" width="2" height="2.6"/><rect x="262" y="330" width="2" height="2.6"/><rect x="258" y="380" width="2" height="2.6"/><rect x="266" y="420" width="2" height="2.6"/><rect x="336" y="390" width="2" height="2.6"/><rect x="340" y="430" width="2" height="2.6"/></g>' +
