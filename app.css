@@ -1411,7 +1411,7 @@ body { background-color: var(--edge) !important; }
 .ck-t { flex: 1; min-width: 0; min-height: 44px; padding: 0; border: 0; background: none; color: var(--ink); font: inherit; font-size: 15px; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 4px; }
 .ckbox.on + .ck-t { color: var(--soft); text-decoration: line-through; }
 .ck-edit { flex: 1; min-width: 0; min-height: 38px; margin: 5px 0; padding: 0 10px; border-radius: 10px; border: 0; box-shadow: inset 0 0 0 1.5px var(--accent); background: var(--inner); font: inherit; font-size: 16px; color: var(--ink); outline: none; }
-.ck-grip { flex: none; display: grid; place-items: center; width: 34px; height: 44px; color: var(--soft); cursor: grab; touch-action: none; -webkit-user-select: none; user-select: none; }
+.ck-grip { flex: none; display: grid; place-items: center; width: 34px; height: 44px; color: var(--soft); cursor: grab; touch-action: pan-x; -webkit-user-select: none; user-select: none; }
 .ck-grip svg { width: 18px; height: 18px; }
 .cklist .li.dragging { background: var(--surface); box-shadow: var(--shadow-sm); border-radius: 12px; position: relative; z-index: 2; }
 /* sheet rows: press and hold for a small 나만/같이 · 고치기 · 지우기 menu */

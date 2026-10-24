@@ -2307,19 +2307,31 @@
     soloRefresh(over.parentNode);
   });
   /* 할 일 · 준비물 sheet: drag a row by its grip */
+  /* the ≡ grip: pulled up/down it moves the row; pulled sideways the row slides open/shut like anywhere else */
   let ckDrag = null;
+  const ckIds = (list) => Array.from(list.children).map((r) => r.getAttribute("data-id"));
+  const ckDragGo = () => {
+    const d = ckDrag;
+    d.on = true;
+    openRows().forEach((o) => shut(o, true));
+    d.li.classList.add("dragging");
+    try { d.g.setPointerCapture(d.id); } catch (err) {}
+  };
   sheet.addEventListener("pointerdown", (e) => {
     const g = e.target.closest(".ck-grip");
     if (!g) return;
-    e.preventDefault();
-    closeSwipe();
     const li = g.closest(".li");
-    ckDrag = { li, key: g.getAttribute("data-grip"), id: e.pointerId, list: li.parentNode };
-    li.classList.add("dragging");
-    try { g.setPointerCapture(e.pointerId); } catch (err) {}
+    ckDrag = { li, g, key: g.getAttribute("data-grip"), id: e.pointerId, list: li.parentNode, x: e.clientX, y: e.clientY, on: false, order: ckIds(li.parentNode).join() };
+    if (e.pointerType === "mouse") { e.preventDefault(); ckDragGo(); }
   });
   document.addEventListener("pointermove", (e) => {
     if (!ckDrag || e.pointerId !== ckDrag.id) return;
+    if (!ckDrag.on) {
+      const dx = e.clientX - ckDrag.x, dy = e.clientY - ckDrag.y;
+      if (Math.abs(dx) > 6 && Math.abs(dx) >= Math.abs(dy)) { ckDrag = null; return; } /* sideways: let the row slide */
+      if (Math.abs(dy) < 6) return;
+      ckDragGo();
+    }
     e.preventDefault();
     let before = null;
     for (const r of Array.from(ckDrag.list.children)) {
@@ -2329,17 +2341,26 @@
     }
     if (before !== ckDrag.li.nextSibling || (!before && ckDrag.li !== ckDrag.list.lastElementChild)) ckDrag.list.insertBefore(ckDrag.li, before);
   }, { passive: false });
+  /* only redraw when the order really changed (a plain touch on ≡ used to redraw the whole list — that was the flicker) */
   const ckDrop = () => {
     if (!ckDrag) return;
     const d = ckDrag;
     ckDrag = null;
+    if (!d.on) return;
     d.li.classList.remove("dragging");
-    ckReorder(d.key, Array.from(d.list.children).map((r) => r.getAttribute("data-id")));
+    const ids = ckIds(d.list);
+    if (ids.join() === d.order) return;
+    ckReorder(d.key, ids);
     render(); ckSheet(d.key);
   };
   document.addEventListener("pointerup", ckDrop);
   document.addEventListener("pointercancel", ckDrop);
-  document.addEventListener("touchmove", (e) => { if (ckDrag) e.preventDefault(); }, { passive: false });
+  document.addEventListener("touchmove", (e) => {
+    if (!ckDrag) return;
+    if (ckDrag.on) { e.preventDefault(); return; }
+    const t = e.touches[0];
+    if (t && Math.abs(t.clientY - ckDrag.y) > Math.abs(t.clientX - ckDrag.x)) e.preventDefault(); /* up/down on ≡ is a move, not a scroll */
+  }, { passive: false });
   document.addEventListener("pointerup", endDrag);
   document.addEventListener("pointercancel", endDrag);
   document.addEventListener("touchmove", (e) => { if (drag) e.preventDefault(); }, { passive: false });
@@ -2463,7 +2484,20 @@
   sheet.addEventListener("click", (e) => { if (lpFired) { lpFired = false; e.preventDefault(); e.stopPropagation(); } }, true);
   sheet.addEventListener("contextmenu", (e) => { const inn = e.target.closest(".cklist .sli-in"); if (inn) { e.preventDefault(); if (!sheet.querySelector(".ckmenu")) ckMenuOpen(inn.closest(".sli")); } });
   const openRows = () => Array.from(sheet.querySelectorAll(".sli-sc")).filter((sc) => sc.scrollLeft > 4);
-  const shut = (sc, now) => { try { sc.scrollTo({ left: 0, behavior: now ? "auto" : "smooth" }); } catch (e) { sc.scrollLeft = 0; } };
+  const rowTo = (sc, open, now) => { const left = open ? sc.scrollWidth - sc.clientWidth : 0; try { sc.scrollTo({ left, behavior: now ? "auto" : "smooth" }); } catch (e) { sc.scrollLeft = left; } };
+  const shut = (sc, now) => rowTo(sc, false, now);
+  let rowT = null;
+  sheet.addEventListener("touchstart", (e) => { const sc = e.target.closest(".sli-sc"); rowT = sc && !e.target.closest(".sli-acts") ? { sc, left: sc.scrollLeft } : null; }, { passive: true });
+  sheet.addEventListener("touchend", () => {
+    const t = rowT;
+    rowT = null;
+    if (!t) return;
+    const now = t.sc.scrollLeft;
+    if (Math.abs(now - t.left) < 6) return;
+    const open = now > t.left;
+    rowTo(t.sc, open);
+    setTimeout(() => { if (t.sc.isConnected && (t.sc.scrollLeft > 4) !== open) rowTo(t.sc, open); }, 450);
+  }, { passive: true });
   sheet.addEventListener("scroll", (e) => {
     if (sheet.querySelector(".ckmenu")) ckMenuClose();
     const sc = e.target;
