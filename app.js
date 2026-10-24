@@ -882,13 +882,10 @@
       '<g class="far">' + far + "</g>" +
       '<rect y="470" width="390" height="311" fill="url(#hw)"/><rect class="dy" y="470" width="390" height="311" fill="url(#hwd)"/><rect class="dk" y="470" width="390" height="311" fill="url(#hwk)"/>' +
       '<g fill="url(#hb)">' + near +
-      /* the Pudong bank under everything, and a low podium round the tower's feet, so it stands on land, not on the river */
-      '<rect x="-4" y="463" width="398" height="9" rx="3"/><path d="M160 470 L162 452 Q196 444 230 452 L232 470 Z"/>' +
       '<path d="M284 470 L287 330 Q290 280 302 246 L306 250 Q314 290 316 330 L318 470 Z"/>' +
       '<path fill-rule="evenodd" d="M248 470 L250 296 L272 282 L274 470 Z M254 297 L269 290 L269 306 L254 311 Z"/>' +
       '<polygon points="326,470 326,370 329,370 329,350 332,350 332,334 335,334 337,300 339,334 342,334 342,350 345,350 345,370 348,370 348,470"/>' +
-      '<path class="hbs" d="M174 470 L190 426 M218 470 L202 426 M196 470 L196 426" stroke-width="7" stroke-linecap="round"/>' +
-      '<rect x="191" y="300" width="10" height="122"/><rect x="193" y="228" width="6" height="74"/></g>' +
+      '<rect x="191" y="300" width="10" height="170"/><rect x="193" y="228" width="6" height="74"/></g>' +
       '<path class="ant" d="M196 226 L196 158" stroke-width="2.4"/><circle class="tip" cx="196" cy="156" r="2.4" fill="#FFD36B"/>' +
       '<g class="win">' + wins + '<rect x="300" y="300" width="2" height="2.6"/><rect x="305" y="340" width="2" height="2.6"/><rect x="298" y="380" width="2" height="2.6"/><rect x="309" y="410" width="2" height="2.6"/><rect x="262" y="330" width="2" height="2.6"/><rect x="258" y="380" width="2" height="2.6"/><rect x="266" y="420" width="2" height="2.6"/><rect x="336" y="390" width="2" height="2.6"/><rect x="340" y="430" width="2" height="2.6"/></g>' +
       '<g class="pglow"><circle cx="196" cy="420" r="46" fill="url(#hglow)"/><circle cx="196" cy="300" r="30" fill="url(#hglow)"/></g>' +
