@@ -1521,14 +1521,30 @@
   }
   /* which day an expense belongs to: today, or any trip day (for writing things down later) */
   let expDay = "";
+  /* 날짜: 여행 전 (flights, eSIM… bought ahead), each trip day, 오늘, or any date you pick */
+  const tripStart = () => (state.days.find((d) => d.iso) || {}).iso || "";
+  const isoOf = (ts) => { const t = new Date(ts); return t.getFullYear() + "-" + pad(t.getMonth() + 1) + "-" + pad(t.getDate()); };
+  const isPreExp = (e) => { const st = tripStart(); return !!st && isoOf(e.at || 0) < st; };
   function expDayOpts() {
-    const tIso = todayIso(), out = [], trip = state.days.filter((d) => d.iso);
-    if (!trip.some((d) => d.iso === tIso)) out.push(["", "오늘 · " + dayLabel(Date.now())]);
+    const tIso = todayIso(), out = [["pre", "여행 전"]], trip = state.days.filter((d) => d.iso), st = tripStart();
+    if (!trip.some((d) => d.iso === tIso) && !(st && tIso < st)) out.push(["", "오늘 · " + dayLabel(Date.now())]);
     trip.forEach((d) => out.push([d.iso === tIso ? "" : d.iso, (d.iso === tIso ? "오늘 · " : "") + (isNum(d.n) ? "Day " + d.n : "귀국") + " · " + d.date]));
+    out.push(["pick", "날짜 직접 고르기…"]);
     return out;
   }
-  function expAt(day) {
-    const m = String(day || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  function expDayDefault() {
+    const ok = expDayOpts().some((o) => o[0] === expDay);
+    if (ok && expDay !== "pick") return expDay;
+    const st = tripStart();
+    return st && todayIso() < st ? "pre" : "";
+  }
+  function expAt(day, picked) {
+    if (day === "pre") {
+      const st = tripStart();
+      if (!st || todayIso() < st) return Date.now();
+      const n = new Date(st + "T12:00:00"); n.setDate(n.getDate() - 1); return n.getTime();
+    }
+    const m = String(day === "pick" ? picked : day || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
     if (!m) return Date.now();
     const n = new Date(); n.setFullYear(+m[1], +m[2] - 1, +m[3]); return n.getTime();
   }
@@ -1544,7 +1560,8 @@
         '<div class="field"><span>종류</span><div class="chips">' + CATS.map((k) => radio("cat", k[0], ICON[k[2]] + k[1], k[0] === cat, "catchip")).join("") + "</div></div>" +
         '<label class="minechk"><input type="checkbox" name="mine"' + (ui.expMine ? " checked" : "") + "><span>" + ICON.lock + "나만 쓴 돈 · 정산 안 하고 내 폰에만 남겨요</span></label>" +
         (ppl.length ? '<div class="field payrow"><span>낸 사람</span><div class="chips">' + ppl.map((p) => radio("payer", p, esc(p), p === ui.payer)).join("") + "</div></div>" : "") +
-        '<label class="field"><span>날짜</span><select name="day">' + expDayOpts().map((o) => '<option value="' + o[0] + '"' + (o[0] === expDay ? " selected" : "") + ">" + esc(o[1]) + "</option>").join("") + "</select></label>" +
+        '<label class="field"><span>날짜</span><select name="day" id="expDaySel">' + expDayOpts().map((o) => '<option value="' + o[0] + '"' + (o[0] === expDayDefault() ? " selected" : "") + ">" + esc(o[1]) + "</option>").join("") + "</select></label>" +
+        '<label class="field" id="expPick" hidden><span>고른 날짜</span><input type="date" name="pickd" value="' + todayIso() + '"></label>' +
         "</div>",
       foot: '<span class="grow"></span><button class="btn" type="button" data-act="sh-close">취소</button><button class="btn primary" type="button" data-act="sh" data-k="save">추가</button>',
       on(k, v) {
@@ -1552,13 +1569,16 @@
         const amt = parseFloat(String(v.amt || "").replace(/[,\s]/g, ""));
         if (!(amt > 0)) { toast("금액을 넣어주세요"); const a = sheet.querySelector('input[name="amt"]'); if (a) a.focus(); return; }
         const mine = !!v.mine || !ppl.length;
-        const e = { id: newId("x"), amt, cur: v.cur === "KRW" ? "KRW" : "CNY", what: v.what || "", cat: v.cat || "etc", at: expAt(v.day) };
+        if (v.day === "pick" && !v.pickd) { toast("날짜를 골라주세요"); return; }
+        const e = { id: newId("x"), amt, cur: v.cur === "KRW" ? "KRW" : "CNY", what: v.what || "", cat: v.cat || "etc", at: expAt(v.day, v.pickd) };
         if (mine) state.myExp.push(e);
         else { e.payer = v.payer || ppl[0]; state.settle.expenses.push(e); ui.payer = e.payer; }
         ui.cur = e.cur; ui.cat = e.cat; ui.expMine = !!v.mine; expDay = v.day || ""; saveUI();
         save(); closeSheet(); render(); toast(mine ? "나만 쓴 돈으로 넣었어요" : "추가했어요");
       }
     });
+    const ds = $("#expDaySel"), pk = $("#expPick");
+    if (ds && pk) { const sync1 = () => { pk.hidden = ds.value !== "pick"; }; ds.addEventListener("change", sync1); sync1(); }
     const a = sheet.querySelector('input[name="amt"]'); if (a) a.focus();
   }
   function settleCard(L) {
@@ -1583,14 +1603,15 @@
     s += settleCard(L);
     if (L.all.length) {
       const list = L.all.slice().sort((a, b) => (b.at || 0) - (a.at || 0)), days = {};
-      list.forEach((e) => { const dl = dayLabel(e.at || 0); days[dl] = (days[dl] || 0) + inBase(e, c) * L.part(e); });
+      const grp = (e) => (isPreExp(e) ? "여행 전" : dayLabel(e.at || 0));
+      list.forEach((e) => { const dl = grp(e); days[dl] = (days[dl] || 0) + inBase(e, c) * L.part(e); });
       let last = "";
       list.forEach((e) => {
-        const dl = dayLabel(e.at || 0);
+        const dl = grp(e);
         if (dl !== last) { s += (last ? "</div></div>" : "") + '<div class="exp-dh"><span>' + dl + "</span><span>" + amtFmt(days[dl], c) + '</span></div><div class="pad"><div class="box exp-box">'; last = dl; }
         const armed = armedExp === e.id;
         s += '<div class="exp">' + catIc(e.cat) + '<button class="exp-open" type="button" data-act="exp-edit" data-id="' + e.id + '" aria-label="' + esc(e.what || "지출") + ' 금액 고치기"><span class="w2"><b>' + esc(e.what || catOf(e.cat)[1]) +
-          (e.mine ? '<i class="mine-ic" title="나만 쓴 돈">' + ICON.lock + "</i>" : "") + "</b><span>" + (e.mine ? "나만 · 정산 안 함" : esc(e.payer) + " 냄" + (c.n > 1 ? " · 내 몫 " + (e.cur === "KRW" ? wonFmt(e.amt / c.n) : yuanFmt(e.amt / c.n)) : "")) + "</span></span>" +
+          (e.mine ? '<i class="mine-ic" title="나만 쓴 돈">' + ICON.lock + "</i>" : "") + "</b><span>" + (isPreExp(e) ? dayLabel(e.at || 0).split(" ")[0] + " · " : "") + (e.mine ? "나만 · 정산 안 함" : esc(e.payer) + " 냄" + (c.n > 1 ? " · 내 몫 " + (e.cur === "KRW" ? wonFmt(e.amt / c.n) : yuanFmt(e.amt / c.n)) : "")) + "</span></span>" +
           '<span class="a">' + (e.cur === "KRW" ? wonFmt(+e.amt) : yuanFmt(+e.amt)) + (e.cur !== "KRW" && c.rate ? "<small>" + wonFmt(e.amt * c.rate) + "</small>" : "") + "</span></button>" +
           '<button class="btn sm ' + (armed ? "danger armed" : "ghost") + '" type="button" data-act="exp-del" data-id="' + e.id + '" aria-label="이 지출 지우기">' + (armed ? "지우기" : ICON.x) + "</button></div>";
       });
