@@ -893,7 +893,7 @@
       '<g class="pglow"><circle cx="196" cy="420" r="46" fill="url(#hglow)"/><circle cx="196" cy="300" r="30" fill="url(#hglow)"/></g>' +
       '<circle cx="196" cy="420" r="22" fill="url(#hp)"/><circle cx="196" cy="300" r="15" fill="url(#hp)"/><circle cx="196" cy="228" r="7.5" fill="url(#hp)"/>' +
       '<ellipse cx="189" cy="412" rx="7" ry="4.2" fill="#fff" opacity=".7" transform="rotate(-30 189 412)"/><ellipse cx="191" cy="294" rx="4.6" ry="2.8" fill="#fff" opacity=".7" transform="rotate(-30 191 294)"/>' +
-      '<rect x="174" y="474" width="44" height="150" fill="url(#hr)" opacity=".55"/>' +
+      '<rect class="hrf" x="174" y="474" width="44" height="150" fill="url(#hr)" opacity=".55"/>' +
       '<g class="shim">' + shim + "</g>" +
       '<path class="hzl" d="M0 476 H390" stroke-width="1"/></svg>';
     return heroSvg;
