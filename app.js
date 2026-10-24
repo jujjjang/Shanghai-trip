@@ -1382,6 +1382,16 @@
     let days = sel === "all"
       ? (postsOf(PRE).length ? [preDay()] : []).concat(state.days.filter((d) => postsOf(d.id).length || !(d.iso && d.iso > todayIso()))).reverse()
       : [logDay(sel)];
+    /* nothing written yet: a little stack of empty polaroids and one line to start, instead of a lone 여행 전 row */
+    const none = sel === "all" ? !state.posts.length : !postsOf(sel).length;
+    if (none) {
+      const d0 = sel === "all" ? null : logDay(sel), ph = phase();
+      const line = d0 && !d0.pre ? esc(d0.title) + "<br>이날 본 것 하나만 남겨볼까요?" : ph.k === "during" ? "사진 한 장, 한 줄이면 충분해요<br>오늘 본 것 하나만 남겨볼까요?" : ph.k === "after" ? "사진 한 장, 한 줄이면 충분해요<br>기억이 흐려지기 전에 남겨볼까요?" : "사진 한 장, 한 줄이면 충분해요<br>여행 전 설렘부터 남겨볼까요?";
+      s += '<div class="lempty"><div class="lempty-art" aria-hidden="true"><span class="pola p1"><i>' + ICON.camera + '</i></span><span class="pola p2"><i>' + ICON.heart + '</i></span><span class="pola p3"><i>' + ICON.pin + "</i></span></div>" +
+        "<b>" + (d0 && !d0.pre ? (isNum(d0.n) ? "Day " + esc(d0.n) : "귀국날") + "엔 아직 기록이 없어요" : "아직 남긴 기록이 없어요") + "</b><p>" + line + "</p>" +
+        '<button class="btn primary" type="button" data-act="post-new" data-day="' + (sel !== "all" ? sel : "") + '">' + ICON.pen + "첫 기록 남기기</button></div>";
+      return s + '<div class="fpad"></div>';
+    }
     if (!days.length) days = [preDay()];
     days.forEach((d) => {
       const list = postsOf(d.id).slice().reverse();
@@ -1520,31 +1530,12 @@
     return { c, all, total, today, cats, part };
   }
   /* which day an expense belongs to: today, or any trip day (for writing things down later) */
-  let expDay = "";
-  /* 날짜: 여행 전 (flights, eSIM… bought ahead), each trip day, 오늘, or any date you pick */
+  /* 지출 날짜: any date (오늘 by default); anything before the first trip day is grouped as 여행 전 */
   const tripStart = () => (state.days.find((d) => d.iso) || {}).iso || "";
   const isoOf = (ts) => { const t = new Date(ts); return t.getFullYear() + "-" + pad(t.getMonth() + 1) + "-" + pad(t.getDate()); };
   const isPreExp = (e) => { const st = tripStart(); return !!st && isoOf(e.at || 0) < st; };
-  function expDayOpts() {
-    const tIso = todayIso(), out = [["pre", "여행 전"]], trip = state.days.filter((d) => d.iso), st = tripStart();
-    if (!trip.some((d) => d.iso === tIso) && !(st && tIso < st)) out.push(["", "오늘 · " + dayLabel(Date.now())]);
-    trip.forEach((d) => out.push([d.iso === tIso ? "" : d.iso, (d.iso === tIso ? "오늘 · " : "") + (isNum(d.n) ? "Day " + d.n : "귀국") + " · " + d.date]));
-    out.push(["pick", "날짜 직접 고르기…"]);
-    return out;
-  }
-  function expDayDefault() {
-    const ok = expDayOpts().some((o) => o[0] === expDay);
-    if (ok && expDay !== "pick") return expDay;
-    const st = tripStart();
-    return st && todayIso() < st ? "pre" : "";
-  }
-  function expAt(day, picked) {
-    if (day === "pre") {
-      const st = tripStart();
-      if (!st || todayIso() < st) return Date.now();
-      const n = new Date(st + "T12:00:00"); n.setDate(n.getDate() - 1); return n.getTime();
-    }
-    const m = String(day === "pick" ? picked : day || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  function expAt(day) {
+    const m = String(day || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
     if (!m) return Date.now();
     const n = new Date(); n.setFullYear(+m[1], +m[2] - 1, +m[3]); return n.getTime();
   }
@@ -1560,8 +1551,7 @@
         '<div class="field"><span>종류</span><div class="chips">' + CATS.map((k) => radio("cat", k[0], ICON[k[2]] + k[1], k[0] === cat, "catchip")).join("") + "</div></div>" +
         '<label class="minechk"><input type="checkbox" name="mine"' + (ui.expMine ? " checked" : "") + "><span>" + ICON.lock + "나만 쓴 돈 · 정산 안 하고 내 폰에만 남겨요</span></label>" +
         (ppl.length ? '<div class="field payrow"><span>낸 사람</span><div class="chips">' + ppl.map((p) => radio("payer", p, esc(p), p === ui.payer)).join("") + "</div></div>" : "") +
-        '<label class="field"><span>날짜</span><select name="day" id="expDaySel">' + expDayOpts().map((o) => '<option value="' + o[0] + '"' + (o[0] === expDayDefault() ? " selected" : "") + ">" + esc(o[1]) + "</option>").join("") + "</select></label>" +
-        '<label class="field" id="expPick" hidden><span>고른 날짜</span><input type="date" name="pickd" value="' + todayIso() + '"></label>' +
+        '<label class="field"><span>날짜</span><input type="date" name="d" value="' + todayIso() + '"></label>' +
         "</div>",
       foot: '<span class="grow"></span><button class="btn" type="button" data-act="sh-close">취소</button><button class="btn primary" type="button" data-act="sh" data-k="save">추가</button>',
       on(k, v) {
@@ -1569,16 +1559,13 @@
         const amt = parseFloat(String(v.amt || "").replace(/[,\s]/g, ""));
         if (!(amt > 0)) { toast("금액을 넣어주세요"); const a = sheet.querySelector('input[name="amt"]'); if (a) a.focus(); return; }
         const mine = !!v.mine || !ppl.length;
-        if (v.day === "pick" && !v.pickd) { toast("날짜를 골라주세요"); return; }
-        const e = { id: newId("x"), amt, cur: v.cur === "KRW" ? "KRW" : "CNY", what: v.what || "", cat: v.cat || "etc", at: expAt(v.day, v.pickd) };
+        const e = { id: newId("x"), amt, cur: v.cur === "KRW" ? "KRW" : "CNY", what: v.what || "", cat: v.cat || "etc", at: v.d && v.d !== todayIso() ? expAt(v.d) : Date.now() };
         if (mine) state.myExp.push(e);
         else { e.payer = v.payer || ppl[0]; state.settle.expenses.push(e); ui.payer = e.payer; }
-        ui.cur = e.cur; ui.cat = e.cat; ui.expMine = !!v.mine; expDay = v.day || ""; saveUI();
+        ui.cur = e.cur; ui.cat = e.cat; ui.expMine = !!v.mine; saveUI();
         save(); closeSheet(); render(); toast(mine ? "나만 쓴 돈으로 넣었어요" : "추가했어요");
       }
     });
-    const ds = $("#expDaySel"), pk = $("#expPick");
-    if (ds && pk) { const sync1 = () => { pk.hidden = ds.value !== "pick"; }; ds.addEventListener("change", sync1); sync1(); }
     const a = sheet.querySelector('input[name="amt"]'); if (a) a.focus();
   }
   function settleCard(L) {
