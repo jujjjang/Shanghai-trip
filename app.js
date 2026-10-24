@@ -831,11 +831,15 @@
       x += w;
     }
     const blocks = [[0, 404, 26], [24, 420, 20], [42, 380, 22], [62, 410, 18], [80, 392, 24], [102, 424, 18], [118, 400, 22], [138, 430, 16], [228, 418, 18], [342, 408, 20], [360, 380, 18], [376, 420, 16]];
-    let near = "", wins = "";
+    let near = "", wins = "", winA = "", winG = "";
     blocks.forEach((b) => {
       near += '<rect x="' + b[0] + '" y="' + b[1] + '" width="' + b[2] + '" height="' + (474 - b[1]) + '"/>';
       for (let yy = b[1] + 8; yy < 462; yy += 9) for (let xx = b[0] + 4; xx < b[0] + b[2] - 3; xx += 6) if (rnd() < 0.3) wins += '<rect x="' + xx + '" y="' + yy + '" width="2" height="2.6"/>';
+      /* 낮: no lights on, so every window shows — as rows of glass (A) or the full grid (B) */
+      for (let yy = b[1] + 8; yy < 462; yy += 9) { winA += '<rect x="' + (b[0] + 4) + '" y="' + yy + '" width="' + (b[2] - 8) + '" height="1.6" rx=".8"/>'; for (let xx = b[0] + 4; xx < b[0] + b[2] - 3; xx += 6) winG += '<rect x="' + xx + '" y="' + yy + '" width="2" height="2.6"/>'; }
     });
+    /* 낮: long glass glints down the three towers */
+    const glass = '<path d="M255 312V468M263 309V468" stroke-width="1.6"/><path d="M293 468V330Q295 292 303 258M300 468V334" stroke-width="1.8"/><path d="M337 344V468" stroke-width="1.4"/>';
     let shim = "";
     for (let i = 0; i < 46; i++) {
       const cx = rnd() * 390, y = 480 + rnd() * 240, w = 6 + rnd() * 34;
@@ -889,6 +893,7 @@
       '<path class="hbs" d="M172.5 474 L190 426 M219.5 474 L202 426 M196 474 L196 426" stroke-width="7" stroke-linecap="butt"/>' +
       '<rect x="191" y="300" width="10" height="122"/><rect x="193" y="228" width="6" height="74"/></g>' +
       '<path class="ant" d="M196 226 L196 158" stroke-width="2.4"/><circle class="tip" cx="196" cy="156" r="2.4" fill="#FFD36B"/>' +
+      '<g class="wd wdr">' + winA + '</g><g class="wd wdg">' + winG + '</g><g class="wd wgl" fill="none" stroke="#FFFFFF" stroke-linecap="round">' + glass + "</g>" +
       '<g class="win">' + wins + '<rect x="300" y="300" width="2" height="2.6"/><rect x="305" y="340" width="2" height="2.6"/><rect x="298" y="380" width="2" height="2.6"/><rect x="309" y="410" width="2" height="2.6"/><rect x="262" y="330" width="2" height="2.6"/><rect x="258" y="380" width="2" height="2.6"/><rect x="266" y="420" width="2" height="2.6"/><rect x="336" y="390" width="2" height="2.6"/><rect x="340" y="430" width="2" height="2.6"/></g>' +
       '<g class="pglow"><circle cx="196" cy="420" r="46" fill="url(#hglow)"/><circle cx="196" cy="300" r="30" fill="url(#hglow)"/></g>' +
       '<circle cx="196" cy="420" r="22" fill="url(#hp)"/><circle cx="196" cy="300" r="15" fill="url(#hp)"/><circle cx="196" cy="228" r="7.5" fill="url(#hp)"/>' +

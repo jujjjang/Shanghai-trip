@@ -920,6 +920,9 @@ body[data-tab="home"] { background: linear-gradient(var(--bg), var(--bg)) top ce
 [data-theme="light"] .hero-art .hbs { stroke: #A4CFEC; }
 [data-theme="light"] .hero-art .ant { stroke: #A9D3EE; }
 [data-theme="light"] .hero-art .win { fill: #FFFFFF; opacity: .5; } /* 낮: the same windows, as glass catching the light */
+.hero-art .wd { display: none; }
+[data-theme="light"] .hero-art .wd { display: inline; fill: #FFFFFF; opacity: .32; }
+[data-theme="light"] .hero-art .wgl { opacity: .4; }
 [data-theme="light"] .hero-art .hp0 { stop-color: #FFFFFF; }
 [data-theme="light"] .hero-art .hp1 { stop-color: #FFE6EF; }
 [data-theme="light"] .hero-art .hp2 { stop-color: #FAD0DF; }
