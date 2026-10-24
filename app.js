@@ -1377,8 +1377,14 @@
     s += '<div class="lchips" role="tablist" aria-label="날짜 고르기"><button type="button" class="lchip' + (sel === "all" ? " on" : "") + '" data-act="log-day" data-v="all" aria-pressed="' + (sel === "all") + '">전체</button>' +
       '<button type="button" class="lchip txt' + (sel === PRE ? " on" : "") + '" data-act="log-day" data-v="' + PRE + '" aria-pressed="' + (sel === PRE) + '">여행 전</button>' +
       state.days.map((d) => '<button type="button" class="lchip' + (sel === d.id ? " on" : "") + '" data-act="log-day" data-v="' + d.id + '" aria-pressed="' + (sel === d.id) + '" style="--c:' + dayC(d) + '"><i>' + esc(d.n) + "</i>" + esc(String(d.date).split(" ")[0]) + "</button>").join("") + "</div>";
-    (sel === "all" ? (postsOf(PRE).length ? [preDay()] : []).concat(state.days) : [logDay(sel)]).forEach((d) => {
-      const list = postsOf(d.id);
+    /* newest on top: the latest day first and, within a day, the latest post first.
+       In 전체, days still ahead with nothing in them stay out of the way (their chip is there to write one) */
+    let days = sel === "all"
+      ? (postsOf(PRE).length ? [preDay()] : []).concat(state.days.filter((d) => postsOf(d.id).length || !(d.iso && d.iso > todayIso()))).reverse()
+      : [logDay(sel)];
+    if (!days.length) days = [preDay()];
+    days.forEach((d) => {
+      const list = postsOf(d.id).slice().reverse();
       s += '<section class="fday" id="log-' + d.id + '" style="--c:' + logC(d) + '"><div class="fday-h"><span class="rd">' + (d.pre ? ICON.plane : esc(d.n)) + '</span><div><span class="m">' + esc(d.date) + "</span><b>" + esc(d.title) + "</b></div>" +
         (list.length ? '<span class="cnt">' + list.length + "개</span>" : "") + "</div>" +
         (list.length ? list.map(postHtml).join("") : '<button class="fempty" type="button" data-act="post-new" data-day="' + d.id + '">' + ICON.plus + "<span>" + (d.pre ? "출발 전 기록 남기기" : "이날 첫 기록 남기기") + "</span></button>") + "</section>";
