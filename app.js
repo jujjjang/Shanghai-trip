@@ -2484,7 +2484,27 @@
   sheet.addEventListener("click", (e) => { if (lpFired) { lpFired = false; e.preventDefault(); e.stopPropagation(); } }, true);
   sheet.addEventListener("contextmenu", (e) => { const inn = e.target.closest(".cklist .sli-in"); if (inn) { e.preventDefault(); if (!sheet.querySelector(".ckmenu")) ckMenuOpen(inn.closest(".sli")); } });
   const openRows = () => Array.from(sheet.querySelectorAll(".sli-sc")).filter((sc) => sc.scrollLeft > 4);
-  const rowTo = (sc, open, now) => { const left = open ? sc.scrollWidth - sc.clientWidth : 0; try { sc.scrollTo({ left, behavior: now ? "auto" : "smooth" }); } catch (e) { sc.scrollLeft = left; } };
+  /* settle a row open/shut in one quick glide: stop the phone's own (slower) glide, jump the scroll to the end spot,
+     and slide the contents the rest of the way frame by frame — already moving on the very first frame, fast at first, soft at the end */
+  const rowTo = (sc, open, now) => {
+    cancelAnimationFrame(sc._raf);
+    sc.style.overflowX = "hidden"; /* ends the phone's own glide right here, so nothing fights the one below */
+    const to = open ? sc.scrollWidth - sc.clientWidth : 0, from = sc.scrollLeft, kids = Array.from(sc.children);
+    sc.style.scrollSnapType = "none";
+    sc.scrollLeft = to;
+    const set = (v) => kids.forEach((k) => { k.style.transform = Math.abs(v) > 0.5 ? "translateX(" + v + "px)" : ""; });
+    const done = () => { set(0); sc.style.scrollSnapType = ""; sc.style.overflowX = ""; };
+    const d0 = to - from;
+    if (now || Math.abs(d0) < 1) { done(); return; }
+    const t0 = performance.now(), dur = 180;
+    let last = 0;
+    const step = () => {
+      const p = last = Math.min(1, Math.max(last, (performance.now() - t0 + 16) / dur)), e = 1 - Math.pow(1 - p, 3);
+      set(d0 * (1 - e));
+      if (p < 1) sc._raf = requestAnimationFrame(step); else done();
+    };
+    step();
+  };
   const shut = (sc, now) => rowTo(sc, false, now);
   let rowT = null;
   sheet.addEventListener("touchstart", (e) => { const sc = e.target.closest(".sli-sc"); rowT = sc && !e.target.closest(".sli-acts") ? { sc, left: sc.scrollLeft } : null; }, { passive: true });
@@ -2496,7 +2516,6 @@
     if (Math.abs(now - t.left) < 6) return;
     const open = now > t.left;
     rowTo(t.sc, open);
-    setTimeout(() => { if (t.sc.isConnected && (t.sc.scrollLeft > 4) !== open) rowTo(t.sc, open); }, 450);
   }, { passive: true });
   sheet.addEventListener("scroll", (e) => {
     if (sheet.querySelector(".ckmenu")) ckMenuClose();
