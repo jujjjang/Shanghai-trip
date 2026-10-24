@@ -882,6 +882,8 @@
       '<g class="far">' + far + "</g>" +
       '<rect y="470" width="390" height="311" fill="url(#hw)"/><rect class="dy" y="470" width="390" height="311" fill="url(#hwd)"/><rect class="dk" y="470" width="390" height="311" fill="url(#hwk)"/>' +
       '<g fill="url(#hb)">' + near +
+      /* the Pudong bank under everything, and a low podium round the tower's feet, so it stands on land, not on the river */
+      '<rect x="-4" y="463" width="398" height="9" rx="3"/><path d="M160 470 L162 452 Q196 444 230 452 L232 470 Z"/>' +
       '<path d="M284 470 L287 330 Q290 280 302 246 L306 250 Q314 290 316 330 L318 470 Z"/>' +
       '<path fill-rule="evenodd" d="M248 470 L250 296 L272 282 L274 470 Z M254 297 L269 290 L269 306 L254 311 Z"/>' +
       '<polygon points="326,470 326,370 329,370 329,350 332,350 332,334 335,334 337,300 339,334 342,334 342,350 345,350 345,370 348,370 348,470"/>' +

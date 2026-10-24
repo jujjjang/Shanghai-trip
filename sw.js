@@ -1,6 +1,6 @@
 /* Offline support: the app shell answers from cache at once and refreshes in the background,
    so the trip still opens with no signal in China. Fonts are kept the first time they load. */
-const VERSION = "sht-2026-10-25l";
+const VERSION = "sht-2026-10-25m";
 const FONTS = "sht-fonts";
 const IMGS = "sht-imgs"; /* place pictures from the internet: kept on the phone so they show at once (and in China, where Wikimedia is blocked) */
 const CORE = [
