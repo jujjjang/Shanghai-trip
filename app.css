@@ -1415,9 +1415,18 @@ body { background-color: var(--edge) !important; }
 .ck-grip svg { width: 18px; height: 18px; }
 .cklist .li.dragging { background: var(--surface); box-shadow: var(--shadow-sm); border-radius: 12px; position: relative; z-index: 2; }
 /* sheet rows: press and hold for a small 나만/같이 · 고치기 · 지우기 menu */
-.cklist .sli { display: block; }
-.sli-in { display: flex; align-items: center; gap: 2px; min-height: 48px; border-radius: 12px; transition: background .15s; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
-.sli.lp .sli-in { background: var(--inner); margin: 0 -8px; padding: 0 8px; }
+.cklist .sli { display: block; transition: background .15s; }
+.sli.lp { background: var(--inner); border-radius: 12px; margin: 0 -8px; padding: 0 8px; }
+/* each row slides sideways by itself (a tiny scroller with two stops: closed / open) */
+.sli-sc { display: flex; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.sli-sc::-webkit-scrollbar { display: none; }
+.sli-in { flex: 0 0 100%; min-width: 0; scroll-snap-align: start; display: flex; align-items: center; gap: 2px; min-height: 48px; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.sli-acts { flex: none; scroll-snap-align: end; display: flex; gap: 5px; padding: 7px 0 7px 8px; }
+.sli-acts button { width: 42px; border: 0; border-radius: 11px; padding: 0; display: grid; place-items: center; color: #fff; cursor: pointer; }
+.sli-acts button svg { width: 18px; height: 18px; }
+.sa-mine { background: var(--accent-2); }
+.sa-edit { background: #8C93B8; }
+.sa-del { background: var(--danger); }
 .ckmenu { position: fixed; z-index: 5; min-width: 176px; border-radius: 16px; overflow: hidden; background: var(--surface); background: color-mix(in srgb, var(--surface) 90%, #fff); border: 1px solid var(--line); box-shadow: 0 16px 44px rgba(10, 6, 50, .38); display: flex; flex-direction: column; animation: pop .14s ease-out; transform-origin: 30px 0; }
 .ckmenu button { display: flex; align-items: center; gap: 11px; min-height: 48px; padding: 0 16px; border: 0; border-radius: 0; background: none; color: var(--ink); font: inherit; font-size: 15px; font-weight: 600; text-align: left; cursor: pointer; }
 .ckmenu button + button { border-top: 1px solid var(--line); border-top-color: color-mix(in srgb, var(--ink) 12%, transparent); }

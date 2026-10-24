@@ -1788,12 +1788,15 @@
         (canMine(key) ? '<p class="note ck-note">' + ICON.lock + " 나만 보는 " + (key === "pack" ? "준비물" : "할 일") + " · 나머지는 같이 봐요 · 체크는 각자</p>" : "") +
         '<div class="ckhead"><div class="wprog" data-prog="' + key + '"><i style="width:' + (list.length ? (doneN / list.length) * 100 : 0) + '%"></i></div><span class="mono" data-count="' + key + '">' + doneN + " / " + list.length + "</span></div>" +
         (list.length ? '<div class="cklist ckedit" data-key="' + key + '">' + list.map((x) => {
-          return '<div class="li sli" data-id="' + x.id + '"><div class="sli-in">' +
+          const b = (act, cls, ic, label) => '<button class="' + cls + '" type="button" data-act="' + act + '" data-list="' + key + '" data-id="' + x.id + '" aria-label="' + label + '">' + ic + "</button>";
+          return '<div class="li sli" data-id="' + x.id + '"><div class="sli-sc"><div class="sli-in">' +
             '<label class="ck ckbox' + (state.done[x.id] ? " on" : "") + '" aria-label="' + esc(x.t) + ' 체크"><input type="checkbox" id="ckx-' + x.id + '" data-ck="' + x.id + '"' + (state.done[x.id] ? " checked" : "") + "></label>" +
             ckWords(key, x) +
-            '<span class="ck-grip" data-grip="' + key + '" aria-label="끌어서 순서 바꾸기">' + ICON.grip + "</span></div></div>";
+            '<span class="ck-grip" data-grip="' + key + '" aria-label="끌어서 순서 바꾸기">' + ICON.grip + '</span></div><div class="sli-acts">' +
+            (canMine(key) ? b("li-mine", "sa-mine", x.list ? ICON.users : ICON.lock, x.list ? "같이 보기로" : "나만 보기") : "") +
+            b("li-edit", "sa-edit", ICON.pen, "고치기") + b("li-del", "sa-del", ICON.trash, "지우기") + "</div></div></div>";
         }).join("") + "</div>" +
-          '<p class="note ck-tip"><span>꾹 누르면 ' + (canMine(key) ? "나만 보기 · " : "") + "고치기 · 지우기</span><span>" + ICON.grip + " 끌면 순서 바꾸기</span></p>" : '<p class="empty">아직 비어 있어요</p>')
+          '<p class="note ck-tip"><span>왼쪽으로 밀면 ' + (canMine(key) ? "나만 보기 · " : "") + "고치기 · 지우기</span><span>" + ICON.grip + " 끌면 순서 바꾸기</span></p>" : '<p class="empty">아직 비어 있어요</p>')
     });
   }
   function papagoSheet() {
@@ -2450,7 +2453,7 @@
     if (e.button && e.button > 0) return;
     const inn = e.target.closest(".cklist .sli-in");
     if (!inn || e.target.closest(".ck-grip, .ck-edit")) return;
-    const li = inn.parentNode;
+    const li = inn.closest(".sli");
     lp = { id: e.pointerId, x: e.clientX, y: e.clientY, t: setTimeout(() => { lp = null; lpFired = true; ckMenuOpen(li); }, 420) };
   });
   document.addEventListener("pointermove", (e) => { if (lp && e.pointerId === lp.id && Math.abs(e.clientX - lp.x) + Math.abs(e.clientY - lp.y) > 10) { clearTimeout(lp.t); lp = null; } });
@@ -2458,8 +2461,20 @@
   /* the finger lifting after the hold mustn't also tick the box */
   sheet.addEventListener("touchend", (e) => { if (lpFired && e.cancelable) e.preventDefault(); }, { passive: false });
   sheet.addEventListener("click", (e) => { if (lpFired) { lpFired = false; e.preventDefault(); e.stopPropagation(); } }, true);
-  sheet.addEventListener("contextmenu", (e) => { const inn = e.target.closest(".cklist .sli-in"); if (inn) { e.preventDefault(); if (!sheet.querySelector(".ckmenu")) ckMenuOpen(inn.parentNode); } });
-  sheet.addEventListener("scroll", () => { if (sheet.querySelector(".ckmenu")) ckMenuClose(); }, true);
+  sheet.addEventListener("contextmenu", (e) => { const inn = e.target.closest(".cklist .sli-in"); if (inn) { e.preventDefault(); if (!sheet.querySelector(".ckmenu")) ckMenuOpen(inn.closest(".sli")); } });
+  const openRows = () => Array.from(sheet.querySelectorAll(".sli-sc")).filter((sc) => sc.scrollLeft > 4);
+  const shut = (sc, now) => { try { sc.scrollTo({ left: 0, behavior: now ? "auto" : "smooth" }); } catch (e) { sc.scrollLeft = 0; } };
+  sheet.addEventListener("scroll", (e) => {
+    if (sheet.querySelector(".ckmenu")) ckMenuClose();
+    const sc = e.target;
+    if (sc.classList && sc.classList.contains("sli-sc") && sc.scrollLeft > 4) openRows().forEach((o) => { if (o !== sc) shut(o); });
+  }, true);
+  sheet.addEventListener("click", (e) => {
+    const open = openRows();
+    if (!open.length || e.target.closest(".sli-acts")) return;
+    open.forEach((o) => shut(o));
+    if (open.some((o) => o.contains(e.target))) { e.preventDefault(); e.stopPropagation(); }
+  }, true);
   function endRowGesture() {
     if (!rg) return;
     clearTimeout(rg.t);
@@ -2664,6 +2679,7 @@
     const ae = document.activeElement;
     if (ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName) && (view.contains(ae) || sheet.contains(ae))) return true;
     if (rg || drag || press || dotScrub || ckDrag || lp || (openSw && openSw.isConnected) || sheet.querySelector(".ckmenu")) return true;
+    if (!sheet.hidden && Array.from(sheet.querySelectorAll(".sli-sc")).some((sc) => sc.scrollLeft > 4)) return true;
     if (!sheet.hidden && !/^(ck-|dt-|share)/.test(sheetKey()) && sheet.querySelector(".sh-body input, .sh-body textarea, .sh-body select")) return true;
     return false;
   }
@@ -3156,6 +3172,7 @@
         const key = t.getAttribute("data-list"), x = ckList(key).find((y) => y.id === id);
         const row = sheet.querySelector('.cklist .sli[data-id="' + id + '"]'), words = row && row.querySelector(".ck-t");
         ckMenuClose();
+        const sc = row && row.querySelector(".sli-sc"); if (sc) sc.scrollLeft = 0;
         if (!x || !words) return;
         const inp = document.createElement("input");
         inp.className = "ck-edit"; inp.value = x.t; inp.setAttribute("enterkeyhint", "done"); inp.setAttribute("aria-label", "고치기");
