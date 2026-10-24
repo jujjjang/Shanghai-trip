@@ -1562,11 +1562,14 @@
     openSheet({
       key: "exp-new", title: "지출 추가",
       body: '<div class="expform">' +
+        (ppl.length ? '<div class="seg" role="radiogroup" aria-label="지출 종류">' +
+          '<label><input type="radio" name="kind" value="shared"' + (ui.expMine ? "" : " checked") + "><span>" + ICON.users + "공동 지출</span></label>" +
+          '<label><input type="radio" name="kind" value="mine"' + (ui.expMine ? " checked" : "") + "><span>" + ICON.lock + "개인 지출</span></label></div>" +
+          '<p class="note seg-note seg-shared">' + ppl.length + "명이 나눠서 정산해요</p>" + '<p class="note seg-note seg-mine">정산 안 하고 내 폰에만 남겨요</p>' : "") +
         '<div class="amtrow"><label class="field" style="flex:1"><span class="vh">금액</span><input name="amt" inputmode="decimal" placeholder="금액" autocomplete="off"></label>' +
           '<div class="chips">' + radio("cur", "CNY", "¥", ui.cur !== "KRW") + radio("cur", "KRW", "₩", ui.cur === "KRW") + "</div></div>" +
         field("what", "어디에 썼는지", "", { ph: "예: 점심 딤섬" }) +
         '<div class="field"><span>종류</span><div class="chips">' + CATS.map((k) => radio("cat", k[0], ICON[k[2]] + k[1], k[0] === cat, "catchip")).join("") + "</div></div>" +
-        '<label class="minechk"><input type="checkbox" name="mine"' + (ui.expMine ? " checked" : "") + "><span>" + ICON.lock + "나만 쓴 돈 · 정산 안 하고 내 폰에만 남겨요</span></label>" +
         (ppl.length ? '<div class="field payrow"><span>낸 사람</span><div class="chips">' + ppl.map((p) => radio("payer", p, esc(p), p === ui.payer)).join("") + "</div></div>" : "") +
         '<label class="field"><span>날짜</span><input type="date" name="d" value="' + todayIso() + '"></label>' +
         "</div>",
@@ -1575,38 +1578,54 @@
         if (k !== "save") return;
         const amt = parseFloat(String(v.amt || "").replace(/[,\s]/g, ""));
         if (!(amt > 0)) { toast("금액을 넣어주세요"); const a = sheet.querySelector('input[name="amt"]'); if (a) a.focus(); return; }
-        const mine = !!v.mine || !ppl.length;
+        const mine = v.kind === "mine" || !ppl.length;
         const e = { id: newId("x"), amt, cur: v.cur === "KRW" ? "KRW" : "CNY", what: v.what || "", cat: v.cat || "etc", at: v.d && v.d !== todayIso() ? expAt(v.d) : Date.now() };
         if (mine) state.myExp.push(e);
         else { e.payer = v.payer || ppl[0]; state.settle.expenses.push(e); ui.payer = e.payer; }
-        ui.cur = e.cur; ui.cat = e.cat; ui.expMine = !!v.mine; saveUI();
-        save(); closeSheet(); render(); toast(mine ? "나만 쓴 돈으로 넣었어요" : "추가했어요");
+        ui.cur = e.cur; ui.cat = e.cat; ui.expMine = v.kind === "mine"; saveUI();
+        save(); closeSheet(); render(); toast(mine ? "개인 지출로 넣었어요" : "공동 지출로 넣었어요");
       }
     });
     const a = sheet.querySelector('input[name="amt"]'); if (a) a.focus();
   }
   function settleCard(L) {
     const S = state.settle, ppl = S.members, c = L.c;
-    if (!ppl.length) return '<div class="pad"><div class="box"><p class="note">더보기 → 설정 → 여행 인원을 넣으면 같이 쓴 돈을 나눠 드려요</p></div></div>';
-    const open = S.expenses.filter((e) => !e.settled), doneN = S.expenses.length - open.length;
-    const head = '<span class="sc-l"><b>정산</b>' + (open.length ? "<span>1인당 " + amtFmt(c.share, c) + "</span>" : "") + "</span>";
-    let right = !S.expenses.length ? '<span class="sc-r note">같이 쓴 돈이 아직 없어요</span>' : !open.length ? '<span class="sc-r note">정산 다 했어요</span>' : !c.xs.length ? '<span class="sc-r note">딱 맞아요</span>'
-      : '<span class="sc-r">' + c.xs.map((x) => "<span>" + esc(x.from) + " → " + esc(x.to) + " <b>" + amtFmt(x.v, c) + "</b></span>").join("") + "</span>";
-    const detail = '<div class="sc-more"><p class="note">' + (open.length ? "정산할 돈 " + amtFmt(c.total, c) + " · " + c.n + "명이 나눠요" : "정산할 돈이 없어요") + (doneN ? " · 정산 완료 " + doneN + "건은 빠져요" : "") + "</p>" +
-      (open.length ? ppl.map((p) => '<div class="sc-p"><span>' + esc(p) + '</span><span class="mono">' + amtFmt(c.paid[p] || 0, c) + " 냄</span></div>").join("") : "") +
-      (c.xs.length ? c.xs.map((x) => '<div class="xfer"><b>' + esc(x.from) + '</b><span class="note">→</span><b>' + esc(x.to) + '</b><span class="amt">' + money(x.v, c) + "</span></div>").join("") : "") +
-      (c.skipped ? '<p class="note">원화로 넣은 지출 ' + c.skipped + "건은 환율을 넣어야 합산돼요</p>" : "") +
-      '<p class="note sc-hint">' + ICON.check + " 지출 옆 동그라미를 누르면 정산 완료 · 정산에서 빠져요</p></div>";
-    return '<div class="pad"><details class="box sc" data-fold="settle-card"' + (ui.open["settle-card"] ? " open" : "") + '><summary class="sc-sum">' + head + right + '<span class="chev" aria-hidden="true"></span></summary>' + detail + "</details></div>";
+    if (!ppl.length) return '<div class="pad"><div class="box"><p class="note">더보기 → 설정 → 여행 인원을 넣으면 공동 지출을 나눠 드려요</p></div></div>';
+    const shared = S.expenses.slice().sort((a, b) => (b.at || 0) - (a.at || 0)), open = shared.filter((e) => !e.settled), doneN = shared.length - open.length;
+    if (!shared.length) return '<div class="pad"><div class="box"><p class="note">공동 지출이 아직 없어요 · ＋에서 \'공동 지출\'로 넣으면 여기서 나눠요</p></div></div>';
+    let s = '<div class="pad"><div class="box st">';
+    if (!open.length) s += '<div class="st-res">' + ICON.check + "<b>정산 다 했어요</b></div>";
+    else if (!c.xs.length) s += '<div class="st-res"><b>딱 맞아요</b><span class="note">주고받을 돈이 없어요</span></div>';
+    else s += c.xs.map((x) => '<div class="st-x"><b>' + esc(x.from) + '</b><span class="note">→</span><b>' + esc(x.to) + '</b><span class="amt">' + money(x.v, c) + "</span></div>").join("");
+    if (open.length) s += '<div class="st-who">' + ppl.map((p) => '<div class="sc-p"><span>' + esc(p) + ' 냄</span><span class="mono">' + amtFmt(c.paid[p] || 0, c) + "</span></div>").join("") +
+      '<p class="note">정산할 돈 ' + amtFmt(c.total, c) + " · 1인당 " + amtFmt(c.share, c) + "</p></div>";
+    if (c.skipped) s += '<p class="note">원화로 넣은 지출 ' + c.skipped + "건은 환율을 넣어야 합산돼요</p>";
+    const rows = open.concat(shared.filter((e) => e.settled));
+    s += '<details class="st-fold" data-fold="st-list"' + (ui.open["st-list"] !== false ? " open" : "") + '><summary><b>지출별 정산</b><span class="note">' + shared.length + "건 중 " + doneN + '건 완료</span><span class="chev" aria-hidden="true"></span></summary>' +
+      '<div class="st-list">' + rows.map((e) => '<label class="st-row' + (e.settled ? " on" : "") + '"><input type="checkbox" data-settle="' + e.id + '"' + (e.settled ? " checked" : "") + ">" +
+        '<span class="st-t"><b>' + esc(e.what || catOf(e.cat)[1]) + "</b><small>" + dayLabel(e.at || 0).split(" ")[0] + " · " + esc(e.payer) + ' 냄</small></span><span class="st-a">' + (e.cur === "KRW" ? wonFmt(+e.amt) : yuanFmt(+e.amt)) + "</span></label>").join("") +
+      '</div><p class="note st-tip">주고받은 건 체크 · 체크하면 정산에서 빠져요</p></details>';
+    return s + "</div></div>";
+  }
+  /* 내 지출: total + today; opens to show where it went (공동 지출 내 몫 / 개인 지출, then by kind) */
+  function mySumCard(L) {
+    const c = L.c;
+    let shared = 0, own = 0;
+    L.all.forEach((e) => { const v = inBase(e, c) * L.part(e); if (e.mine) own += v; else shared += v; });
+    const cats = CATS.filter((k) => L.cats[k[0]]), max = Math.max(1, ...cats.map((k) => L.cats[k[0]]));
+    return '<div class="pad"><details class="box ms" data-fold="my-sum"' + (ui.open["my-sum"] ? " open" : "") + '><summary class="ms-sum"><div class="stiles"><div class="stile"><span>내 여행 총 지출</span><b>' + amtFmt(L.total, c) + "</b></div>" +
+      '<div class="stile"><span>오늘</span><b>' + amtFmt(L.today, c) + '</b></div></div><span class="chev" aria-hidden="true"></span></summary><div class="ms-more">' +
+      (L.all.length ? '<div class="sc-p"><span>' + ICON.users + "공동 지출 · 내 몫</span><b>" + amtFmt(shared, c) + "</b></div>" +
+        '<div class="sc-p"><span>' + ICON.lock + "개인 지출</span><b>" + amtFmt(own, c) + "</b></div>" +
+        '<div class="ms-cats">' + cats.map((k) => '<div class="ms-cat">' + ICON[k[2]] + "<span>" + k[1] + '</span><i><i style="width:' + ((L.cats[k[0]] / max) * 100).toFixed(1) + '%"></i></i><b>' + amtFmt(L.cats[k[0]], c) + "</b></div>").join("") + "</div>"
+        : '<p class="note">아직 적은 지출이 없어요</p>') + "</div></details></div>";
   }
   function moneyHtml() {
     const S = state.settle, ppl = S.members, L = ledgerSum(), c = L.c;
     if (ppl.indexOf(ui.payer) < 0) ui.payer = ppl[0] || "";
     let s = pageHead("가계부", c.rate ? "1위안 = " + c.rate + "원" : "여행 지출 · 정산", true);
-    s += '<div class="pad"><div class="box"><div class="stiles"><div class="stile"><span>내 여행 총 지출</span><b>' + amtFmt(L.total, c) + "</b></div>" +
-      '<div class="stile"><span>오늘</span><b>' + amtFmt(L.today, c) + "</b></div></div>" +
-      (L.all.length ? '<div class="catsum">' + CATS.filter((k) => L.cats[k[0]]).map((k) => '<span class="cs">' + ICON[k[2]] + k[1] + " <b>" + amtFmt(L.cats[k[0]], c) + "</b></span>").join("") + "</div>" : "") + "</div></div>";
-    s += settleCard(L);
+    s += mySumCard(L);
+    s += '<div class="sec-h"><h2>지출 내역</h2></div>';
     if (L.all.length) {
       const list = L.all.slice().sort((a, b) => (b.at || 0) - (a.at || 0)), days = {};
       const grp = (e) => (isPreExp(e) ? "여행 전" : dayLabel(e.at || 0));
@@ -1617,13 +1636,13 @@
         if (dl !== last) { s += (last ? "</div></div>" : "") + '<div class="exp-dh"><span>' + dl + "</span><span>" + amtFmt(days[dl], c) + '</span></div><div class="pad"><div class="box exp-box">'; last = dl; }
         const armed = armedExp === e.id;
         s += '<div class="exp' + (e.settled ? " settled" : "") + '">' + catIc(e.cat) + '<button class="exp-open" type="button" data-act="exp-edit" data-id="' + e.id + '" aria-label="' + esc(e.what || "지출") + ' 금액 고치기"><span class="w2"><b>' + esc(e.what || catOf(e.cat)[1]) +
-          (e.mine ? '<i class="mine-ic" title="나만 쓴 돈">' + ICON.lock + "</i>" : "") + "</b><span>" + (isPreExp(e) ? dayLabel(e.at || 0).split(" ")[0] + " · " : "") + (e.mine ? "나만 · 정산 안 함" : esc(e.payer) + " 냄") + "</span></span>" +
+          (e.mine ? '<i class="mine-ic" title="나만 쓴 돈">' + ICON.lock + "</i>" : "") + "</b><span>" + (isPreExp(e) ? dayLabel(e.at || 0).split(" ")[0] + " · " : "") + (e.mine ? "개인 지출" : esc(e.payer) + " 냄") + "</span></span>" +
           '<span class="a">' + (e.cur === "KRW" ? wonFmt(+e.amt) : yuanFmt(+e.amt)) + (e.cur !== "KRW" && c.rate ? "<small>" + wonFmt(e.amt * c.rate) + "</small>" : "") + "</span></button>" +
-          (e.mine || armed ? "" : '<button class="exp-st' + (e.settled ? " on" : "") + '" type="button" data-act="exp-settle" data-id="' + e.id + '" aria-pressed="' + !!e.settled + '" aria-label="' + (e.settled ? "정산 완료 취소" : "정산 완료로 표시") + '">' + ICON.check + "</button>") +
           '<button class="btn sm ' + (armed ? "danger armed" : "ghost") + '" type="button" data-act="exp-del" data-id="' + e.id + '" aria-label="이 지출 지우기">' + (armed ? "지우기" : ICON.x) + "</button></div>";
       });
       s += "</div></div>";
     } else s += '<div class="pad"><p class="note" style="text-align:center;padding:18px 0">＋를 눌러 첫 지출을 적어보세요</p></div>';
+    s += '<div class="sec-h"><h2>정산</h2></div>' + settleCard(L);
     s += '<div class="sec-h"><h2>환율</h2></div><div class="pad"><div class="box">' + fxHtml("fx") +
       '<details class="fold flat" data-fold="settle-set"' + (ui.open["settle-set"] || !S.rate ? " open" : "") + '><summary><span class="ft">환율 바꾸기</span><span class="chev" aria-hidden="true"></span></summary><div class="fold-b form">' +
       '<label class="field"><span>1위안 = ?원</span><input id="mRate" data-keep inputmode="decimal" value="' + esc(S.rate || "") + '" autocomplete="off"></label>' +
@@ -3211,13 +3230,6 @@
         save(); render(); toast("지웠어요");
         return;
       }
-      case "exp-settle": {
-        const x = state.settle.expenses.find((y) => y.id === id);
-        if (!x) return;
-        if (x.settled) delete x.settled; else x.settled = true;
-        save(); render(); toast(x.settled ? "정산 완료 · 정산에서 뺐어요" : "다시 정산에 넣었어요");
-        return;
-      }
       case "settle-save": {
         const rate = parseFloat(String($("#mRate").value).replace(/[,\s]/g, ""));
         state.settle.rate = rate > 0 ? rate : 0;
@@ -3297,6 +3309,11 @@
         document.querySelectorAll('[data-prog="' + key + '"] i').forEach((i) => { i.style.width = (list.length ? (n / list.length) * 100 : 0) + "%"; });
         document.querySelectorAll('[data-count="' + key + '"]').forEach((c) => { c.textContent = n + " / " + list.length; });
       }
+      return;
+    }
+    if (t.hasAttribute("data-settle")) {
+      const x = state.settle.expenses.find((y) => y.id === t.getAttribute("data-settle"));
+      if (x) { if (t.checked) x.settled = true; else delete x.settled; save(); render(); }
       return;
     }
     if (t.hasAttribute("data-post-pick")) {
