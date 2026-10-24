@@ -1596,7 +1596,7 @@
       (open.length ? ppl.map((p) => '<div class="sc-p"><span>' + esc(p) + '</span><span class="mono">' + amtFmt(c.paid[p] || 0, c) + " 냄</span></div>").join("") : "") +
       (c.xs.length ? c.xs.map((x) => '<div class="xfer"><b>' + esc(x.from) + '</b><span class="note">→</span><b>' + esc(x.to) + '</b><span class="amt">' + money(x.v, c) + "</span></div>").join("") : "") +
       (c.skipped ? '<p class="note">원화로 넣은 지출 ' + c.skipped + "건은 환율을 넣어야 합산돼요</p>" : "") +
-      (open.length ? '<div class="sc-done"><button class="btn sm" type="button" data-act="settle-done">' + ICON.check + "정산 완료</button><span class=\"note\">돈 주고받았으면 눌러요 · 지금까지 쓴 건 정산에서 빠져요</span></div>" : "") + "</div>";
+      '<p class="note sc-hint">' + ICON.check + " 지출 옆 동그라미를 누르면 정산 완료 · 정산에서 빠져요</p></div>";
     return '<div class="pad"><details class="box sc" data-fold="settle-card"' + (ui.open["settle-card"] ? " open" : "") + '><summary class="sc-sum">' + head + right + '<span class="chev" aria-hidden="true"></span></summary>' + detail + "</details></div>";
   }
   function moneyHtml() {
@@ -1618,7 +1618,8 @@
         const armed = armedExp === e.id;
         s += '<div class="exp' + (e.settled ? " settled" : "") + '">' + catIc(e.cat) + '<button class="exp-open" type="button" data-act="exp-edit" data-id="' + e.id + '" aria-label="' + esc(e.what || "지출") + ' 금액 고치기"><span class="w2"><b>' + esc(e.what || catOf(e.cat)[1]) +
           (e.mine ? '<i class="mine-ic" title="나만 쓴 돈">' + ICON.lock + "</i>" : "") + "</b><span>" + (isPreExp(e) ? dayLabel(e.at || 0).split(" ")[0] + " · " : "") + (e.mine ? "나만 · 정산 안 함" : esc(e.payer) + " 냄") + "</span></span>" +
-          '<span class="a">' + (e.cur === "KRW" ? wonFmt(+e.amt) : yuanFmt(+e.amt)) + (e.settled ? '<small class="exp-ok">' + ICON.check + "정산 완료</small>" : e.cur !== "KRW" && c.rate ? "<small>" + wonFmt(e.amt * c.rate) + "</small>" : "") + "</span></button>" +
+          '<span class="a">' + (e.cur === "KRW" ? wonFmt(+e.amt) : yuanFmt(+e.amt)) + (e.cur !== "KRW" && c.rate ? "<small>" + wonFmt(e.amt * c.rate) + "</small>" : "") + "</span></button>" +
+          (e.mine || armed ? "" : '<button class="exp-st' + (e.settled ? " on" : "") + '" type="button" data-act="exp-settle" data-id="' + e.id + '" aria-pressed="' + !!e.settled + '" aria-label="' + (e.settled ? "정산 완료 취소" : "정산 완료로 표시") + '">' + ICON.check + "</button>") +
           '<button class="btn sm ' + (armed ? "danger armed" : "ghost") + '" type="button" data-act="exp-del" data-id="' + e.id + '" aria-label="이 지출 지우기">' + (armed ? "지우기" : ICON.x) + "</button></div>";
       });
       s += "</div></div>";
@@ -3210,15 +3211,11 @@
         save(); render(); toast("지웠어요");
         return;
       }
-      case "settle-done": {
-        const ids = state.settle.expenses.filter((x) => !x.settled).map((x) => x.id);
-        if (!ids.length) return;
-        state.settle.expenses.forEach((x) => { if (ids.indexOf(x.id) >= 0) x.settled = true; });
-        save(); render();
-        toast("정산 완료! " + ids.length + "건을 정산에서 뺐어요", { label: "되돌리기", fn: () => {
-          state.settle.expenses.forEach((x) => { if (ids.indexOf(x.id) >= 0) delete x.settled; });
-          save(); render();
-        } }, 6000);
+      case "exp-settle": {
+        const x = state.settle.expenses.find((y) => y.id === id);
+        if (!x) return;
+        if (x.settled) delete x.settled; else x.settled = true;
+        save(); render(); toast(x.settled ? "정산 완료 · 정산에서 뺐어요" : "다시 정산에 넣었어요");
         return;
       }
       case "settle-save": {
