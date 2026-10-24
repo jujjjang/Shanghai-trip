@@ -1646,8 +1646,16 @@
       row("share", "users", "친구랑 같이 쓰기", shareSub()) +
       row("backup", "download", "데이터 백업 파일 받기", "일정 · 정산 · 기록 글 (사진 빼고)") +
       '<button class="row" type="button" data-act="reset"><span class="ri">' + ICON.undo + '</span><span class="rt"><b>초기 세팅으로 되돌리기</b><span>홈 위젯 · 준비물 · 필수 앱 · 할 일</span></span><span class="rv">' + ICON.chevR + "</span></button>" +
+      '<button class="row" type="button" data-act="app-update"><span class="ri">' + ICON.sync + '</span><span class="rt"><b>앱 버전</b><span id="appVer">확인 중…</span></span><span class="rv">새로 받기</span></button>' +
       "</div>";
+    setTimeout(showAppVer, 0);
     return s;
+  }
+  /* which version this phone is running: the name of the offline copy the service worker keeps */
+  function showAppVer() {
+    const el = document.getElementById("appVer");
+    if (!el || !window.caches) { if (el) el.textContent = "알 수 없음"; return; }
+    caches.keys().then((ks) => { const v = ks.filter((k) => /^sht-\d{4}-/.test(k)).sort().pop(); el.textContent = v ? v.replace("sht-", "") : "알 수 없음"; }).catch(() => { el.textContent = "알 수 없음"; });
   }
 
   /* ---------- render ---------- */
@@ -3203,6 +3211,12 @@
         return;
       }
       case "reset": resetSheet(); return;
+      case "app-update": {
+        if (!swReg) { location.reload(); return; }
+        wantUpd = true; toast("새 버전 찾는 중…");
+        swReg.update().then(() => { setTimeout(() => { if (!swReg.installing && !swReg.waiting) { wantUpd = false; toast("지금이 최신 버전이에요"); } }, 2500); }).catch(() => { wantUpd = false; toast("인터넷 연결을 확인해 주세요"); });
+        return;
+      }
     }
   });
 
@@ -3322,15 +3336,20 @@
   document.addEventListener("visibilitychange", () => { if (!document.hidden) { applyTheme(); if (ui.tab === "home" && !editing) render(); } });
   if (mqDark) { try { mqDark.addEventListener("change", applyTheme); } catch (e) { try { mqDark.addListener(applyTheme); } catch (e2) {} } }
 
+  let swReg = null, wantUpd = false;
   if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
     let updReady = false;
+    const opened = Date.now();
     navigator.serviceWorker.register("sw.js").then((reg) => {
+      swReg = reg;
       reg.addEventListener("updatefound", () => {
         const w = reg.installing;
         if (!w) return;
         w.addEventListener("statechange", () => {
           if (w.state === "installed" && navigator.serviceWorker.controller) {
             updReady = true;
+            /* just opened (or asked for it): nothing is in progress yet, so switch at once */
+            if ((Date.now() - opened < 12000 || wantUpd) && sheet.hidden && !editing) { location.reload(); return; }
             toast("새 버전이 있어요", { label: "새로고침", fn: () => location.reload() }, 15000);
           }
         });
@@ -3344,6 +3363,7 @@
         check();
       });
       setInterval(check, 30 * 60 * 1000);
+      check();
     }).catch(() => {});
   }
 })();
