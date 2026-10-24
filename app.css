@@ -1408,23 +1408,23 @@ body { background-color: var(--edge) !important; }
 /* 할 일 · 준비물 sheet: box ticks, words edit, grip drags */
 .cklist.ckedit .li { gap: 2px; }
 .ckbox { flex: none !important; min-height: 48px; padding-right: 8px; }
-.ck-t { flex: 1; min-width: 0; min-height: 44px; padding: 0; border: 0; background: none; color: var(--ink); font: inherit; font-size: 15px; text-align: left; cursor: text; display: flex; align-items: center; gap: 4px; }
+.ck-t { flex: 1; min-width: 0; min-height: 44px; padding: 0; border: 0; background: none; color: var(--ink); font: inherit; font-size: 15px; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 4px; }
 .ckbox.on + .ck-t { color: var(--soft); text-decoration: line-through; }
 .ck-edit { flex: 1; min-width: 0; min-height: 38px; margin: 5px 0; padding: 0 10px; border-radius: 10px; border: 0; box-shadow: inset 0 0 0 1.5px var(--accent); background: var(--inner); font: inherit; font-size: 16px; color: var(--ink); outline: none; }
 .ck-grip { flex: none; display: grid; place-items: center; width: 34px; height: 44px; color: var(--soft); cursor: grab; touch-action: none; -webkit-user-select: none; user-select: none; }
 .ck-grip svg { width: 18px; height: 18px; }
 .cklist .li.dragging { background: var(--surface); box-shadow: var(--shadow-sm); border-radius: 12px; position: relative; z-index: 2; }
+/* sheet rows slide left over their 나만/같이 · 고치기 · 지우기 buttons */
+.cklist .sli { position: relative; overflow: hidden; display: block; }
+.sli-in { position: relative; z-index: 1; display: flex; align-items: center; gap: 2px; min-height: 48px; background: var(--surface); transition: transform .22s ease; touch-action: pan-y; }
+.sli .wsw-acts { top: 7px; bottom: 7px; gap: 5px; }
+.sli.open .wsw-acts { visibility: visible; }
+.sli .wsw-acts button { width: 40px; border-radius: 11px; }
+.sli .wsw-acts button svg { width: 18px; height: 18px; }
 .ck-tip { margin: 2px 2px 0; font-size: 12px; display: flex; align-items: center; gap: 3px; flex-wrap: wrap; }
 .ck-tip svg { width: 13px; height: 13px; }
-.cklist .li.open { background: var(--inner); border-radius: 12px 12px 0 0; margin: 0 -6px 0 -8px; padding: 0 6px 0 8px; }
-.ck-bar { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 -6px 0 -8px; padding: 0 6px 10px 48px; background: var(--inner); border-radius: 0 0 12px 12px; }
 .ck-tip { column-gap: 12px; }
 .ck-tip span { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
-.cklist .ck-bar + .li { border-top: 1px solid var(--line-2); }
-.ck-bar button { display: inline-flex; align-items: center; gap: 4px; min-height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; }
-.ck-bar button svg { width: 14px; height: 14px; }
-.ck-bar button.del { color: var(--coral-ink, #B83A0E); }
-.ck-bar button.del.armed { background: var(--coral-soft, #FFE9E2); border-color: transparent; }
 .ck-note svg { width: 13px; height: 13px; vertical-align: -2px; }
 /* 밤 하늘 별똥별: 가끔 하나씩, 1초쯤 스윽 */
 .hero-art .shoot { opacity: 0; animation: shoot 30s linear infinite; }

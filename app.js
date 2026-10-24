@@ -747,7 +747,7 @@
   let ptrDown = false;
   document.addEventListener("pointerdown", () => { ptrDown = true; }, true);
   ["pointerup", "pointercancel"].forEach((n) => document.addEventListener(n, () => { setTimeout(() => { ptrDown = false; }, 0); }, true));
-  const ckWords = (key, x) => '<button class="ck-t" type="button" data-act="li-edit" data-list="' + key + '" data-id="' + x.id + '" aria-label="' + esc(x.t) + ' 고치기">' + esc(x.t) + (x.list ? '<i class="mine-ic">' + ICON.lock + "</i>" : "") + "</button>";
+  const ckWords = (key, x) => '<label class="ck-t" for="ckx-' + x.id + '">' + esc(x.t) + (x.list ? '<i class="mine-ic">' + ICON.lock + "</i>" : "") + "</label>";
   function ckMove(key, id) {
     /* it stays where it was in the list on this phone */
     if (canMine(key)) { ui.ckOrd = ui.ckOrd || {}; ui.ckOrd[key] = ckList(key).map((y) => y.id); saveUI(); }
@@ -1143,6 +1143,22 @@
       }
     }
     return "";
+  }
+  /* delete a checklist item, with 되돌리기 putting it back in the same spot */
+  function ckDelUndo(k, id) {
+    const arrs = [state.mine, state.prep[k] || state.tasks];
+    let home = null;
+    arrs.forEach((a) => { const i = a.findIndex((y) => y.id === id); if (i >= 0 && !home) home = { a: a === state.mine ? "mine" : state.prep[k] ? "prep" : "tasks", i, it: a[i] }; });
+    const wasDone = !!state.done[id];
+    const redraw = () => { render(); if (sheetKey() === "ck-" + k) ckSheet(k); };
+    ckDel(k, id); delete state.done[id]; openSw = null; save(); redraw();
+    if (!home) { toast("지웠어요"); return; }
+    toast("'" + home.it.t + "' 지웠어요", { label: "되돌리기", fn: () => {
+      const a = home.a === "mine" ? state.mine : home.a === "prep" ? state.prep[k] : state.tasks;
+      if (!a.some((y) => y.id === id)) a.splice(Math.min(home.i, a.length), 0, home.it);
+      if (wasDone) state.done[id] = true;
+      save(); redraw();
+    } }, 5000);
   }
   /* a widget row: tick it, or slide it left for 나만/같이 · 고치기 · 지우기 */
   function wckRow(key, x) {
@@ -1778,11 +1794,16 @@
         '<button class="btn primary" type="button" data-act="li-add" data-list="' + key + '">추가</button></div>' +
         (canMine(key) ? '<p class="note ck-note">' + ICON.lock + " 나만 보는 " + (key === "pack" ? "준비물" : "할 일") + " · 나머지는 같이 봐요 · 체크는 각자</p>" : "") +
         '<div class="ckhead"><div class="wprog" data-prog="' + key + '"><i style="width:' + (list.length ? (doneN / list.length) * 100 : 0) + '%"></i></div><span class="mono" data-count="' + key + '">' + doneN + " / " + list.length + "</span></div>" +
-        (list.length ? '<div class="cklist ckedit">' + list.map((x) => '<div class="li" data-id="' + x.id + '">' +
-          '<label class="ck ckbox' + (state.done[x.id] ? " on" : "") + '" aria-label="' + esc(x.t) + ' 체크"><input type="checkbox" data-ck="' + x.id + '"' + (state.done[x.id] ? " checked" : "") + "></label>" +
-          ckWords(key, x) +
-          '<span class="ck-grip" data-grip="' + key + '" aria-label="끌어서 순서 바꾸기">' + ICON.grip + "</span></div>").join("") + "</div>" +
-          '<p class="note ck-tip"><span>글자 누르면 고치기' + (canMine(key) ? " · 나만 보기" : "") + " · 지우기</span><span>" + ICON.grip + " 끌면 순서 바꾸기</span></p>" : '<p class="empty">아직 비어 있어요</p>')
+        (list.length ? '<div class="cklist ckedit">' + list.map((x) => {
+          const b = (act, cls, ic, label) => '<button class="' + cls + '" type="button" data-act="' + act + '" data-list="' + key + '" data-id="' + x.id + '" aria-label="' + label + '">' + ic + "</button>";
+          return '<div class="li sli" data-id="' + x.id + '"><div class="wsw-acts">' +
+            (canMine(key) ? b("li-mine", "wa-mine", x.list ? ICON.users : ICON.lock, x.list ? "같이 보기로" : "나만 보기") : "") +
+            b("li-edit", "wa-edit", ICON.pen, "고치기") + b("li-del", "wa-del", ICON.trash, "지우기") + '</div><div class="sli-in">' +
+            '<label class="ck ckbox' + (state.done[x.id] ? " on" : "") + '" aria-label="' + esc(x.t) + ' 체크"><input type="checkbox" id="ckx-' + x.id + '" data-ck="' + x.id + '"' + (state.done[x.id] ? " checked" : "") + "></label>" +
+            ckWords(key, x) +
+            '<span class="ck-grip" data-grip="' + key + '" aria-label="끌어서 순서 바꾸기">' + ICON.grip + "</span></div></div>";
+        }).join("") + "</div>" +
+          '<p class="note ck-tip"><span>왼쪽으로 밀면 ' + (canMine(key) ? "나만 보기 · " : "") + "고치기 · 지우기</span><span>" + ICON.grip + " 끌면 순서 바꾸기</span></p>" : '<p class="empty">아직 비어 있어요</p>')
     });
   }
   function papagoSheet() {
@@ -2298,6 +2319,7 @@
     const g = e.target.closest(".ck-grip");
     if (!g) return;
     e.preventDefault();
+    closeSwipe();
     const li = g.closest(".li");
     ckDrag = { li, key: g.getAttribute("data-grip"), id: e.pointerId, list: li.parentNode };
     li.classList.add("dragging");
@@ -2407,6 +2429,16 @@
       const r = over.getBoundingClientRect();
       ul.insertBefore(rg.li, e.clientY > r.top + r.height / 2 ? over.nextSibling : over);
     }
+  });
+  /* 할 일 · 준비물 sheet: slide a row left for 나만/같이 · 고치기 · 지우기 */
+  sheet.addEventListener("pointerdown", (e) => {
+    swallow = false;
+    if (e.button && e.button > 0) return;
+    if (e.target.closest(".wsw-acts, .ck-grip, .ck-edit")) return;
+    const row = e.target.closest(".cklist .sli > .sli-in");
+    if (!row) { closeSwipe(); return; }
+    const w = row.parentNode.querySelector(".wsw-acts").offsetWidth + 10;
+    rg = { row, w, id: e.pointerId, x0: e.clientX, y0: e.clientY, lastY: e.clientY, base: openSw === row ? -w : 0, mode: null, t: 0 };
   });
   function endRowGesture() {
     if (!rg) return;
@@ -2910,7 +2942,7 @@
     /* in edit mode, widgets only move or come out — nothing inside them fires */
     if (editing && e.target.closest("#wgrid") && !e.target.closest(".w-del, .w-add, .w-reset")) { e.preventDefault(); return; }
     if (swallow) { swallow = false; e.preventDefault(); return; }
-    if (openSw && !e.target.closest(".sw-del, .wsw-acts")) { const was = openSw; closeSwipe(); if (e.target.closest(".swipe, .wsw") && was.contains(e.target)) { e.preventDefault(); return; } }
+    if (openSw && !e.target.closest(".sw-del, .wsw-acts")) { const was = openSw; closeSwipe(); if (e.target.closest(".swipe, .wsw, .sli") && was.contains(e.target)) { e.preventDefault(); return; } }
     /* ticking a box inside a checklist widget shouldn't also open the big list */
     if (e.target.closest(".wck")) return;
     const lk = e.target.closest("a[href]");
@@ -3099,50 +3131,25 @@
         return;
       }
       case "ck-mine": ckMineOn = !ckMineOn; { const k = t.getAttribute("data-list"), inp = document.getElementById("add-" + k), v = inp ? inp.value : ""; ckSheet(k); const again = document.getElementById("add-" + k); if (again) { again.value = v; again.focus(); } } return;
-      case "li-mine": { const k = t.getAttribute("data-list"), r = ckMove(k, id); save(); render(); ckSheet(k); if (r) toast(r === "나만" ? "이제 내 폰에만 보여요" : "이제 친구 폰에도 보여요"); return; }
+      case "li-mine": { const k = t.getAttribute("data-list"), r = ckMove(k, id); openSw = null; save(); render(); ckSheet(k); if (r) toast(r === "나만" ? "이제 내 폰에만 보여요" : "이제 친구 폰에도 보여요"); return; }
       case "li-edit": { /* the words turn into a box right there; Enter or tapping away saves */
         const key = t.getAttribute("data-list"), x = ckList(key).find((y) => y.id === id);
-        if (!x) return;
+        const row = t.closest(".sli"), words = row && row.querySelector(".ck-t");
+        closeSwipe(); openSw = null;
+        if (!x || !words) return;
         const inp = document.createElement("input");
         inp.className = "ck-edit"; inp.value = x.t; inp.setAttribute("enterkeyhint", "done"); inp.setAttribute("aria-label", "고치기");
-        t.replaceWith(inp);
-        const row = inp.closest(".li"), bar = document.createElement("div");
-        bar.className = "ck-bar";
-        bar.innerHTML = (canMine(key) ? '<button type="button" data-b="mine">' + (x.list ? ICON.users + "같이 보기로" : ICON.lock + "나만 보기") + "</button>" : "") +
-          '<button type="button" data-b="del" class="del">' + ICON.trash + "지우기</button>";
-        row.classList.add("open"); row.after(bar);
+        words.replaceWith(inp);
         inp.focus(); inp.select();
         let over = false;
-        const keepText = () => { const v = inp.value.trim(); if (v && v !== x.t) x.t = v; };
-        /* close just this row (not the whole sheet), so a tap that ended the editing still lands where it was aimed */
         const done = (ok) => {
           if (over) return;
           over = true;
           const v = inp.value.trim();
-          if (ok && v && v !== x.t) { x.t = v; save(); render(); }
-          const close = () => {
-            const tmp = document.createElement("div"); tmp.innerHTML = ckWords(key, x);
-            if (inp.isConnected) inp.replaceWith(tmp.firstChild);
-            bar.remove(); row.classList.remove("open");
-          };
-          /* tapped somewhere else: wait for that tap to finish, or the rows below would jump up under the finger */
-          if (ptrDown) { let gone = false; const go = () => { if (!gone) { gone = true; setTimeout(close, 0); } }; document.addEventListener("click", go, { once: true, capture: true }); setTimeout(go, 450); } else close();
+          if (ok && v && v !== x.t) { x.t = v; save(); render(); toast("고쳤어요"); }
+          const tmp = document.createElement("div"); tmp.innerHTML = ckWords(key, x);
+          if (inp.isConnected) inp.replaceWith(tmp.firstChild);
         };
-        ["pointerdown", "mousedown"].forEach((n) => bar.addEventListener(n, (ev) => ev.preventDefault())); /* keep the box focused while tapping these */
-        bar.addEventListener("click", (ev) => {
-          const b = ev.target.closest("button[data-b]");
-          if (!b) return;
-          ev.stopPropagation();
-          if (b.getAttribute("data-b") === "mine") {
-            over = true; keepText();
-            const r = ckMove(key, id); save(); render(); ckSheet(key);
-            if (r) toast(r === "나만" ? "이제 내 폰에만 보여요" : "이제 친구 폰에도 보여요");
-            return;
-          }
-          if (!b.classList.contains("armed")) { b.classList.add("armed"); b.lastChild.textContent = "정말 지우기"; return; }
-          over = true;
-          ckDel(key, id); delete state.done[id]; save(); render(); ckSheet(key); toast("지웠어요");
-        });
         inp.addEventListener("keydown", (ev) => { if (ev.key === "Enter") { ev.preventDefault(); done(true); } else if (ev.key === "Escape") done(false); });
         inp.addEventListener("blur", () => done(true));
         return;
@@ -3170,30 +3177,7 @@
         const inp = sheet.querySelector('input[name="t"]'); if (inp) { inp.focus(); inp.select(); }
         return;
       }
-      case "wck-del": {
-        const k = t.getAttribute("data-list");
-        /* remember where it sat, so 되돌리기 puts it back in the same spot */
-        const arrs = [state.mine, state.prep[k] || state.tasks];
-        let home = null;
-        arrs.forEach((a) => { const i = a.findIndex((y) => y.id === id); if (i >= 0 && !home) home = { a: a === state.mine ? "mine" : state.prep[k] ? "prep" : "tasks", i, it: a[i] }; });
-        const wasDone = !!state.done[id];
-        ckDel(k, id); delete state.done[id]; openSw = null; save(); render();
-        if (!home) { toast("지웠어요"); return; }
-        toast("'" + home.it.t + "' 지웠어요", { label: "되돌리기", fn: () => {
-          const a = home.a === "mine" ? state.mine : home.a === "prep" ? state.prep[k] : state.tasks;
-          if (!a.some((y) => y.id === id)) a.splice(Math.min(home.i, a.length), 0, home.it);
-          if (wasDone) state.done[id] = true;
-          save(); render();
-        } }, 5000);
-        return;
-      }
-      case "li-del": {
-        const key = t.getAttribute("data-list");
-        ckDel(key, id);
-        delete state.done[id];
-        save(); render(); ckSheet(key); toast("지웠어요");
-        return;
-      }
+      case "wck-del": case "li-del": ckDelUndo(t.getAttribute("data-list"), id); return;
       case "copy": copyText(t.getAttribute("data-v"), "복사했어요: " + t.getAttribute("data-v")); return;
       case "info-add": infoSheet(null); return;
       case "info-edit": infoSheet(id); return;
