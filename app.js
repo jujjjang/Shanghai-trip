@@ -1144,13 +1144,20 @@
     }
     return "";
   }
+  /* a widget row: tick it, or slide it left for 나만/같이 · 고치기 · 지우기 */
+  function wckRow(key, x) {
+    const b = (act, cls, ic, label) => '<button class="' + cls + '" type="button" data-act="' + act + '" data-list="' + key + '" data-id="' + x.id + '" aria-label="' + label + '">' + ic + "</button>";
+    return '<div class="wsw"><div class="wsw-acts">' +
+      (canMine(key) ? b("wck-mine", "wa-mine", x.list ? ICON.users : ICON.lock, x.list ? "같이 보기로" : "나만 보기") : "") +
+      b("wck-edit", "wa-edit", ICON.pen, "고치기") + b("wck-del", "wa-del", ICON.trash, "지우기") + "</div>" + ckHtml(x, esc(x.t), "wck") + "</div>";
+  }
   /* checklist widgets: the whole list, scrollable; tap anywhere else to open it big */
   function wCheck(key, wid) {
     const list = ckList(key), doneN = list.filter((x) => state.done[x.id]).length, title = ckTitle(key);
     const sorted = list.filter((x) => !state.done[x.id]).concat(list.filter((x) => state.done[x.id]));
     return wrapW(wid || key, '<div class="hd"><span class="lbl">' + esc(title) + '</span><button class="wedit-ic" type="button" data-act="ck-sheet" data-list="' + key + '" aria-label="' + esc(title) + ' 추가 · 편집">' + ICON.pen + "</button></div>" +
       '<div class="wprog" data-prog="' + key + '"><i style="width:' + (list.length ? (doneN / list.length) * 100 : 0) + '%"></i></div>' +
-      '<div class="wlist">' + (sorted.length ? sorted.map((x) => ckHtml(x, esc(x.t), "wck")).join("") : '<span class="sub" style="padding:6px 0">비어 있어요 · 연필을 눌러 추가</span>') + "</div>", "wcheck", ' data-act="ck-sheet" data-list="' + key + '"');
+      '<div class="wlist">' + (sorted.length ? sorted.map((x) => wckRow(key, x)).join("") : '<span class="sub" style="padding:6px 0">비어 있어요 · 연필을 눌러 추가</span>') + "</div>", "wcheck", ' data-act="ck-sheet" data-list="' + key + '"');
   }
   function wFlight(ctx) {
     const legs = state.flight.legs;
@@ -2361,11 +2368,12 @@
   }
   view.addEventListener("pointerdown", (e) => {
     swallow = false;
-    if (ui.tab !== "plan" || (e.button && e.button > 0)) return;
-    if (e.target.closest(".sw-del")) return;
-    const row = e.target.closest(".swipe > .prow, .swipe > .srow");
+    if (!(ui.tab === "plan" || (ui.tab === "home" && !editing)) || (e.button && e.button > 0)) return;
+    if (e.target.closest(".sw-del, .wsw-acts")) return;
+    const row = e.target.closest(".swipe > .prow, .swipe > .srow, .wsw > .wck");
     if (!row) { closeSwipe(); return; }
-    rg = { row, id: e.pointerId, x0: e.clientX, y0: e.clientY, lastY: e.clientY, base: openSw === row ? -SW_W : 0, mode: null, t: setTimeout(startRowDrag, e.pointerType === "mouse" ? 260 : 380) };
+    const acts = row.parentNode.querySelector(".wsw-acts"), w = acts ? acts.offsetWidth + 8 : SW_W;
+    rg = { row, w, id: e.pointerId, x0: e.clientX, y0: e.clientY, lastY: e.clientY, base: openSw === row ? -w : 0, mode: null, t: setTimeout(startRowDrag, e.pointerType === "mouse" ? 260 : 380) };
   });
   document.addEventListener("pointermove", (e) => {
     if (!rg || e.pointerId !== rg.id) return;
@@ -2378,7 +2386,7 @@
     }
     e.preventDefault();
     if (rg.mode === "swipe") {
-      const x = Math.max(-SW_W - 30, Math.min(0, rg.base + dx));
+      const x = Math.max(-rg.w - 30, Math.min(0, rg.base + dx));
       rg.row.style.transform = "translateX(" + x + "px)";
       rg.row.parentNode.classList.toggle("open", x < -4);
       rg.dx = dx;
@@ -2401,7 +2409,7 @@
       swallow = true;
       g.row.style.transition = "";
       const x = g.base + (g.dx || 0);
-      if (x < -SW_W / 2) { g.row.style.transform = "translateX(" + -SW_W + "px)"; g.row.parentNode.classList.add("open"); openSw = g.row; }
+      if (x < -g.w / 2) { g.row.style.transform = "translateX(" + -g.w + "px)"; g.row.parentNode.classList.add("open"); openSw = g.row; }
       else { g.row.style.transform = ""; g.row.parentNode.classList.remove("open"); if (openSw === g.row) openSw = null; }
     } else if (g.mode === "drag") {
       swallow = true;
@@ -2893,10 +2901,10 @@
   document.addEventListener("click", (e) => {
     /* in edit mode, widgets only move or come out — nothing inside them fires */
     if (editing && e.target.closest("#wgrid") && !e.target.closest(".w-del, .w-add, .w-reset")) { e.preventDefault(); return; }
+    if (swallow) { swallow = false; e.preventDefault(); return; }
+    if (openSw && !e.target.closest(".sw-del, .wsw-acts")) { const was = openSw; closeSwipe(); if (e.target.closest(".swipe, .wsw") && was.contains(e.target)) { e.preventDefault(); return; } }
     /* ticking a box inside a checklist widget shouldn't also open the big list */
     if (e.target.closest(".wck")) return;
-    if (swallow) { swallow = false; e.preventDefault(); return; }
-    if (openSw && !e.target.closest(".sw-del")) { const was = openSw; closeSwipe(); if (e.target.closest(".swipe") && was.contains(e.target)) { e.preventDefault(); return; } }
     const lk = e.target.closest("a[href]");
     if (lk && !lk.hasAttribute("data-act")) return;
     const t = e.target.closest("[data-act], [data-href]");
@@ -3129,6 +3137,46 @@
         });
         inp.addEventListener("keydown", (ev) => { if (ev.key === "Enter") { ev.preventDefault(); done(true); } else if (ev.key === "Escape") done(false); });
         inp.addEventListener("blur", () => done(true));
+        return;
+      }
+      case "wck-mine": {
+        const k = t.getAttribute("data-list"), r = ckMove(k, id);
+        openSw = null; save(); render();
+        if (r) toast(r === "나만" ? "이제 내 폰에만 보여요" : "이제 친구 폰에도 보여요");
+        return;
+      }
+      case "wck-edit": {
+        const k = t.getAttribute("data-list"), x = ckList(k).find((y) => y.id === id);
+        openSw = null; closeSwipe();
+        if (!x) return;
+        openSheet({
+          key: "wck-edit", title: "고치기", body: field("t", ckTitle(k), x.t),
+          foot: '<span class="grow"></span><button class="btn" type="button" data-act="sh-close">취소</button><button class="btn primary" type="button" data-act="sh" data-k="save">저장</button>',
+          on(kk, v) {
+            if (kk !== "save") return;
+            if (!v.t) { toast("내용을 적어주세요"); return; }
+            if (v.t !== x.t) { x.t = v.t; save(); }
+            closeSheet(); render(); toast("고쳤어요");
+          }
+        });
+        const inp = sheet.querySelector('input[name="t"]'); if (inp) { inp.focus(); inp.select(); }
+        return;
+      }
+      case "wck-del": {
+        const k = t.getAttribute("data-list");
+        /* remember where it sat, so 되돌리기 puts it back in the same spot */
+        const arrs = [state.mine, state.prep[k] || state.tasks];
+        let home = null;
+        arrs.forEach((a) => { const i = a.findIndex((y) => y.id === id); if (i >= 0 && !home) home = { a: a === state.mine ? "mine" : state.prep[k] ? "prep" : "tasks", i, it: a[i] }; });
+        const wasDone = !!state.done[id];
+        ckDel(k, id); delete state.done[id]; openSw = null; save(); render();
+        if (!home) { toast("지웠어요"); return; }
+        toast("'" + home.it.t + "' 지웠어요", { label: "되돌리기", fn: () => {
+          const a = home.a === "mine" ? state.mine : home.a === "prep" ? state.prep[k] : state.tasks;
+          if (!a.some((y) => y.id === id)) a.splice(Math.min(home.i, a.length), 0, home.it);
+          if (wasDone) state.done[id] = true;
+          save(); render();
+        } }, 5000);
         return;
       }
       case "li-del": {
