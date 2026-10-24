@@ -1523,7 +1523,12 @@
   }, true);
 
   /* ---------- MONEY ---------- */
-  let armedExp = null, armedTimer = null;
+  /* the little bar under a tapped expense */
+  function expBarClose() {
+    document.querySelectorAll(".exp-acts").forEach((b) => b.remove());
+    document.querySelectorAll(".exp.sel").forEach((r) => r.classList.remove("sel"));
+  }
+  document.addEventListener("click", (e) => { if (!e.target.closest(".exp-acts, .exp-open")) expBarClose(); }, true);
   function dayLabel(ts) { const t = new Date(ts); return (t.getMonth() + 1) + "." + t.getDate() + " " + "일월화수목금토"[t.getDay()]; }
   /* ---------- 가계부: every expense by day, with 정산 for the shared ones ----------
      같이 쓴 돈 → state.settle.expenses (synced, split N ways) · 나만 쓴 돈 → state.myExp (this phone only, not split) */
@@ -1600,11 +1605,7 @@
     if (open.length) s += '<div class="st-who">' + ppl.map((p) => '<div class="sc-p"><span>' + esc(p) + ' 냄</span><span class="mono">' + amtFmt(c.paid[p] || 0, c) + "</span></div>").join("") +
       '<p class="note">정산할 돈 ' + amtFmt(c.total, c) + " · 1인당 " + amtFmt(c.share, c) + "</p></div>";
     if (c.skipped) s += '<p class="note">원화로 넣은 지출 ' + c.skipped + "건은 환율을 넣어야 합산돼요</p>";
-    const rows = open.concat(shared.filter((e) => e.settled));
-    s += '<details class="st-fold" data-fold="st-list"' + (ui.open["st-list"] !== false ? " open" : "") + '><summary><b>지출별 정산</b><span class="note">' + shared.length + "건 중 " + doneN + '건 완료</span><span class="chev" aria-hidden="true"></span></summary>' +
-      '<div class="st-list">' + rows.map((e) => '<label class="st-row' + (e.settled ? " on" : "") + '"><input type="checkbox" data-settle="' + e.id + '"' + (e.settled ? " checked" : "") + ">" +
-        '<span class="st-t"><b>' + esc(e.what || catOf(e.cat)[1]) + "</b><small>" + dayLabel(e.at || 0).split(" ")[0] + " · " + esc(e.payer) + ' 냄</small></span><span class="st-a">' + (e.cur === "KRW" ? wonFmt(+e.amt) : yuanFmt(+e.amt)) + "</span></label>").join("") +
-      '</div><p class="note st-tip">주고받은 건 체크 · 체크하면 정산에서 빠져요</p></details>';
+    s += '<p class="note st-tip">' + ICON.check + (doneN ? "정산 완료 " + doneN + "건 빠짐 · 지출 누르면 정산 완료" : "지출 내역에서 지출을 누르면 정산 완료") + "</p>";
     return s + "</div></div>";
   }
   /* 내 지출: total + today; opens to show where it went (공동 지출 내 몫 / 개인 지출, then by kind) */
@@ -1617,7 +1618,7 @@
       '<div class="stile"><span>오늘</span><b>' + amtFmt(L.today, c) + '</b></div></div><span class="chev" aria-hidden="true"></span></summary><div class="ms-more">' +
       (L.all.length ? '<div class="sc-p"><span>' + ICON.users + "공동 지출 · 내 몫</span><b>" + amtFmt(shared, c) + "</b></div>" +
         '<div class="sc-p"><span>' + ICON.lock + "개인 지출</span><b>" + amtFmt(own, c) + "</b></div>" +
-        '<div class="ms-cats">' + cats.map((k) => '<div class="ms-cat">' + ICON[k[2]] + "<span>" + k[1] + '</span><i><i style="width:' + ((L.cats[k[0]] / max) * 100).toFixed(1) + '%"></i></i><b>' + amtFmt(L.cats[k[0]], c) + "</b></div>").join("") + "</div>"
+        '<div class="ms-cats">' + cats.map((k) => '<div class="ms-cat" style="' + avStyle(k[3]) + '">' + catIc(k[0]) + "<span>" + k[1] + '</span><i><i style="width:' + ((L.cats[k[0]] / max) * 100).toFixed(1) + '%"></i></i><b>' + amtFmt(L.cats[k[0]], c) + "</b></div>").join("") + "</div>"
         : '<p class="note">아직 적은 지출이 없어요</p>') + "</div></details></div>";
   }
   function moneyHtml() {
@@ -1634,11 +1635,10 @@
       list.forEach((e) => {
         const dl = grp(e);
         if (dl !== last) { s += (last ? "</div></div>" : "") + '<div class="exp-dh"><span>' + dl + "</span><span>" + amtFmt(days[dl], c) + '</span></div><div class="pad"><div class="box exp-box">'; last = dl; }
-        const armed = armedExp === e.id;
-        s += '<div class="exp' + (e.settled ? " settled" : "") + '">' + catIc(e.cat) + '<button class="exp-open" type="button" data-act="exp-edit" data-id="' + e.id + '" aria-label="' + esc(e.what || "지출") + ' 금액 고치기"><span class="w2"><b>' + esc(e.what || catOf(e.cat)[1]) +
+        s += '<div class="exp' + (e.settled ? " settled" : "") + '" data-id="' + e.id + '">' + catIc(e.cat) + '<button class="exp-open" type="button" data-act="exp-tap" data-id="' + e.id + '" aria-label="' + esc(e.what || "지출") + ' 정산 · 고치기"><span class="w2"><b>' + esc(e.what || catOf(e.cat)[1]) +
           (e.mine ? '<i class="mine-ic" title="나만 쓴 돈">' + ICON.lock + "</i>" : "") + "</b><span>" + (isPreExp(e) ? dayLabel(e.at || 0).split(" ")[0] + " · " : "") + (e.mine ? "개인 지출" : esc(e.payer) + " 냄") + "</span></span>" +
-          '<span class="a">' + (e.cur === "KRW" ? wonFmt(+e.amt) : yuanFmt(+e.amt)) + (e.cur !== "KRW" && c.rate ? "<small>" + wonFmt(e.amt * c.rate) + "</small>" : "") + "</span></button>" +
-          '<button class="btn sm ' + (armed ? "danger armed" : "ghost") + '" type="button" data-act="exp-del" data-id="' + e.id + '" aria-label="이 지출 지우기">' + (armed ? "지우기" : ICON.x) + "</button></div>";
+          '<span class="a">' + (e.cur === "KRW" ? wonFmt(+e.amt) : yuanFmt(+e.amt)) + (e.settled ? '<small class="exp-ok">' + ICON.check + "정산 완료</small>" : e.cur !== "KRW" && c.rate ? "<small>" + wonFmt(e.amt * c.rate) + "</small>" : "") + "</span></button>" +
+          '<button class="btn sm ghost" type="button" data-act="exp-del" data-id="' + e.id + '" aria-label="이 지출 지우기">' + ICON.x + "</button></div>";
       });
       s += "</div></div>";
     } else s += '<div class="pad"><p class="note" style="text-align:center;padding:18px 0">＋를 눌러 첫 지출을 적어보세요</p></div>';
@@ -3200,13 +3200,36 @@
         return;
       }
       case "exp-new": expNewSheet(); return;
+      case "exp-tap": { /* tap an expense: a small bar opens under it (tap again to close) */
+        const row = t.closest(".exp"), had = row && row.classList.contains("sel");
+        expBarClose();
+        if (!row || had) return;
+        const e = state.settle.expenses.find((x) => x.id === id), mine = !e && state.myExp.find((x) => x.id === id);
+        if (!e && !mine) return;
+        const bar = document.createElement("div");
+        bar.className = "exp-acts";
+        bar.innerHTML = (e ? '<button type="button" class="' + (e.settled ? "" : "pri") + '" data-act="exp-settle" data-id="' + id + '">' + (e.settled ? "정산 완료 취소" : ICON.check + "정산 완료") + "</button>" : "") +
+          '<button type="button" data-act="exp-amt" data-id="' + id + '">' + ICON.pen + "금액 고치기</button>";
+        row.classList.add("sel"); row.after(bar);
+        return;
+      }
+      case "exp-settle": {
+        const x = state.settle.expenses.find((y) => y.id === id);
+        if (!x) return;
+        if (x.settled) delete x.settled; else x.settled = true;
+        save(); render(); toast(x.settled ? "정산 완료 · 정산에서 뺐어요" : "다시 정산에 넣었어요");
+        return;
+      }
+      case "exp-amt":
       case "exp-edit": { /* the amount turns into a box right there; Enter or tapping away saves it */
         const e = state.settle.expenses.find((x) => x.id === id) || state.myExp.find((x) => x.id === id);
-        if (!e) return;
+        expBarClose();
+        const ob = act === "exp-amt" ? document.querySelector('.exp[data-id="' + id + '"] .exp-open') : t;
+        if (!e || !ob) return;
         const box = document.createElement("div");
         box.className = "exp-open editing";
-        box.innerHTML = t.querySelector(".w2").outerHTML + '<span class="a"><label class="exp-edit"><span>' + (e.cur === "KRW" ? "₩" : "¥") + '</span><input inputmode="decimal" value="' + esc(e.amt) + '" aria-label="금액" autocomplete="off"></label></span>';
-        t.replaceWith(box);
+        box.innerHTML = ob.querySelector(".w2").outerHTML + '<span class="a"><label class="exp-edit"><span>' + (e.cur === "KRW" ? "₩" : "¥") + '</span><input inputmode="decimal" value="' + esc(e.amt) + '" aria-label="금액" autocomplete="off"></label></span>';
+        ob.replaceWith(box);
         const inp = box.querySelector("input");
         inp.focus(); inp.select();
         let over = false;
@@ -3221,13 +3244,16 @@
         inp.addEventListener("blur", () => done(true));
         return;
       }
-      case "exp-del": {
-        clearTimeout(armedTimer);
-        if (armedExp !== id) { armedExp = id; render(); armedTimer = setTimeout(() => { armedExp = null; render(); }, 3500); return; }
-        armedExp = null;
-        state.settle.expenses = state.settle.expenses.filter((x) => x.id !== id);
-        state.myExp = state.myExp.filter((x) => x.id !== id);
-        save(); render(); toast("지웠어요");
+      case "exp-del": { /* gone at once; 되돌리기 puts it back in the same spot */
+        const inShared = state.settle.expenses.some((x) => x.id === id), arr = inShared ? state.settle.expenses : state.myExp, i = arr.findIndex((x) => x.id === id);
+        if (i < 0) return;
+        const it = arr.splice(i, 1)[0];
+        save(); render();
+        toast("'" + (it.what || catOf(it.cat)[1]) + "' 지웠어요", { label: "되돌리기", fn: () => {
+          const a = inShared ? state.settle.expenses : state.myExp;
+          if (!a.some((x) => x.id === id)) a.splice(Math.min(i, a.length), 0, it);
+          save(); render();
+        } }, 5000);
         return;
       }
       case "settle-save": {
