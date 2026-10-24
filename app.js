@@ -827,13 +827,13 @@
     let far = "", x = -6;
     while (x < 396) {
       const w = 12 + Math.floor(rnd() * 16), h = 26 + Math.floor(rnd() * 64);
-      far += '<rect x="' + x + '" y="' + (470 - h) + '" width="' + (w - 2) + '" height="' + h + '"/>';
+      far += '<rect x="' + x + '" y="' + (470 - h) + '" width="' + (w - 2) + '" height="' + (h + 4) + '"/>';
       x += w;
     }
     const blocks = [[0, 404, 26], [24, 420, 20], [42, 380, 22], [62, 410, 18], [80, 392, 24], [102, 424, 18], [118, 400, 22], [138, 430, 16], [228, 418, 18], [342, 408, 20], [360, 380, 18], [376, 420, 16]];
     let near = "", wins = "";
     blocks.forEach((b) => {
-      near += '<rect x="' + b[0] + '" y="' + b[1] + '" width="' + b[2] + '" height="' + (470 - b[1]) + '"/>';
+      near += '<rect x="' + b[0] + '" y="' + b[1] + '" width="' + b[2] + '" height="' + (474 - b[1]) + '"/>';
       for (let yy = b[1] + 8; yy < 462; yy += 9) for (let xx = b[0] + 4; xx < b[0] + b[2] - 3; xx += 6) if (rnd() < 0.3) wins += '<rect x="' + xx + '" y="' + yy + '" width="2" height="2.6"/>';
     });
     let shim = "";
@@ -880,22 +880,22 @@
       '<ellipse cx="195" cy="476" rx="350" ry="125" fill="url(#hhaze)"/></g>' +
       '<ellipse cx="200" cy="470" rx="280" ry="110" fill="url(#hglow)"/>' +
       '<g class="far">' + far + "</g>" +
-      '<rect y="470" width="390" height="311" fill="url(#hw)"/><rect class="dy" y="470" width="390" height="311" fill="url(#hwd)"/><rect class="dk" y="470" width="390" height="311" fill="url(#hwk)"/>' +
+      '<rect y="474" width="390" height="307" fill="url(#hw)"/><rect class="dy" y="474" width="390" height="307" fill="url(#hwd)"/><rect class="dk" y="474" width="390" height="307" fill="url(#hwk)"/>' +
       '<g fill="url(#hb)">' + near +
-      '<path d="M284 470 L287 330 Q290 280 302 246 L306 250 Q314 290 316 330 L318 470 Z"/>' +
-      '<path fill-rule="evenodd" d="M248 470 L250 296 L272 282 L274 470 Z M254 297 L269 290 L269 306 L254 311 Z"/>' +
-      '<polygon points="326,470 326,370 329,370 329,350 332,350 332,334 335,334 337,300 339,334 342,334 342,350 345,350 345,370 348,370 348,470"/>' +
+      '<path d="M284 474 L287 330 Q290 280 302 246 L306 250 Q314 290 316 330 L318 474 Z"/>' +
+      '<path fill-rule="evenodd" d="M248 474 L250 296 L272 282 L274 474 Z M254 297 L269 290 L269 306 L254 311 Z"/>' +
+      '<polygon points="326,474 326,370 329,370 329,350 332,350 332,334 335,334 337,300 339,334 342,334 342,350 345,350 345,370 348,370 348,474"/>' +
       /* the three legs run on down behind the river: cut flat at the water line, so the tower stands beyond the water, not on it */
-      '<path class="hbs" d="M174 470 L190 426 M218 470 L202 426 M196 470 L196 426" stroke-width="7" stroke-linecap="butt"/>' +
+      '<path class="hbs" d="M172.5 474 L190 426 M219.5 474 L202 426 M196 474 L196 426" stroke-width="7" stroke-linecap="butt"/>' +
       '<rect x="191" y="300" width="10" height="122"/><rect x="193" y="228" width="6" height="74"/></g>' +
       '<path class="ant" d="M196 226 L196 158" stroke-width="2.4"/><circle class="tip" cx="196" cy="156" r="2.4" fill="#FFD36B"/>' +
       '<g class="win">' + wins + '<rect x="300" y="300" width="2" height="2.6"/><rect x="305" y="340" width="2" height="2.6"/><rect x="298" y="380" width="2" height="2.6"/><rect x="309" y="410" width="2" height="2.6"/><rect x="262" y="330" width="2" height="2.6"/><rect x="258" y="380" width="2" height="2.6"/><rect x="266" y="420" width="2" height="2.6"/><rect x="336" y="390" width="2" height="2.6"/><rect x="340" y="430" width="2" height="2.6"/></g>' +
       '<g class="pglow"><circle cx="196" cy="420" r="46" fill="url(#hglow)"/><circle cx="196" cy="300" r="30" fill="url(#hglow)"/></g>' +
       '<circle cx="196" cy="420" r="22" fill="url(#hp)"/><circle cx="196" cy="300" r="15" fill="url(#hp)"/><circle cx="196" cy="228" r="7.5" fill="url(#hp)"/>' +
       '<ellipse cx="189" cy="412" rx="7" ry="4.2" fill="#fff" opacity=".7" transform="rotate(-30 189 412)"/><ellipse cx="191" cy="294" rx="4.6" ry="2.8" fill="#fff" opacity=".7" transform="rotate(-30 191 294)"/>' +
-      '<rect class="hrf" x="174" y="474" width="44" height="150" fill="url(#hr)" opacity=".55"/>' +
+      '<rect class="hrf" x="174" y="478"width="44" height="150" fill="url(#hr)" opacity=".55"/>' +
       '<g class="shim">' + shim + "</g>" +
-      '<path class="hzl" d="M0 476 H390" stroke-width="1"/></svg>';
+      '<path class="hzl" d="M0 480 H390" stroke-width="1"/></svg>';
     return heroSvg;
   }
   function placeCard(st, i, list, day, nextId) {
