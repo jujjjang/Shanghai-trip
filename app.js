@@ -513,7 +513,7 @@
         : '<circle cx="236" cy="44" r="56" fill="url(#psun)"/><circle cx="236" cy="44" r="12" fill="#FFFFFF" opacity=".5"/>' + cloud(150, 40, .5, .7, 140)) + "</g>" +
       '<linearGradient id="skyf" gradientUnits="userSpaceOnUse" x1="0" y1="' + (h - 46) + '" x2="0" y2="' + h + '"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#000"/></linearGradient>' +
       '<mask id="skym"><rect width="390" height="' + h + '" fill="url(#skyf)"/></mask>' +
-      '<g class="nt" mask="url(#skym)"><g transform="' + (small ? "translate(" + f1(390 - 390 * .76) + " " + f1(h - 190 * .76) + ") scale(.76)" : "translate(0 " + dy + ")") + '">' + skyCity("url(#bfade)", "", "") + "</g></g>" +
+      '<g class="nt" mask="url(#skym)"><g transform="' + (small ? "translate(" + f1(390 - 390 * .76 - 14) + " " + f1(h - 190 * .76 - 10) + ") scale(.76)" : "translate(0 " + dy + ")") + '">' + skyCity("url(#bfade)", "", "") + "</g></g>" +
       '<g class="dy"><g transform="' + (small ? "translate(" + f1(390 - 390 * .76 - 14) + " " + f1(h - 190 * .76 - 10) + ") scale(.76)" : "translate(0 " + dy + ")") + '">' + skyCity("", "lc", "lcb") + "</g></g></svg>";
   }
   /* the little Pudong skyline in page headers; fill = gradient (밤), or classes for flat colours (낮) */
@@ -1065,21 +1065,16 @@
   }
   let dotScrub = false; /* dragging along the home card's dots: hold off re-renders until the finger lifts */
   const HERO_CARD_BEFORE = 266; /* height of the 여행 전 card area: the river sits just above it, and every day keeps that same gap */
+  const HERO_CITY_DAY = 0.88; /* city size on days with a taller card (1 = 여행 전 size) */
   function fitHero() {
-    const hero = $(".hero"), card = hero && hero.querySelector(".hero-card"), h1 = hero && hero.querySelector(".htitle");
-    if (!hero || !card || !h1) return;
+    const hero = $(".hero"), card = hero && hero.querySelector(".hero-card");
+    if (!hero || !card) return;
     const hr = hero.getBoundingClientRect(), s = Math.max(hr.width / 390, hr.height / 781);
     const lift = card.offsetHeight - HERO_CARD_BEFORE;
     if (lift < 4) { ["--wy", "--cs", "--py"].forEach((k) => hero.style.removeProperty(k)); return; }
-    /* the tower may rise up beside the weather chip (it stands in the middle), just not into the title;
-       if the chip ever reaches the middle, it stays under the chip instead */
-    const chip = hero.querySelector(".hhint > *"), cr = chip && chip.getBoundingClientRect();
-    const line = parseFloat(getComputedStyle(h1).lineHeight) || 39;
-    const under = (cr && cr.right > hr.left + hr.width / 2 - 14 ? cr.bottom + 8 : h1.getBoundingClientRect().top + line + 12) - hr.top;
-    const water = hr.height - 307 * s - lift;
-    const cs = Math.min(1, Math.max(0.55, (water - under) / (318 * s))), wy = -lift / s;
+    const cs = HERO_CITY_DAY, wy = -lift / s;
     hero.style.setProperty("--wy", wy.toFixed(1) + "px");
-    hero.style.setProperty("--cs", cs.toFixed(3));
+    hero.style.setProperty("--cs", String(cs));
     hero.style.setProperty("--py", (wy + 222 * (1 - cs)).toFixed(1) + "px");
   }
   function heroMount() {
