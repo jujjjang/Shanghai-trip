@@ -668,17 +668,12 @@ details[open] > summary .chev { margin-top: 4px; transform: rotate(-135deg); }
 .hero-art .hwat { transform: translateY(var(--wy, 0px)); }
 .hero-art .hsky { transform: translateY(var(--py, 0px)); }
 .hero-art .hwb { fill: #1C1850; }
-/* 여행 중 (the taller-card days): the city is a lighter shade (still solid) so the screen doesn't feel crowded; windows and pearls stay as they are */
-.hero.trip .hero-art .far { fill: #35297B; opacity: 1; }
-.hero.trip .hero-art .hb0 { stop-color: #241D60; }
-.hero.trip .hero-art .hb1 { stop-color: #1F1852; }
-.hero.trip .hero-art .hbs { stroke: #241D60; }
-.hero.trip .hero-art .ant { stroke: #271F64; }
-[data-theme="light"] .hero.trip .hero-art .far { fill: #C7E3F4; }
-[data-theme="light"] .hero.trip .hero-art .hb0 { stop-color: #AED7F0; }
-[data-theme="light"] .hero.trip .hero-art .hb1 { stop-color: #A4D0EE; }
-[data-theme="light"] .hero.trip .hero-art .hbs { stroke: #AAD4EF; }
-[data-theme="light"] .hero.trip .hero-art .ant { stroke: #AED7F0; }
+/* 여행 중 (the taller-card days), 밤 only: the city is a lighter shade (still solid) so the screen doesn't feel crowded; 낮 keeps the same colours as 여행 전·후 */
+:root:not([data-theme="light"]) .hero.trip .hero-art .far { fill: #35297B; opacity: 1; }
+:root:not([data-theme="light"]) .hero.trip .hero-art .hb0 { stop-color: #241D60; }
+:root:not([data-theme="light"]) .hero.trip .hero-art .hb1 { stop-color: #1F1852; }
+:root:not([data-theme="light"]) .hero.trip .hero-art .hbs { stroke: #241D60; }
+:root:not([data-theme="light"]) .hero.trip .hero-art .ant { stroke: #271F64; }
 [data-theme="light"] .hero-art .hwb { fill: #94C0E6; }
 .hero-art .tw { animation: twinkle 3.2s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: center; }
 .hero-art .tw:nth-of-type(2n) { animation-delay: -1.3s; animation-duration: 2.4s; }
