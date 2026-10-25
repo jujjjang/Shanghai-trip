@@ -499,7 +499,6 @@
     const dy = h - 190;
     const dots = [[24, 30, 1], [70, 18, .8], [118, 44, 1.1], [160, 12, .7], [196, 34, 1], [252, 14, .8], [300, 18, .9], [366, 40, .8], [190, 80, .7], [52, 84, .8], [140, 104, .6], [18, 120, .7], [96, 132, .7], [228, 108, .6]].filter((s) => s[1] < h - 56 && !(s[0] < 210 && s[1] > 22 && s[1] < 108));
     const gold = [[150, 26, 4.2], [226, 74, 3.4], [338, 22, 4.6], [380, 92, 3.4]].filter((s) => s[1] < h - 50);
-    const win = [[225, 160], [233, 166], [247, 156], [304, 122], [314, 134], [309, 152], [345, 112], [352, 142], [358, 162], [377, 150], [365, 168], [228, 170]];
     return '<svg class="hart" viewBox="0 0 390 ' + h + '" preserveAspectRatio="' + (small ? "xMaxYMax meet" : "xMaxYMax slice") + '" aria-hidden="true"><defs>' +
       '<linearGradient id="bfade" gradientUnits="userSpaceOnUse" x1="0" y1="' + (60 + dy) + '" x2="0" y2="' + (190 + dy) + '"><stop class="bt" offset="0"/><stop class="bt" offset=".7"/><stop class="bb" offset="1"/></linearGradient>' +
       '<radialGradient id="hpearl" cx=".36" cy=".32" r=".75"><stop class="pp0" offset="0"/><stop class="pp1" offset=".4"/><stop class="pp2" offset=".8"/><stop class="pp3" offset="1"/></radialGradient>' +
@@ -514,17 +513,23 @@
         : '<circle cx="236" cy="44" r="56" fill="url(#psun)"/><circle cx="236" cy="44" r="12" fill="#FFFFFF" opacity=".5"/>' + cloud(150, 40, .5, .7, 140)) + "</g>" +
       '<linearGradient id="skyf" gradientUnits="userSpaceOnUse" x1="0" y1="' + (h - 46) + '" x2="0" y2="' + h + '"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#000"/></linearGradient>' +
       '<mask id="skym"><rect width="390" height="' + h + '" fill="url(#skyf)"/></mask>' +
-      '<g mask="url(#skym)"><g transform="' + (small ? "translate(" + f1(390 - 390 * .76) + " " + f1(h - 190 * .76) + ") scale(.76)" : "translate(0 " + dy + ")") + '">' +
-      '<circle class="pgl" cx="280" cy="128" r="62" fill="url(#pglow)"/>' +
-      '<path fill="url(#bfade)" d="M218 190V152h8v-12h8v50zM242 190v-40h8v40zM372 190v-48h10v48zM354 190v-36h12v36z"/>' +
-      '<polygon fill="url(#bfade)" points="300,190 300,110 303,110 303,94 306,94 306,82 309,82 311,60 313,82 316,82 316,94 319,94 319,110 322,110 322,190"/>' +
-      '<path fill="url(#bfade)" d="M338 190 L340 92 Q343 52 349 32 L353 37 Q358 62 361 92 L363 190 Z"/>' +
+      '<g class="nt" mask="url(#skym)"><g transform="' + (small ? "translate(" + f1(390 - 390 * .76) + " " + f1(h - 190 * .76) + ") scale(.76)" : "translate(0 " + dy + ")") + '">' + skyCity("url(#bfade)", "", "") + "</g></g>" +
+      '<g class="dy"><g transform="' + (small ? "translate(" + f1(390 - 390 * .76 - 14) + " " + f1(h - 190 * .76 - 10) + ") scale(.76)" : "translate(0 " + dy + ")") + '">' + skyCity("", "lc", "lcb") + "</g></g></svg>";
+  }
+  /* the little Pudong skyline in page headers; fill = gradient (밤), or classes for flat colours (낮) */
+  function skyCity(fill, cls, back) {
+    const f = (c) => (fill ? ' fill="' + fill + '"' : ' class="' + c + '"');
+    const win = [[225, 160], [233, 166], [247, 156], [304, 122], [314, 134], [309, 152], [345, 112], [352, 142], [358, 162], [377, 150], [365, 168], [228, 170]];
+    return '<circle class="pgl" cx="280" cy="128" r="62" fill="url(#pglow)"/>' +
+      '<path' + f(back) + ' d="M218 190V152h8v-12h8v50zM242 190v-40h8v40zM372 190v-48h10v48zM354 190v-36h12v36z"/>' +
+      '<polygon' + f(cls) + ' points="300,190 300,110 303,110 303,94 306,94 306,82 309,82 311,60 313,82 316,82 316,94 319,94 319,110 322,110 322,190"/>' +
+      '<path' + f(cls) + ' d="M338 190 L340 92 Q343 52 349 32 L353 37 Q358 62 361 92 L363 190 Z"/>' +
       '<path class="stkl" d="M270 186 L276 156 M290 186 L284 156 M280 186 L280 156" stroke-width="3"/>' +
       '<rect class="stkf" x="277.5" y="98" width="5" height="58"/><rect class="stkf" x="278.4" y="70" width="3.2" height="30"/><path class="stkl" d="M280 66 L280 44" stroke-width="1.6"/>' +
       '<circle class="tip" cx="280" cy="43" r="1.8" fill="#FFD36B"/>' +
-      '<g class="win">' + win.map((w) => '<rect x="' + w[0] + '" y="' + w[1] + '" width="2.2" height="2.2"/>').join("") + "</g>" +
+      (fill ? '<g class="win">' + win.map((w) => '<rect x="' + w[0] + '" y="' + w[1] + '" width="2.2" height="2.2"/>').join("") + "</g>" : "") +
       '<circle cx="280" cy="152" r="11" fill="url(#hpearl)"/><circle cx="280" cy="98" r="7.5" fill="url(#hpearl)"/><circle cx="280" cy="70" r="3.6" fill="url(#hpearl)"/>' +
-      '<ellipse cx="276.5" cy="148" rx="3.6" ry="2.2" fill="#fff" opacity=".7" transform="rotate(-30 276.5 148)"/></g></g></svg>';
+      '<ellipse cx="276.5" cy="148" rx="3.6" ry="2.2" fill="#fff" opacity=".7" transform="rotate(-30 276.5 148)"/>';
   }
   const pageHead = (title, sub, tight) => '<header class="phead' + (tight ? " tight" : "") + '">' + skyArt(tight ? 188 : 184, true) + "<h1>" + esc(title) + "</h1>" + (sub ? '<span class="sub">' + esc(sub) + "</span>" : "") + "</header>";
 
@@ -1069,7 +1074,8 @@
     /* the tower may rise up beside the weather chip (it stands in the middle), just not into the title;
        if the chip ever reaches the middle, it stays under the chip instead */
     const chip = hero.querySelector(".hhint > *"), cr = chip && chip.getBoundingClientRect();
-    const under = (cr && cr.right > hr.left + hr.width / 2 - 14 ? cr.bottom + 10 : h1.getBoundingClientRect().bottom + 22) - hr.top;
+    const line = parseFloat(getComputedStyle(h1).lineHeight) || 39;
+    const under = (cr && cr.right > hr.left + hr.width / 2 - 14 ? cr.bottom + 8 : h1.getBoundingClientRect().top + line + 12) - hr.top;
     const water = hr.height - 307 * s - lift;
     const cs = Math.min(1, Math.max(0.55, (water - under) / (318 * s))), wy = -lift / s;
     hero.style.setProperty("--wy", wy.toFixed(1) + "px");
@@ -1077,7 +1083,7 @@
     hero.style.setProperty("--py", (wy + 222 * (1 - cs)).toFixed(1) + "px");
   }
   function heroMount() {
-    fitHero(); setTimeout(fitHero, 400);
+    fitHero();
     const hc = document.getElementById("hc");
     if (!hc) return;
     const n = hc.children.length, start = +hc.getAttribute("data-start") || 0, dayId = hc.getAttribute("data-day");
