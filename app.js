@@ -1010,7 +1010,16 @@
         d.stops.forEach((st) => { if (isDone(st.id)) places++; (st.spots || []).forEach((p) => { if (isDone(p.id)) places++; }); });
       });
       Object.keys(Object.assign({}, state.placePhotos, state.shared)).forEach((k) => { if (!state.posts.some((x) => x.id === k)) photos += picsOf(k, state.placePhotos[k]).length; });
+      /* three polaroids: the most-liked trip photos (then the newest); colour cards stand in until there are photos */
+      const shots = [];
+      state.posts.forEach((p) => { const n = likeNames(p.id).length; postPics(p.id).forEach((pid) => shots.push({ pid, n, at: p.at || 0 })); });
+      shots.sort((a, b) => b.n - a.n || b.at - a.at);
+      const pick = shots.filter((x, i) => shots.findIndex((y) => y.pid === x.pid) === i).slice(0, 3);
+      const stand = [ICON.camera, ICON.heart, ICON.pin];
+      /* the favourite sits in the middle, in front */
+      const polas = [1, 0, 2].map((k, i) => '<span class="pola p' + (i + 1) + '">' + (pick[k] ? '<i class="ph"><img data-pid="' + esc(pick[k].pid) + '" alt=""></i>' : "<i>" + stand[i] + "</i>") + "</span>").join("");
       return '<div class="hc-one"><article class="pc"><div class="pc-b"><div class="pc-top"><span class="pc-tag on">다녀온 여행 한눈에</span></div>' +
+        '<button class="recap-pola" type="button" data-act="tab" data-tab="log" aria-label="기록 보기">' + polas + "</button>" +
         '<div class="stat3"><div><span>다녀온 곳</span><b>' + places + "곳</b></div><div><span>사진</span><b>" + photos + "장</b></div><div><span>함께 쓴 돈</span><b>" + totalFmt(settleCalc()) + "</b></div></div>" +
         '<div class="wn-foot"><button class="btn cta" type="button" data-act="tab" data-tab="log">' + ICON.log + "기록 보기</button></div></div></article></div>";
     }

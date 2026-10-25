@@ -1536,6 +1536,13 @@ body { background-color: var(--edge) !important; }
 .pola.p3 { left: 128px; transform: rotate(10deg); }
 .pola.p3 i { background: linear-gradient(160deg, #B8E6D4, #9ED3F2); }
 .lempty b { font-size: 17px; }
+/* 다녀온 여행 card: three polaroids of the trip */
+.recap-pola { position: relative; display: block; width: 226px; height: 116px; margin: 2px auto 6px; padding: 0; border: 0; background: none; cursor: pointer; }
+.recap-pola .pola.p1 { left: 2px; top: 10px; }
+.recap-pola .pola.p2 { left: 72px; top: 2px; }
+.recap-pola .pola.p3 { left: 142px; top: 10px; }
+.pola i.ph { overflow: hidden; background: var(--inner); }
+.pola i.ph img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .lempty p { margin: 0 0 8px; font-size: 13.5px; line-height: 1.6; color: var(--muted); }
 .lempty .btn { gap: 7px; padding: 0 20px; }
 .lempty .btn svg { width: 16px; height: 16px; }
