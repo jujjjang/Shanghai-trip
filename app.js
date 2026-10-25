@@ -1048,7 +1048,7 @@
       hint = '<span class="mono">' + esc(String(t.dates || "").replace(/\s*·\s*\d+박.*$/, "")) + "</span>";
     }
     const flyday = ph.k === "during" && state.days.length && (ph.day === state.days[0] || ph.day === state.days[state.days.length - 1]);
-    let s = '<section class="hero' + (flyday ? " flyday" : "") + '">' + heroArt() + /* the plane only crosses the sky on the days we fly */
+    let s = '<section class="hero' + (flyday ? " flyday" : "") + (ph.k === "during" ? " trip" : "") + '">' + heroArt() + /* the plane only crosses the sky on the days we fly */
       '<div class="hero-top"><div class="hrow"><span class="hz">上海</span><button class="hchip" type="button" data-act="preview-pick" aria-label="홈 화면 미리보기 바꾸기">' + esc(chip) + ICON.chevR + "</button>" +
       '<button class="hedit' + (editing ? " done" : "") + '" type="button" data-act="w-edit">' + (editing ? "완료" : "편집") + "</button></div>" +
       '<h1 class="htitle">' + esc(title) + "</h1>" + (hint ? '<div class="hhint">' + hint + "</div>" : "") + "</div>" +

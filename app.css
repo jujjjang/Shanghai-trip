@@ -668,6 +668,9 @@ details[open] > summary .chev { margin-top: 4px; transform: rotate(-135deg); }
 .hero-art .hwat { transform: translateY(var(--wy, 0px)); }
 .hero-art .hsky { transform: translateY(var(--py, 0px)); }
 .hero-art .hwb { fill: #1C1850; }
+/* 여행 중 (the taller-card days): the city steps back toward the sky so the screen doesn't feel crowded; windows and pearls stay as they are */
+.hero.trip .hero-art .far { opacity: .55; }
+.hero.trip .hero-art .hcity > g[fill] { opacity: .7; }
 [data-theme="light"] .hero-art .hwb { fill: #94C0E6; }
 .hero-art .tw { animation: twinkle 3.2s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: center; }
 .hero-art .tw:nth-of-type(2n) { animation-delay: -1.3s; animation-duration: 2.4s; }
@@ -1290,11 +1293,11 @@ body { background-color: var(--edge) !important; }
 /* 낮: clearer air — less white haze on the river, buildings a shade deeper than the sky, softer glow round the pearls */
 [data-theme="light"] .hero-art ellipse[fill="url(#hglow)"] { opacity: .3; }
 [data-theme="light"] .hero-art ellipse[fill="url(#hhaze)"] { opacity: .4; }
-[data-theme="light"] .hero-art .far { fill: #B3D8F0; }
-[data-theme="light"] .hero-art .hb0 { stop-color: #94C8EB; }
-[data-theme="light"] .hero-art .hb1 { stop-color: #86BEE7; }
-[data-theme="light"] .hero-art .hbs { stroke: #90C5EA; }
-[data-theme="light"] .hero-art .ant { stroke: #94C8EB; }
+[data-theme="light"] .hero-art .far { fill: #BDDDF2; }
+[data-theme="light"] .hero-art .hb0 { stop-color: #9FCEED; }
+[data-theme="light"] .hero-art .hb1 { stop-color: #92C5EA; }
+[data-theme="light"] .hero-art .hbs { stroke: #9BCBEC; }
+[data-theme="light"] .hero-art .ant { stroke: #9FCEED; }
 [data-theme="light"] .hero-art .pglow { opacity: .15; }
 
 /* links fire only on the words: place names hug their text, weather opens from "자세히" */
