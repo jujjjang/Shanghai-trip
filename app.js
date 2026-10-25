@@ -1065,7 +1065,7 @@
   }
   let dotScrub = false; /* dragging along the home card's dots: hold off re-renders until the finger lifts */
   const HERO_CARD_BEFORE = 266; /* height of the 여행 전 card area: the river sits just above it, and every day keeps that same gap */
-  const HERO_CITY_DAY = 0.88; /* city size on days with a taller card (1 = 여행 전 size) */
+  const HERO_CITY_DAY = 0.85; /* city size on days with a taller card (1 = 여행 전 size) */
   function fitHero() {
     const hero = $(".hero"), card = hero && hero.querySelector(".hero-card");
     if (!hero || !card) return;

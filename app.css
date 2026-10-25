@@ -937,10 +937,10 @@ body[data-tab="home"] { background: linear-gradient(var(--bg), var(--bg)) top ce
 [data-theme="light"] .hero-art .shim rect { fill: #FFFFFF; }
 [data-theme="light"] .hero-art .shim { opacity: .7; }
 [data-theme="light"] .hart .bt, [data-theme="light"] .hart .bb { stop-color: #ABD4EE; }
-[data-theme="light"] .hart .stkl { stroke: #D9EDFA; }
-[data-theme="light"] .hart .stkf { fill: #D9EDFA; }
-[data-theme="light"] .hart .lc { fill: #D9EDFA; }
-[data-theme="light"] .hart .lcb { fill: #C4E1F4; }
+[data-theme="light"] .hart .stkl { stroke: #CDE6F7; }
+[data-theme="light"] .hart .stkf { fill: #CDE6F7; }
+[data-theme="light"] .hart .lc { fill: #CDE6F7; }
+[data-theme="light"] .hart .lcb { fill: #CDE6F7; }
 [data-theme="light"] .hart .win { display: none; }
 [data-theme="light"] .hart .pgl { opacity: .25; }
 [data-theme="light"] .hart .pp0 { stop-color: #FFFFFF; }
