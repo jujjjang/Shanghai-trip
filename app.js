@@ -840,6 +840,22 @@
       const near1 = Math.abs(cx - 196) < 40 ? "#FFB8E6" : Math.abs(cx - 300) < 30 || Math.abs(cx - 336) < 20 ? "#FFD68A" : "#B7A9FF";
       shim += '<rect class="' + (i % 4 ? "" : "tw") + '" x="' + f1(cx - w / 2) + '" y="' + f1(y) + '" width="' + f1(w) + '" height="1.6" rx=".8" fill="' + near1 + '" opacity="' + f1(0.18 + rnd() * 0.45) + '"/>';
     }
+    /* more city past both edges — only seen when the city is drawn smaller (days with a taller card) */
+    let xl = -6;
+    while (xl > -200) {
+      const w = 12 + Math.floor(rnd() * 16), h = 26 + Math.floor(rnd() * 64);
+      xl -= w; far += '<rect x="' + xl + '" y="' + (470 - h) + '" width="' + (w - 2) + '" height="' + (h + 4) + '"/>';
+    }
+    while (x < 600) {
+      const w = 12 + Math.floor(rnd() * 16), h = 26 + Math.floor(rnd() * 64);
+      far += '<rect x="' + x + '" y="' + (470 - h) + '" width="' + (w - 2) + '" height="' + (h + 4) + '"/>';
+      x += w;
+    }
+    [[-176, 398, 22], [-154, 420, 18], [-136, 386, 24], [-112, 412, 20], [-92, 394, 18], [-74, 424, 16], [-58, 402, 22], [-36, 386, 18], [-18, 414, 18],
+      [392, 398, 20], [412, 424, 16], [428, 388, 24], [452, 410, 18], [470, 394, 22], [492, 420, 18], [510, 400, 20], [530, 384, 22], [552, 414, 20]].forEach((b) => {
+      near += '<rect x="' + b[0] + '" y="' + b[1] + '" width="' + b[2] + '" height="' + (474 - b[1]) + '"/>';
+      for (let yy = b[1] + 8; yy < 462; yy += 9) for (let xx = b[0] + 4; xx < b[0] + b[2] - 3; xx += 6) if (rnd() < 0.3) wins += '<rect x="' + xx + '" y="' + yy + '" width="2" height="2.6"/>';
+    });
     /* 밤: a few brighter stars whose light swells and fades, each in its own time */
     const bloom = bloomPts.map((q, i) =>
       '<g transform="translate(' + q[0] + " " + q[1] + ')"><g class="bloom b' + (i + 1) + '"><circle r="11" fill="url(#blg)"/></g><circle r="1.4" fill="#FFFFFF" opacity=".9"/></g>').join("");
@@ -867,14 +883,14 @@
       '<rect width="390" height="480" fill="url(#hs)"/><rect class="dy" width="390" height="480" fill="url(#hsd)"/>' +
       '<g class="nt">' + stars + gold + bloom + shoot + '<circle cx="314" cy="174" r="44" fill="url(#hm)"/><circle cx="314" cy="174" r="14" fill="#FFE7A8" mask="url(#hmm)"/></g>' +
       '<g class="dy"><circle class="sunglow" cx="314" cy="174" r="82" fill="url(#hsun)"/><circle cx="314" cy="174" r="13.5" fill="#FFFFFF" opacity=".55"/>' +
-      '<g class="plane-fly"><rect x="-66" y="-.8" width="54" height="1.6" rx=".8" fill="url(#trailg)"/>' +
-        '<g transform="rotate(90) scale(.95) translate(-12 -12)"><path fill="#FFFFFF" d="M21 15.5v-2l-7.5-4.5V4.2a1.5 1.5 0 0 0-3 0V9L3 13.5v2l7.5-2.3v5l-2.2 1.6V21l3.7-1 3.7 1v-1.2l-2.2-1.6v-5z"/></g></g>' +
+      '<g class="hsky"><g class="plane-fly"><rect x="-66" y="-.8" width="54" height="1.6" rx=".8" fill="url(#trailg)"/>' +
+        '<g transform="rotate(90) scale(.95) translate(-12 -12)"><path fill="#FFFFFF" d="M21 15.5v-2l-7.5-4.5V4.2a1.5 1.5 0 0 0-3 0V9L3 13.5v2l7.5-2.3v5l-2.2 1.6V21l3.7-1 3.7 1v-1.2l-2.2-1.6v-5z"/></g></g></g>' +
       cloud(330, 40, .5, .5, 140) + cloud(64, 262, .9, .75, 105) + cloud(206, 236, .5, .55, 125) + cloud(286, 316, .72, .65, 115) + cloud(130, 352, .58, .6, 98) + cloud(40, 304, .45, .5, 132) +
-      '<ellipse cx="195" cy="476" rx="350" ry="125" fill="url(#hhaze)"/></g>' +
-      '<ellipse cx="200" cy="470" rx="280" ry="110" fill="url(#hglow)"/>' +
-      '<g class="far">' + far + "</g>" +
-      '<rect y="474" width="390" height="307" fill="url(#hw)"/><rect class="dy" y="474" width="390" height="307" fill="url(#hwd)"/>' +
-      '<g fill="url(#hb)">' + near +
+      "</g>" + '<g class="dy hwat"><ellipse cx="195" cy="476" rx="350" ry="125" fill="url(#hhaze)"/></g>' +
+      '<g class="hwat"><ellipse cx="200" cy="470" rx="280" ry="110" fill="url(#hglow)"/></g>' +
+      '<g class="hcity"><g class="far">' + far + "</g></g>" +
+      '<g class="hwat"><rect y="474" width="390" height="307" fill="url(#hw)"/><rect class="dy" y="474" width="390" height="307" fill="url(#hwd)"/><rect class="hwb" y="780" width="390" height="260"/></g>' +
+      '<g class="hcity"><g fill="url(#hb)">' + near +
       '<path d="M284 474 L287 330 Q290 280 302 246 L306 250 Q314 290 316 330 L318 474 Z"/>' +
       '<path fill-rule="evenodd" d="M248 474 L250 296 L272 282 L274 474 Z M254 297 L269 290 L269 306 L254 311 Z"/>' +
       '<polygon points="326,474 326,370 329,370 329,350 332,350 332,334 335,334 337,300 339,334 342,334 342,350 345,350 345,370 348,370 348,474"/>' +
@@ -886,9 +902,9 @@
       '<g class="pglow"><circle cx="196" cy="420" r="46" fill="url(#hglow)"/><circle cx="196" cy="300" r="30" fill="url(#hglow)"/></g>' +
       '<circle cx="196" cy="420" r="22" fill="url(#hp)"/><circle cx="196" cy="300" r="15" fill="url(#hp)"/><circle cx="196" cy="228" r="7.5" fill="url(#hp)"/>' +
       '<ellipse cx="189" cy="412" rx="7" ry="4.2" fill="#fff" opacity=".7" transform="rotate(-30 189 412)"/><ellipse cx="191" cy="294" rx="4.6" ry="2.8" fill="#fff" opacity=".7" transform="rotate(-30 191 294)"/>' +
-      '<rect class="hrf" x="174" y="478"width="44" height="150" fill="url(#hr)" opacity=".55"/>' +
-      '<g class="shim">' + shim + "</g>" +
-      '<path class="hzl" d="M0 480 H390" stroke-width="1"/></svg>';
+      '<rect class="hrf" x="174" y="478" width="44" height="150" fill="url(#hr)" opacity=".55"/></g>' +
+      '<g class="hwat"><g class="shim">' + shim + "</g>" +
+      '<path class="hzl" d="M0 480 H390" stroke-width="1"/></g></svg>';
     return heroSvg;
   }
   function placeCard(st, i, list, day, nextId) {
@@ -1043,7 +1059,21 @@
     return s;
   }
   let dotScrub = false; /* dragging along the home card's dots: hold off re-renders until the finger lifts */
+  const HERO_CARD_BEFORE = 266; /* height of the 여행 전 card area: the river sits just above it, and every day keeps that same gap */
+  function fitHero() {
+    const hero = $(".hero"), card = hero && hero.querySelector(".hero-card"), top = hero && hero.querySelector(".hero-top");
+    if (!hero || !card || !top) return;
+    const hr = hero.getBoundingClientRect(), s = Math.max(hr.width / 390, hr.height / 781);
+    const lift = card.offsetHeight - HERO_CARD_BEFORE;
+    if (lift < 4) { ["--wy", "--cs", "--py"].forEach((k) => hero.style.removeProperty(k)); return; }
+    const water = hr.height - 307 * s - lift, under = top.getBoundingClientRect().bottom - hr.top + 16;
+    const cs = Math.min(1, Math.max(0.55, (water - under) / (318 * s))), wy = -lift / s;
+    hero.style.setProperty("--wy", wy.toFixed(1) + "px");
+    hero.style.setProperty("--cs", cs.toFixed(3));
+    hero.style.setProperty("--py", (wy + 222 * (1 - cs)).toFixed(1) + "px");
+  }
   function heroMount() {
+    fitHero(); setTimeout(fitHero, 400);
     const hc = document.getElementById("hc");
     if (!hc) return;
     const n = hc.children.length, start = +hc.getAttribute("data-start") || 0, dayId = hc.getAttribute("data-day");
@@ -3406,7 +3436,7 @@
   });
 
   let rsz;
-  window.addEventListener("resize", () => { clearTimeout(rsz); rsz = setTimeout(() => { if (ui.tab === "plan") { fitPlan(); drawMap(); } }, 150); });
+  window.addEventListener("resize", () => { clearTimeout(rsz); rsz = setTimeout(() => { if (ui.tab === "plan") { fitPlan(); drawMap(); } if (ui.tab === "home") fitHero(); }, 150); });
 
   /* ---------- start ---------- */
   /* pinch-zoom only ever showed the page edges; the app is laid out for the phone already */
