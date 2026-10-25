@@ -1061,12 +1061,16 @@
   let dotScrub = false; /* dragging along the home card's dots: hold off re-renders until the finger lifts */
   const HERO_CARD_BEFORE = 266; /* height of the 여행 전 card area: the river sits just above it, and every day keeps that same gap */
   function fitHero() {
-    const hero = $(".hero"), card = hero && hero.querySelector(".hero-card"), top = hero && hero.querySelector(".hero-top");
-    if (!hero || !card || !top) return;
+    const hero = $(".hero"), card = hero && hero.querySelector(".hero-card"), h1 = hero && hero.querySelector(".htitle");
+    if (!hero || !card || !h1) return;
     const hr = hero.getBoundingClientRect(), s = Math.max(hr.width / 390, hr.height / 781);
     const lift = card.offsetHeight - HERO_CARD_BEFORE;
     if (lift < 4) { ["--wy", "--cs", "--py"].forEach((k) => hero.style.removeProperty(k)); return; }
-    const water = hr.height - 307 * s - lift, under = top.getBoundingClientRect().bottom - hr.top + 16;
+    /* the tower may rise up beside the weather chip (it stands in the middle), just not into the title;
+       if the chip ever reaches the middle, it stays under the chip instead */
+    const chip = hero.querySelector(".hhint > *"), cr = chip && chip.getBoundingClientRect();
+    const under = (cr && cr.right > hr.left + hr.width / 2 - 14 ? cr.bottom + 10 : h1.getBoundingClientRect().bottom + 22) - hr.top;
+    const water = hr.height - 307 * s - lift;
     const cs = Math.min(1, Math.max(0.55, (water - under) / (318 * s))), wy = -lift / s;
     hero.style.setProperty("--wy", wy.toFixed(1) + "px");
     hero.style.setProperty("--cs", cs.toFixed(3));
