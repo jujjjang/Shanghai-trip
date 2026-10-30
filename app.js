@@ -1845,6 +1845,24 @@
 
   /* checklist sheet: check, add, delete in one place */
   let ckMineOn = false;
+  /* ticked rows sink to the bottom (unticked ones come back up), gliding into place — in the big list and in the home widgets */
+  const ckSinkT = {};
+  function ckResort(key) {
+    const ids = ckList(key).map((x) => x.id), want = ids.filter((i) => !state.done[i]).concat(ids.filter((i) => state.done[i]));
+    document.querySelectorAll(".cklist, .wlist").forEach((box) => {
+      const idOf = (r) => { const c = r.querySelector && r.querySelector("[data-ck]"); return c ? c.getAttribute("data-ck") : null; };
+      const rows = Array.from(box.children).filter((r) => idOf(r));
+      if (!rows.length || !rows.some((r) => ids.indexOf(idOf(r)) >= 0)) return;
+      const cur = rows.map(idOf), order = want.filter((i) => cur.indexOf(i) >= 0);
+      if (order.join() === cur.join()) return;
+      const was = new Map(rows.map((r) => [r, r.getBoundingClientRect().top]));
+      order.forEach((i) => box.appendChild(rows.find((r) => idOf(r) === i)));
+      rows.forEach((r) => {
+        const d = was.get(r) - r.getBoundingClientRect().top;
+        if (Math.abs(d) > 1 && r.animate) r.animate([{ transform: "translateY(" + d + "px)" }, { transform: "none" }], { duration: 280, easing: "cubic-bezier(.2, .8, .2, 1)" });
+      });
+    });
+  }
   function ckSheet(key) {
     const list = ckList(key), doneN = list.filter((x) => state.done[x.id]).length, title = ckTitle(key);
     openSheet({
@@ -1856,7 +1874,7 @@
         '<button class="btn primary" type="button" data-act="li-add" data-list="' + key + '">추가</button></div>' +
         (canMine(key) ? '<p class="note ck-note">' + ICON.lock + " 나만 보는 " + (key === "pack" ? "준비물" : "할 일") + " · 나머지는 같이 봐요 · 체크는 각자</p>" : "") +
         '<div class="ckhead"><div class="wprog" data-prog="' + key + '"><i style="width:' + (list.length ? (doneN / list.length) * 100 : 0) + '%"></i></div><span class="mono" data-count="' + key + '">' + doneN + " / " + list.length + "</span></div>" +
-        (list.length ? '<div class="cklist ckedit" data-key="' + key + '">' + list.map((x) => {
+        (list.length ? '<div class="cklist ckedit" data-key="' + key + '">' + list.filter((x) => !state.done[x.id]).concat(list.filter((x) => state.done[x.id])).map((x) => {
           const b = (act, cls, ic, label) => '<button class="' + cls + '" type="button" data-act="' + act + '" data-list="' + key + '" data-id="' + x.id + '" aria-label="' + label + '">' + ic + "</button>";
           return '<div class="li sli" data-id="' + x.id + '"><div class="sli-sc"><div class="sli-in">' +
             '<label class="ck ckbox' + (state.done[x.id] ? " on" : "") + '" aria-label="' + esc(x.t) + ' 체크"><input type="checkbox" id="ckx-' + x.id + '" data-ck="' + x.id + '"' + (state.done[x.id] ? " checked" : "") + "></label>" +
@@ -3378,6 +3396,8 @@
         const list = ckList(key), n = list.filter((x) => state.done[x.id]).length;
         document.querySelectorAll('[data-prog="' + key + '"] i').forEach((i) => { i.style.width = (list.length ? (n / list.length) * 100 : 0) + "%"; });
         document.querySelectorAll('[data-count="' + key + '"]').forEach((c) => { c.textContent = n + " / " + list.length; });
+        /* a moment after the last tick (so a few quick ticks don't move rows under the finger), sink the ticked ones */
+        clearTimeout(ckSinkT[key]); ckSinkT[key] = setTimeout(() => ckResort(key), 550);
       }
       return;
     }
